@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <title>Verifikasi OTP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Fonts & Bootstrap -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --gold: #ffd54f;
+        --gold-200: #ffe883;
+        --brown: #4b3f36;
+        --muted: #8b8179;
+        --link: #0d6efd;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Poppins", system-ui, -apple-system, Segoe UI, Roboto,
+          Arial, sans-serif;
+        color: var(--brown);
+        padding: 40px 20px;
+      }
+
+      .verify-card {
+        width: 100%;
+        max-width: 420px;
+        text-align: center;
+      }
+
+      .lead-text {
+        color: var(--muted);
+        margin-bottom: 28px;
+        font-size: 1.05rem;
+        line-height: 1.6;
+      }
+
+      /* ===== OTP BOX ===== */
+      .otp-row {
+        display: flex;
+        justify-content: center;
+        gap: 14px;
+        margin-bottom: 28px;
+        flex-wrap: wrap;
+      }
+
+      .otp-cell {
+        width: 54px;
+        height: 54px;
+        border-radius: 12px;
+        border: 2px solid var(--gold);
+        text-align: center;
+        font-size: 24px;
+        color: var(--brown);
+        background: #fff;
+        outline: none;
+        caret-color: transparent;
+        transition: all 0.2s ease;
+      }
+
+      .otp-cell:focus {
+        box-shadow: 0 0 0 0.2rem rgba(255, 213, 79, 0.3);
+      }
+
+      /* ===== BUTTON VERIFY ===== */
+      .btn-verify {
+        display: inline-block;
+        padding: 10px 24px;
+        border-radius: 12px;
+        border: 0;
+        background: var(--gold);
+        color: var(--brown);
+        font-weight: 600;
+        font-size: 0.95rem;
+        line-height: 1.2;
+        text-align: center;
+        cursor: pointer;
+        box-shadow: none;
+      }
+
+      .resend {
+        margin-top: 16px;
+        display: inline-block;
+        text-decoration: none;
+        color: var(--link);
+        font-weight: 500;
+      }
+
+      .resend.disabled {
+        pointer-events: none;
+        opacity: 0.5;
+      }
+
+      .notice-wrap {
+        margin-top: 6px;
+      }
+
+      .notice {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .notice.hide {
+        display: none;
+      }
+
+      /* ====== RESPONSIVE ====== */
+      @media (max-width: 768px) {
+        body {
+          padding: 24px 16px;
+        }
+
+        .verify-card {
+          max-width: 360px;
+        }
+
+        .lead-text {
+          font-size: 0.95rem;
+          margin-bottom: 22px;
+        }
+
+        .otp-row {
+          gap: 10px;
+          margin-bottom: 24px;
+        }
+
+        .otp-cell {
+          width: 46px;
+          height: 46px;
+          font-size: 20px;
+          border-radius: 10px;
+        }
+        .resend {
+          font-size: 0.9rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .verify-card {
+          max-width: 320px;
+        }
+
+        .lead-text {
+          font-size: 0.88rem;
+          margin-bottom: 20px;
+        }
+
+        .otp-row {
+          gap: 8px;
+          margin-bottom: 20px;
+        }
+
+        .otp-cell {
+          width: 40px;
+          height: 40px;
+          font-size: 18px;
+          border-radius: 8px;
+        }
+        .notice {
+          font-size: 13px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="verify-card">
+      <p class="lead-text">
+        Masukkan 6 digit kode OTP<br />yang telah dikirim ke email Anda
+      </p>
+
+      <form
+        id="otpForm"
+        action="../backend/verify_otp.php"
+        method="post"
+        novalidate
+      >
+        <input type="hidden" id="email" name="email" />
+
+        <div class="otp-row" id="cells">
+          <input
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            class="otp-cell"
+          />
+          <input
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            class="otp-cell"
+          />
+          <input
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            class="otp-cell"
+          />
+          <input
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            class="otp-cell"
+          />
+          <input
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            class="otp-cell"
+          />
+          <input
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            class="otp-cell"
+          />
+        </div>
+
+        <button type="submit" class="btn-verify" id="btnVerify">
+          Verifikasi
+        </button>
+
+        <div class="text-center">
+          <a
+            href="#"
+            id="resendLink"
+            class="resend disabled"
+            aria-disabled="true"
+            >Kirim ulang OTP (05:00)</a
+          >
+        </div>
+
+        <div class="notice-wrap">
+          <p id="cooldownNote" class="notice hide">
+            Tunggu sebentar sebelum mengirim ulang.
+          </p>
+          <p id="alertBox" class="notice hide"></p>
+        </div>
+      </form>
+    </div>
+    <script>
+      // ====== Setup ======
+      const params = new URLSearchParams(location.search);
+      const emailInput = document.getElementById("email");
+      const form = document.getElementById("otpForm");
+      const cells = Array.prototype.slice.call(
+        document.querySelectorAll(".otp-cell")
+      );
+      const resendLink = document.getElementById("resendLink");
+      const note = document.getElementById("cooldownNote");
+      const alertBox = document.getElementById("alertBox");
+
+      // ambil email dari query
+      const emailQS = params.get("email") || "";
+      if (emailQS) emailInput.value = emailQS;
+
+      // ====== CONFIG ======
+      const COOLDOWN = 300; // 5 menit
+
+      function storageKey(email) {
+        return "otp_last_sent_" + (email || "anonymous");
+      }
+
+      function showAlert(msg) {
+        alertBox.textContent = msg;
+        alertBox.classList.remove("hide");
+      }
+
+      // ====== OTP typing ======
+      function onlyDigit(v) {
+        return v.replace(/\D/g, "");
+      }
+      cells.forEach(function (c, idx) {
+        c.addEventListener("input", function (e) {
+          e.target.value = onlyDigit(e.target.value).slice(0, 1);
+          if (e.target.value && idx < cells.length - 1) cells[idx + 1].focus();
+        });
+        c.addEventListener("keydown", function (e) {
+          if (e.key === "Backspace" && !e.target.value && idx > 0)
+            cells[idx - 1].focus();
+        });
+        c.addEventListener("paste", function (e) {
+          const t = (e.clipboardData || window.clipboardData).getData("text");
+          const digits = onlyDigit(t).slice(0, 6);
+          if (!digits) return;
+          e.preventDefault();
+          cells.forEach((cc, i) => (cc.value = digits[i] || ""));
+          (digits.length < 6
+            ? cells[digits.length]
+            : cells[cells.length - 1]
+          ).focus();
+        });
+      });
+
+      form.addEventListener("submit", function (e) {
+        const otp = cells.map((c) => c.value).join("");
+        if (otp.length !== 6) {
+          e.preventDefault();
+          showAlert("Masukkan 6 digit OTP.");
+          return;
+        }
+        const hid = document.createElement("input");
+        hid.type = "hidden";
+        hid.name = "otp";
+        hid.value = otp;
+        form.appendChild(hid);
+      });
+
+      // ====== COUNTDOWN ======
+      let tickInt = null;
+
+      function secondsLeftFromStorage() {
+        const key = storageKey(emailInput.value);
+        const ts = parseInt(localStorage.getItem(key) || "0", 10);
+        if (!ts) return 0;
+        const elapsed = Math.floor((Date.now() - ts) / 1000);
+        return Math.max(0, COOLDOWN - elapsed);
+      }
+
+      function fmt(s) {
+        const m = String(Math.floor(s / 60)).padStart(2, "0");
+        const d = String(s % 60).padStart(2, "0");
+        return m + ":" + d;
+      }
+
+      function startCountdown(startSeconds) {
+        let remaining = startSeconds;
+
+        function render(sec) {
+          if (sec > 0) {
+            resendLink.textContent = "Kirim ulang OTP (" + fmt(sec) + ")";
+            resendLink.classList.add("disabled");
+            resendLink.setAttribute("aria-disabled", "true");
+            note.classList.remove("hide");
+          } else {
+            resendLink.textContent = "Kirim ulang OTP";
+            resendLink.classList.remove("disabled");
+            resendLink.removeAttribute("aria-disabled");
+            note.classList.add("hide");
+          }
+        }
+
+        render(remaining);
+        clearInterval(tickInt);
+
+        tickInt = setInterval(function () {
+          remaining -= 1;
+          render(remaining);
+
+          // update lokal storage
+          if (remaining > 0) {
+            const backTs = Date.now() - (COOLDOWN - remaining) * 1000;
+            localStorage.setItem(
+              storageKey(emailInput.value),
+              backTs.toString()
+            );
+          }
+
+          if (remaining <= 0) {
+            clearInterval(tickInt);
+          }
+        }, 1000);
+      }
+
+      // ====== Kirim OTP pertama kali saat halaman dibuka ======
+      // (ini yang nyambungin ke backend/send_otp.php)
+      function sendInitialOtp() {
+        if (!emailInput.value) return;
+
+        fetch(
+          "../backend/send_otp.php?email=" +
+            encodeURIComponent(emailInput.value),
+          {
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              Accept: "application/json",
+            },
+          }
+        )
+          .then((r) => r.json())
+          .then((data) => {
+            if (!data.ok) {
+              // kalau gagal kirim yaudah, user masih bisa klik "kirim ulang"
+              showAlert("Tidak bisa mengirim OTP otomatis, coba kirim ulang.");
+              return;
+            }
+            // sukses → catat waktu kirim biar countdown langsung jalan
+            localStorage.setItem(
+              storageKey(emailInput.value),
+              Date.now().toString()
+            );
+            startCountdown(COOLDOWN);
+          })
+          .catch(() => {
+            // jaringan bermasalah → user bisa kirim ulang manual
+          });
+      }
+
+      // ====== INIT ======
+      const initLeft = secondsLeftFromStorage();
+      if (initLeft > 0) {
+        startCountdown(initLeft);
+      } else {
+        // belum ada countdown → langsung coba kirim OTP pertama
+        sendInitialOtp();
+        resendLink.textContent = "Kirim ulang OTP";
+        resendLink.classList.remove("disabled");
+        resendLink.removeAttribute("aria-disabled");
+        note.classList.add("hide");
+      }
+
+      // ====== RESEND CLICK (sekarang nembak ke send_otp.php) ======
+      resendLink.addEventListener("click", function (e) {
+        if (resendLink.classList.contains("disabled")) {
+          e.preventDefault();
+          return;
+        }
+        e.preventDefault();
+
+        if (!emailInput.value) {
+          showAlert("Email tidak valid.");
+          return;
+        }
+
+        // kasih feedback cepat
+        showAlert("Kode OTP baru sudah dikirim ke email.");
+
+        // langsung mulai countdown di front-end
+        localStorage.setItem(
+          storageKey(emailInput.value),
+          Date.now().toString()
+        );
+        startCountdown(COOLDOWN);
+
+        // kirim ke backend benerannya
+        fetch(
+          "../backend/send_otp.php?email=" +
+            encodeURIComponent(emailInput.value),
+          {
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              Accept: "application/json",
+            },
+          }
+        )
+          .then((res) => res.json())
+          .then((data) => {
+            // kalau backend punya logika cooldown sendiri
+            if (!data.ok && data.error === "cooldown") {
+              const wait = parseInt(data.wait || "0", 10);
+              if (wait > 0) {
+                const backTs = Date.now() - (COOLDOWN - wait) * 1000;
+                localStorage.setItem(
+                  storageKey(emailInput.value),
+                  backTs.toString()
+                );
+                startCountdown(wait);
+              }
+              showAlert("Tunggu sebentar sebelum mengirim ulang.");
+            }
+          })
+          .catch(() => {
+            // kalau error jaringan → biarin, countdown tetap jalan
+          });
+      });
+    </script>
+  </body>
+</html>

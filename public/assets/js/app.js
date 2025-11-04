@@ -247,7 +247,7 @@ function renderMenu() {
         const id = btn.getAttribute("data-id");
         addToCart(id);
       },
-      { passive: true }
+      { passive: false }
     );
   });
 }

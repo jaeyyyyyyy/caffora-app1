@@ -14,7 +14,6 @@ header('Content-Type: application/json; charset=utf-8');
    KONEKSI
 ========================= */
 if (!isset($conn) || !($conn instanceof mysqli)) {
-  // fallback (kalau config tidak mengisi $conn)
   $conn = @new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
   if ($conn->connect_errno) {
     http_response_code(500);
@@ -60,21 +59,16 @@ if ($entity !== '' && in_array($entity, $allowedEntities, true)) {
   $types  .= 's';
   $params[] = $entity;
 } else {
-  // default tampilkan keduanya
   $where[] = "(a.entity IN ('order','payment'))";
 }
 
-/* 2) Important-only rules:
-      - Selalu ijinkan semua 'order'
-      - Untuk 'payment' hanya aksi uang: paid / mark_paid / refund
-      - atau to_val mengandung 'paid'
-*/
+/* 2) Important-only rules */
 if ($importantOnly === 1) {
   $where[] = "(
       a.entity = 'order'
       OR (
         a.entity = 'payment' AND (
-          a.action IN ('paid','mark_paid','refund')
+          a.action IN ('paid','mark_paid','refund','update_status')
           OR a.to_val LIKE '%paid%'
           OR a.to_val LIKE '%\"paid\"%'
         )
@@ -107,10 +101,9 @@ if ($fromOk && $toOk) {
   $params[] = $to . ' 23:59:59';
 }
 
-/* 5) Query text */
+/* 5) Query text (remark/action/from/to + entity_id angka) */
 if ($q !== '') {
   $like = '%' . $q . '%';
-  // Cari di remark, action, from_val, to_val, dan entity_id jika q numerik
   $sub = '(a.remark LIKE ? OR a.action LIKE ? OR a.from_val LIKE ? OR a.to_val LIKE ?';
   $types  .= 'ssss';
   $params[] = $like; $params[] = $like; $params[] = $like; $params[] = $like;
@@ -128,6 +121,7 @@ $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
 /* =========================
    COUNT TOTAL
+   (Join ke users cukup; join ke orders tidak dibutuhkan untuk hitung)
 ========================= */
 $countSql = "SELECT COUNT(*) AS c
              FROM audit_logs a
@@ -145,6 +139,8 @@ $offset = ($page - 1) * $perPage;
 
 /* =========================
    AMBIL DATA
+   >>> Tambahan penting: JOIN ke orders untuk ambil invoice_no
+   >>> Berlaku untuk entity 'order' dan 'payment' (keduanya pakai order_id=entity_id)
 ========================= */
 $selectSql = "
   SELECT
@@ -153,9 +149,13 @@ $selectSql = "
     COALESCE(u.name, '')  AS actor_name,
     COALESCE(u.role, '')  AS actor_role,
     a.entity, a.entity_id, a.action,
-    a.from_val, a.to_val, a.remark
+    a.from_val, a.to_val, a.remark,
+    COALESCE(o.invoice_no, '') AS invoice
   FROM audit_logs a
-  LEFT JOIN users u ON u.id = a.actor_id
+  LEFT JOIN users  u ON u.id = a.actor_id
+  LEFT JOIN orders o
+         ON o.id = a.entity_id
+        AND a.entity IN ('order','payment')
   $whereSql
   ORDER BY $orderBy
   LIMIT ? OFFSET ?
@@ -173,7 +173,6 @@ $res = $st2->get_result();
 
 $data = [];
 while ($r = $res->fetch_assoc()) {
-  // Normalisasi output: jaga tipe data
   $data[] = [
     'id'         => (int)$r['id'],
     'created_at' => (string)$r['created_at'],
@@ -186,6 +185,8 @@ while ($r = $res->fetch_assoc()) {
     'from_val'   => (string)($r['from_val'] ?? ''),
     'to_val'     => (string)($r['to_val']   ?? ''),
     'remark'     => (string)($r['remark']   ?? ''),
+    // selalu tersedia (atau string kosong) karena JOIN orders
+    'invoice'    => (string)$r['invoice'],
   ];
 }
 $st2->close();

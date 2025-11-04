@@ -1194,7 +1194,7 @@ $email = $_SESSION['user_email'] ?? '';
     <!-- JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
-    <script src="../assets/js/app.js?v=1012" defer></script>
+    <script src="../assets/js/app.js?v=1013" defer></script>
 
     <!-- NAVBAR ACTIVE -->
     <script>

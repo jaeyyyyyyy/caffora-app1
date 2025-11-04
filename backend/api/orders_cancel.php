@@ -6,24 +6,18 @@ session_start();
 
 require_once __DIR__ . '/../config.php';
 
-/* ==== AUDIT HELPER LOADER (robust) ==== */
-$__candidates = [
-  __DIR__ . '/../lib/audit_helper.php',  // lokasi normal
-  __DIR__ . '/lib/audit_helper.php',     // fallback jika ada di api/lib
+/* ==== AUDIT HELPER ==== */
+$helperCandidates = [
+  __DIR__ . '/../lib/audit_helper.php',
+  __DIR__ . '/lib/audit_helper.php',
 ];
-foreach ($__candidates as $__p) {
-  if (is_file($__p)) { require_once $__p; break; }
+foreach ($helperCandidates as $p) {
+  if (is_file($p)) { require_once $p; break; }
 }
-/* kompatibel jika helper bernama log_audit() */
-if (!function_exists('audit_log') && function_exists('log_audit')) {
-  function audit_log(mysqli $db, int $actorId, string $entity, int $entityId, string $action, string $fromVal = '', string $toVal = '', string $remark = ''): bool {
-    return log_audit($db, $actorId, $entity, $entityId, $action, $fromVal, $toVal, $remark);
-  }
-}
-/* shim terakhir supaya tidak fatal */
 if (!function_exists('audit_log')) {
   function audit_log(mysqli $db, int $actorId, string $entity, int $entityId, string $action, string $fromVal = '', string $toVal = '', string $remark = ''): bool {
-    error_log("[AUDIT_SHIM] audit_helper.php missing: $actorId $entity#$entityId $action ($remark)");
+    // fallback aman bila helper belum ada
+    error_log("[AUDIT_FALLBACK] $actorId $entity#$entityId $action ($remark)");
     return true;
   }
 }
@@ -60,7 +54,7 @@ $reason   = trim((string)($_POST['reason'] ?? ''));
 if ($order_id <= 0) bad('Missing order_id');
 if ($reason === '') $reason = 'Pembatalan pesanan (belum bayar)';
 
-/* ==== Fetch order (for validation & audit from_val) ==== */
+/* ==== Ambil order (validasi & for audit from_val) ==== */
 $stmt = $mysqli->prepare("
   SELECT id, user_id, invoice_no, customer_name, payment_status, order_status, payment_method,
          grand_total, tax_amount
@@ -73,7 +67,7 @@ $order = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 if (!$order) bad('Order tidak ditemukan', 404);
 
-/* ==== Validate ==== */
+/* ==== Validasi ==== */
 if ((string)$order['payment_status'] !== 'pending') {
   bad('Pembatalan hanya untuk pesanan yang belum dibayar.');
 }
@@ -88,9 +82,9 @@ $custName    = (string)$order['customer_name'];
 $method      = (string)$order['payment_method'];
 $actorId     = (int)($_SESSION['user_id'] ?? 0); // yang membatalkan
 
-$fromOrder   = json_encode([
+$fromOrder = json_encode([
   'order_status'   => (string)$order['order_status'],
-  'payment_status' => (string)$order['payment_status']
+  'payment_status' => (string)$order['payment_status'],
 ], JSON_UNESCAPED_UNICODE);
 
 /* ==== Transaction ==== */
@@ -111,16 +105,16 @@ try {
   if (!$stmt->execute()) throw new Exception('Update orders failed: '.$stmt->error);
   $stmt->close();
 
-  // AUDIT: cancel order
+  // AUDIT: fokus ke order
   $toOrder = json_encode([
     'order_status'   => 'cancelled',
     'payment_status' => 'failed',
     'reason'         => $reason,
-    'invoice'        => $invoice
+    'invoice'        => $invoice,
   ], JSON_UNESCAPED_UNICODE);
   audit_log($mysqli, $actorId, 'order', $order_id, 'cancel', $fromOrder, $toOrder, 'cancel via API');
 
-  // 2) Sync payments -> failed & 0
+  // 2) Sinkron payments -> failed & angka nol
   $note = 'cancelled: '.$reason.' | from order '.$invoice;
 
   $stmt = $mysqli->prepare("SELECT id, status FROM payments WHERE order_id=? LIMIT 1");
@@ -142,9 +136,11 @@ try {
     if (!$stmt->execute()) throw new Exception('Update payments failed: '.$stmt->error);
     $stmt->close();
 
-    // AUDIT: payment status
+    // AUDIT: perubahan status payment (uang)
     audit_log($mysqli, $actorId, 'payment', $order_id, 'update_status',
-      $prevPayStatus !== '' ? $prevPayStatus : 'unknown', 'failed', 'sync cancel');
+      $prevPayStatus !== '' ? $prevPayStatus : 'unknown',
+      'failed',
+      'sync cancel');
   } else {
     $stmt = $mysqli->prepare("
       INSERT INTO payments (order_id, method, status, amount_gross, discount, tax, shipping, amount_net, paid_at, note)
@@ -154,23 +150,19 @@ try {
     if (!$stmt->execute()) throw new Exception('Insert payments failed: '.$stmt->error);
     $stmt->close();
 
-    // AUDIT: create payment (failed)
+    // AUDIT: membuat baris payment (status gagal)
     audit_log($mysqli, $actorId, 'payment', $order_id, 'create_failed', '', 'failed', 'insert payment on cancel');
   }
 
-  // 3) Notifications
+  // 3) Kirim notifikasi (TIDAK dicatat di audit_logs agar audit bersih)
   if ($customerId) {
     $linkCus = '/caffora-app1/public/customer/history.php?invoice='.$invoice;
     create_notification($mysqli, $customerId, 'customer',
       'Pesanan kamu dibatalkan ('.$invoice.'). Alasan: '.$reason, $linkCus);
-    audit_log($mysqli, $actorId, 'user', $customerId, 'send_notification', '', "order#{$order_id}", 'cancel → customer');
   }
   $msgK = 'Pesanan dibatalkan: '.$custName.' ('.$invoice.') — '.$reason;
   create_notification($mysqli, null, 'karyawan', $msgK, '/caffora-app1/public/karyawan/orders.php');
-  audit_log($mysqli, $actorId, 'user', 0, 'send_notification', '', "order#{$order_id}", 'cancel → karyawan');
-
-  create_notification($mysqli, null, 'admin', '[ADMIN] '.$msgK, '/caffora-app1/public/admin/orders.php');
-  audit_log($mysqli, $actorId, 'user', 0, 'send_notification', '', "order#{$order_id}", 'cancel → admin');
+  create_notification($mysqli, null, 'admin',    '[ADMIN] '.$msgK, '/caffora-app1/public/admin/orders.php');
 
   $mysqli->commit();
   out(['ok'=>true]);

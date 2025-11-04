@@ -6,6 +6,8 @@ session_start();
 
 require_once __DIR__ . '/../config.php';
 
+$BASE = rtrim(BASE_URL, '/');
+
 $mysqli = @new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($mysqli->connect_errno) {
   echo json_encode(['ok'=>false,'error'=>'DB connect failed: '.$mysqli->connect_error], JSON_UNESCAPED_SLASHES);
@@ -23,19 +25,34 @@ function bad(string $msg, int $code=400): void {
   out(['ok'=>false,'error'=>$msg]);
 }
 
+/** Normalisasi role ke 3 varian resmi */
+function norm_role(?string $r): ?string {
+  if ($r === null) return null;
+  $r = strtolower(trim($r));
+  if ($r === 'admin') return 'admin';
+  if (in_array($r, ['karyawan','pegawai','employee','staff','barista'], true)) return 'karyawan';
+  if (in_array($r, ['customer','pelanggan'], true)) return 'customer';
+  return 'customer'; // fallback aman
+}
+
 /**
  * Simpan notifikasi.
- * - user_id bisa NULL (broadcast role) → gunakan NULLIF agar FK aman.
+ * - user_id bisa NULL (broadcast).
+ * - role: NULL (broadcast global) / 'karyawan' / 'admin' / 'customer'
  * - status default: 'unread' (agar badge muncul).
+ * - Pakai NULLIF di SQL agar string kosong jadi NULL (bukan '' yang gagal di filter).
  */
 function create_notification(mysqli $db, ?int $userId, ?string $role, string $message, ?string $link = null): void {
+  $role = norm_role($role);
+  $roleParam = $role ?? '';     // '' => akan jadi NULL lewat NULLIF
+  $uid = $userId ?? 0;          // 0 => akan jadi NULL lewat NULLIF
+
   $sql = "
     INSERT INTO notifications (user_id, role, message, status, created_at, link)
-    VALUES (NULLIF(?,0), ?, ?, 'unread', NOW(), ?)
+    VALUES (NULLIF(?,0), NULLIF(?,''), ?, 'unread', NOW(), ?)
   ";
   if (!$stmt = $db->prepare($sql)) return;
-  $uid = $userId ?? 0; // 0 → jadi NULL oleh NULLIF
-  $stmt->bind_param('isss', $uid, $role, $message, $link);
+  $stmt->bind_param('isss', $uid, $roleParam, $message, $link);
   $stmt->execute();
   $stmt->close();
 }
@@ -252,16 +269,18 @@ if ($action === 'create') {
     if (!$stmtPay->execute()) throw new Exception('Insert payment failed: '.$stmtPay->error);
     $stmtPay->close();
 
-    // 5) notifikasi (semua role → badge muncul)
+    // 5) NOTIFIKASI — pastikan badge muncul di semua role terkait
+    // ke customer (personal)
     if ($user_id) {
       $msg  = 'Pesanan kamu sudah diterima. Invoice: '.$invoice_no;
-      $link = '/caffora-app1/public/customer/history.php?invoice='.$invoice_no;
+      $link = $GLOBALS['BASE'].'/public/customer/history.php?invoice='.$invoice_no;
       create_notification($mysqli, (int)$user_id, 'customer', $msg, $link);
     }
+    // broadcast ke karyawan & admin
     $msgStaff  = 'Pesanan baru dari '.$customer_name.' total Rp '.number_format($grand_total,0,',','.').' ('.$invoice_no.')';
-    create_notification($mysqli, null, 'karyawan', $msgStaff, '/caffora-app1/public/karyawan/orders.php');
+    create_notification($mysqli, null, 'karyawan', $msgStaff, $GLOBALS['BASE'].'/public/karyawan/orders.php');
     $msgAdmin  = '[ADMIN] Pesanan baru: '.$customer_name.' — Rp '.number_format($grand_total,0,',','.').' ('.$invoice_no.')';
-    create_notification($mysqli, null, 'admin', $msgAdmin, '/caffora-app1/public/admin/orders.php');
+    create_notification($mysqli, null, 'admin', $msgAdmin, $GLOBALS['BASE'].'/public/admin/orders.php');
 
     $mysqli->commit();
     out([
@@ -314,13 +333,13 @@ if ($action === 'update') {
   // order_status
   if (isset($data['order_status'])) {
     $val = (string)$data['order_status'];
-    if (!in_array($val, $ALLOWED_ORDER_STATUS, true)) bad('Invalid order_status');
+    if (!in_array($val, $GLOBALS['ALLOWED_ORDER_STATUS'], true)) bad('Invalid order_status');
 
     // Guard: tidak boleh "processing" jika belum paid
     if ($val === 'processing' && $oldPayStatus !== 'paid') {
       bad('Pembayaran belum Lunas. Set ke paid dulu.');
     }
-    // Pembatalan hanya untuk pesanan belum dibayar (sesuai requirement)
+    // Pembatalan hanya untuk pesanan belum dibayar
     if ($val === 'cancelled' && $oldPayStatus !== 'pending') {
       bad('Pembatalan hanya untuk pesanan yang belum dibayar.');
     }
@@ -339,7 +358,7 @@ if ($action === 'update') {
   // payment_status
   if (isset($data['payment_status'])) {
     $val = (string)$data['payment_status'];
-    if (!in_array($val, $ALLOWED_PAYMENT_STATUS, true)) bad('Invalid payment_status');
+    if (!in_array($val, $GLOBALS['ALLOWED_PAYMENT_STATUS'], true)) bad('Invalid payment_status');
 
     // Aksi sekali arah: paid tidak boleh kembali ke pending
     if ($oldPayStatus === 'paid' && $val === 'pending') {
@@ -354,7 +373,7 @@ if ($action === 'update') {
   if (array_key_exists('payment_method', $data)) {
     $val = $data['payment_method'];
     if ($val !== null && $val !== '') {
-      if (!in_array($val, $ALLOWED_METHOD, true)) bad('Invalid payment_method');
+      if (!in_array($val, $GLOBALS['ALLOWED_METHOD'], true)) bad('Invalid payment_method');
       $fields[] = "payment_method = ?"; $params[] = $val; $types .= 's';
       $newPayMethod = $val;
     } else {
@@ -388,7 +407,7 @@ if ($action === 'update') {
   $stmt->close();
 
   if ($os === 'cancelled') {
-    // Sesuai requirement: batal hanya saat belum dibayar → jadikan FAILED & nol-kan angka
+    // Batal: set payments -> failed
     $noteCancel = 'cancelled: '.($cancelReason ?: '-').' | from orders #'.$invoiceNo;
     if ($payRow) {
       $stmt = $mysqli->prepare("
@@ -409,10 +428,15 @@ if ($action === 'update') {
       $stmt->execute(); $stmt->close();
     }
 
-    // broadcast pembatalan → badge muncul di staf & admin
-    $msgK = 'Pesanan dibatalkan: '.$customerName.' ('.$invoiceNo.')'.($cancelReason ? ' — '.$cancelReason : '');
-    create_notification($mysqli, null, 'karyawan', $msgK, '/caffora-app1/public/karyawan/orders.php');
-    create_notification($mysqli, null, 'admin',    '[ADMIN] '.$msgK, '/caffora-app1/public/admin/orders.php');
+    // broadcast pembatalan → badge staf & admin
+    create_notification($mysqli, null, 'karyawan',
+      'Pesanan dibatalkan: '.$customerName.' ('.$invoiceNo.')'.($cancelReason ? ' — '.$cancelReason : ''),
+      $GLOBALS['BASE'].'/public/karyawan/orders.php'
+    );
+    create_notification($mysqli, null, 'admin',
+      '[ADMIN] Pesanan dibatalkan: '.$customerName.' ('.$invoiceNo.')'.($cancelReason ? ' — '.$cancelReason : ''),
+      $GLOBALS['BASE'].'/public/admin/orders.php'
+    );
 
   } else {
     // resync normal
@@ -441,11 +465,24 @@ if ($action === 'update') {
       $stmt->bind_param('issdddsss', $id, $pm, $ps, $grand, $tax, $grand, $ps, $invoiceNo);
       $stmt->execute(); $stmt->close();
     }
+
+    // === Notifikasi tambahan agar pasti ada UNREAD untuk karyawan ===
+    // 1) ketika pembayaran jadi 'paid'
+    if ($newPayStatus === 'paid' && $oldPayStatus !== 'paid') {
+      $msgPaid = 'Pembayaran LUNAS untuk '.$customerName.' ('.$invoiceNo.').';
+      create_notification($mysqli, null, 'karyawan', $msgPaid, $GLOBALS['BASE'].'/public/karyawan/orders.php');
+      create_notification($mysqli, null, 'admin',    '[ADMIN] '.$msgPaid, $GLOBALS['BASE'].'/public/admin/orders.php');
+    }
+    // 2) ketika status operasional bergeser
+    if ($newOrderStatus !== null && $newOrderStatus !== $oldOrderStatus) {
+      $msgFlow = 'Status pesanan '.$invoiceNo.' → '.$newOrderStatus.'.';
+      create_notification($mysqli, null, 'karyawan', $msgFlow, $GLOBALS['BASE'].'/public/karyawan/orders.php');
+    }
   }
 
   // ===== notifikasi customer saat status berubah
   if ($userIdOrder && $newOrderStatus !== null && $newOrderStatus !== $oldOrderStatus) {
-    $historyLink = '/caffora-app1/public/customer/history.php?invoice='.$invoiceNo;
+    $historyLink = $GLOBALS['BASE'].'/public/customer/history.php?invoice='.$invoiceNo;
     if     ($newOrderStatus === 'ready')
       create_notification($mysqli, $userIdOrder, 'customer', 'Pesanan kamu sudah ready ('.$invoiceNo.').', $historyLink);
     elseif ($newOrderStatus === 'completed')

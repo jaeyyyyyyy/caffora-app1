@@ -296,13 +296,12 @@ $distToday = [
       .charts-row canvas{ max-height:300px!important; }
     }
   </style>
-  
-
 </head>
 <body>
 
-<div id="backdrop" class="backdrop-mobile"></div>
 
+<div id="backdrop" class="backdrop-mobile"></div>
+      <!-- sidebar -->
 <aside class="sidebar" id="sideNav">
   <div class="sidebar-head">
     <button class="sidebar-inner-toggle" id="toggleSidebarInside" aria-label="Tutup menu"></button>
@@ -310,43 +309,45 @@ $distToday = [
       <i class="bi bi-x-lg"></i>
     </button>
   </div>
+
   <nav class="nav flex-column gap-2" id="sidebar-nav">
-  <a class="nav-link" href="<?= BASE_URL ?>/public/admin/index.php">
-    <i class="bi bi-house-door"></i> Dashboard
-  </a>
-  <a class="nav-link" href="<?= BASE_URL ?>/public/admin/orders.php">
-    <i class="bi bi-receipt"></i> Orders
-  </a>
-  <a class="nav-link" href="<?= BASE_URL ?>/public/admin/catalog.php">
-    <i class="bi bi-box-seam"></i> Catalog
-  </a>
-  <a class="nav-link" href="<?= BASE_URL ?>/public/admin/users.php">
-    <i class="bi bi-people"></i> Users
-  </a>
-  <a class="nav-link" href="<?= BASE_URL ?>/public/admin/finance.php">
-    <i class="bi bi-cash-coin"></i> Finance
-  </a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/index.php">
+      <i class="bi bi-house-door"></i> Dashboard
+    </a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/orders.php">
+      <i class="bi bi-receipt"></i> Orders
+    </a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/catalog.php">
+      <i class="bi bi-box-seam"></i> Catalog
+    </a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/users.php">
+      <i class="bi bi-people"></i> Users
+    </a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/finance.php">
+      <i class="bi bi-cash-coin"></i> Finance
+    </a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/notifications_send.php">
+      <i class="bi bi-megaphone"></i> Kirim Notifikasi
+    </a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/audit.php">
+      <i class="bi bi-shield-check"></i> Audit Log
+    </a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/settings.php">
+      <i class="bi bi-gear"></i> Settings
+    </a>
 
-  <!-- ✨ fitur baru: kirim notifikasi -->
-  <a class="nav-link" href="<?= BASE_URL ?>/public/admin/notifications_send.php">
-    <i class="bi bi-megaphone"></i> Kirim Notifikasi
-  </a>
+    <hr>
 
-  <a class="nav-link" href="<?= BASE_URL ?>/public/admin/settings.php">
-    <i class="bi bi-gear"></i> Settings
-  </a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/help.php">
+      <i class="bi bi-question-circle"></i> Help Center
+    </a>
 
-  <hr>
-  <a class="nav-link" href="<?= BASE_URL ?>/public/admin/help.php">
-  <i class="bi bi-question-circle"></i> Help Center
-</a>
-
-  <a class="nav-link" href="<?= BASE_URL ?>/backend/logout.php">
-    <i class="bi bi-box-arrow-right"></i> Logout
-  </a>
-</nav>
-
+    <a class="nav-link" href="<?= BASE_URL ?>/backend/logout.php">
+      <i class="bi bi-box-arrow-right"></i> Logout
+    </a>
+  </nav>
 </aside>
+
 
 <main class="content">
   <div class="topbar">

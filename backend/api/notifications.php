@@ -13,12 +13,16 @@ if ($conn->connect_error) {
 $conn->set_charset('utf8mb4');
 
 /* ---------- UTIL ---------- */
+/**
+ * Normalisasi role: HANYA admin, karyawan, customer.
+ * Default fallback -> customer.
+ */
 function norm_role(string $r): string {
   $r = strtolower(trim($r));
-  if (in_array($r, ['employee','staff','pegawai'], true)) return 'karyawan';
-  if (in_array($r, ['customer','pelanggan'], true)) return 'customer';
-  if ($r === 'admin') return 'admin';
-  return $r ?: 'customer';
+  if ($r === 'admin')     return 'admin';
+  if ($r === 'karyawan')  return 'karyawan';
+  if ($r === 'customer')  return 'customer';
+  return 'customer';
 }
 function jexit(array $arr): void {
   header('Content-Type: application/json; charset=utf-8');
@@ -29,7 +33,7 @@ function jexit(array $arr): void {
 /**
  * Simpan notifikasi baru.
  * - user_id NULL → broadcast
- * - role NULL → broadcast global
+ * - role NULL   → broadcast global (semua role)
  * - status default: unread
  */
 function insert_notif(mysqli $db, ?int $userId, ?string $role, string $message, string $link=''): bool {
@@ -47,7 +51,7 @@ function insert_notif(mysqli $db, ?int $userId, ?string $role, string $message, 
 /* ---------- SESSION USER ---------- */
 $userId = (int)($_SESSION['user_id'] ?? 0);
 $userRoleRaw = (string)($_SESSION['user_role'] ?? '');
-if ($userId && !$userRoleRaw) {
+if ($userId && $userRoleRaw === '') {
   if ($res = $conn->query("SELECT role FROM users WHERE id={$userId} LIMIT 1")) {
     $row = $res->fetch_assoc();
     $userRoleRaw = (string)($row['role'] ?? '');
@@ -60,10 +64,11 @@ $userRole = norm_role($userRoleRaw);
 $action = $_GET['action'] ?? ($_POST['action'] ?? '');
 
 /* ---------- BASE WHERE ---------- */
-// Semua role dapat notifikasi dari:
-// - user_id = saya (personal)
-// - broadcast global (user_id IS NULL AND role IS NULL)
-// - broadcast ke role saya
+/* Semua role dapat notifikasi dari:
+   - user_id = saya (personal)
+   - broadcast global (user_id IS NULL AND role IS NULL)
+   - broadcast ke role saya
+*/
 $roleEsc   = $conn->real_escape_string($userRole);
 $baseWhere = "(user_id = {$userId}
                OR (user_id IS NULL AND (role IS NULL OR role = '{$roleEsc}')))";
@@ -97,10 +102,14 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 /* =====================================================
-   UNREAD COUNT (badge penanda semua role)
+   UNREAD COUNT (badge untuk SEMUA role: admin/karyawan/customer)
 ===================================================== */
 if ($action === 'unread_count') {
-  $sql = "SELECT COUNT(*) AS c FROM notifications
+  // Jika belum login, kembalikan 0 agar aman
+  if ($userId < 1) jexit(['ok'=>true,'count'=>0]);
+
+  $sql = "SELECT COUNT(*) AS c
+          FROM notifications
           WHERE status='unread' AND (
             user_id = {$userId}
             OR (user_id IS NULL AND (role IS NULL OR role = '{$roleEsc}'))
@@ -126,15 +135,18 @@ if ($action === 'list') {
           LIMIT 100";
   $res = $conn->query($sql);
   $items = [];
-  while ($row = $res->fetch_assoc()) {
-    $items[] = [
-      'id'         => (int)$row['id'],
-      'message'    => $row['message'],
-      'status'     => $row['status'],
-      'is_read'    => $row['status'] === 'read',
-      'link'       => $row['link'],
-      'created_at' => $row['created_at']
-    ];
+  if ($res) {
+    while ($row = $res->fetch_assoc()) {
+      $items[] = [
+        'id'         => (int)$row['id'],
+        'message'    => $row['message'],
+        'status'     => $row['status'],
+        'is_read'    => $row['status'] === 'read',
+        'link'       => $row['link'],
+        'created_at' => $row['created_at']
+      ];
+    }
+    $res->close();
   }
   jexit(['ok'=>true,'items'=>$items]);
 }
@@ -161,7 +173,7 @@ if ($action === 'mark_read' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 /* =====================================================
-   SYSTEM NOTIF (auto kirim dari orders)
+   SYSTEM NOTIF (auto dari orders)
 ===================================================== */
 if ($action === 'system_new_order' && $_SERVER['REQUEST_METHOD'] === 'POST') {
   $orderId      = (int)($_POST['order_id'] ?? 0);
@@ -173,18 +185,21 @@ if ($action === 'system_new_order' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
   if ($orderId < 1) jexit(['ok'=>false,'error'=>'Param tidak lengkap']);
 
-  // ke customer
+  // ke customer (personal)
   if ($customerId > 0) {
-    insert_notif($conn, $customerId, 'customer',
+    insert_notif(
+      $conn,
+      $customerId,
+      'customer',
       "Pesanan #{$orderId} berhasil dibuat. Terima kasih, {$customerName}!",
       $custLink
     );
   }
 
   // broadcast ke karyawan & admin
-  $msg = "Pesanan baru #{$orderId} dari {$customerName} (Rp ".number_format($total,0,',','.').")";
+  $msg = "Pesanan baru #{$orderId} dari {$customerName} (Rp " . number_format($total, 0, ',', '.') . ")";
   insert_notif($conn, null, 'karyawan', $msg, $staffLink);
-  insert_notif($conn, null, 'admin', $msg, $staffLink);
+  insert_notif($conn, null, 'admin',    $msg, $staffLink);
 
   jexit(['ok'=>true,'message'=>'System notif dikirim ke semua role']);
 }

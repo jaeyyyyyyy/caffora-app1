@@ -11,6 +11,14 @@ if (!isset($_SESSION['user_id']) || (($_SESSION['user_role'] ?? '') !== 'karyawa
   exit;
 }
 
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+if ($conn->connect_error) {
+  http_response_code(500);
+  echo "DB error";
+  exit;
+}
+$conn->set_charset('utf8mb4');
+
 /** ===== User info ===== */
 $user = [
   'id'    => (int)($_SESSION['user_id'] ?? 0),
@@ -67,15 +75,13 @@ while ($row = $res?->fetch_assoc()) {
 }
 foreach ($labels as $d) $revenue[] = $map[$d];
 
-/** ===== Distribusi status (HARI INI) — pakai order_status =====
-    Bucket: new, processing, ready, completed, cancelled
-================================================================ */
+/** ===== Distribusi status (HARI INI) ===== */
 $statusBuckets = [
   'new'        => 0,
   'processing' => 0,
   'ready'      => 0,
   'completed'  => 0,
-  'cancelled'  => 0, // termasuk canceled/cancel/failed/void/refunded
+  'cancelled'  => 0,
 ];
 
 $stmt = $conn->prepare("
@@ -137,6 +143,7 @@ $distToday = [
       color:var(--ink);
       font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;
     }
+    .d-none{display:none !important;} /* <= util supaya badge bisa toggle */
 
     /* ===== Sidebar ===== */
     .sidebar{
@@ -405,6 +412,26 @@ $distToday = [
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+const BASE = "<?= rtrim(BASE_URL,'/') ?>";
+
+/* ===== BADGE NOTIF (karyawan) ===== */
+async function refreshNotifBadge(){
+  try{
+    const r = await fetch(`${BASE}/backend/api/notifications.php?action=unread_count`, {
+      credentials:'same-origin',
+      headers:{'Accept':'application/json'}
+    });
+    const js = await r.json();
+    const dot = document.getElementById('badgeNotif');
+    if (js && js.ok && Number(js.count||0) > 0) dot.classList.remove('d-none');
+    else dot.classList.add('d-none');
+  }catch(e){
+    // diamkan saja jika error jaringan
+  }
+}
+refreshNotifBadge();
+setInterval(refreshNotifBadge, 30000); // refresh tiap 30 detik
+
 /* sidebar klik aktif */
 document.querySelectorAll('#sidebar-nav .nav-link').forEach(function(a){
   a.addEventListener('click', function(){
@@ -438,7 +465,7 @@ backdrop.addEventListener?.('click', () => {
 /* SEARCH */
 function attachSearch(inputEl, suggestEl){
   if (!inputEl || !suggestEl) return;
-  const ENDPOINT = "<?= BASE_URL ?>/backend/api/karyawan_search.php";
+  const ENDPOINT = `${BASE}/backend/api/karyawan_search.php`;
 
   inputEl.addEventListener('input', async function(){
     const q = this.value.trim();
@@ -480,9 +507,9 @@ function attachSearch(inputEl, suggestEl){
           const type = it.dataset.type;
           const key  = it.dataset.key;
           if (type === 'order'){
-            window.location = "<?= BASE_URL ?>/public/karyawan/orders.php?search=" + encodeURIComponent(key);
+            window.location = `${BASE}/public/karyawan/orders.php?search=` + encodeURIComponent(key);
           } else if (type === 'menu'){
-            window.location = "<?= BASE_URL ?>/public/karyawan/stock.php?search=" + encodeURIComponent(key);
+            window.location = `${BASE}/public/karyawan/stock.php?search=` + encodeURIComponent(key);
           }
         });
       });
@@ -547,7 +574,6 @@ new Chart(document.getElementById('revChart'), {
   }
 });
 
-/* Donut: samakan dengan admin */
 new Chart(document.getElementById('distChart'), {
   type:'doughnut',
   data:{
@@ -555,7 +581,8 @@ new Chart(document.getElementById('distChart'), {
     datasets:[{
       data:dist,
       borderWidth:0,
-       backgroundColor:['#ffe761','#eae3c0','#facf43','#fdeb9e','#edde3bff']    }]
+      backgroundColor:['#ffe761','#eae3c0','#facf43','#fdeb9e','#edde3bff']
+    }]
   },
   options:{ 
     maintainAspectRatio:false,

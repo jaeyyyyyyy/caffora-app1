@@ -122,6 +122,23 @@ $userName = $_SESSION['user_name'] ?? 'Admin';
   }
 }
 
+
+   /* ====== kode responsif ipad rotasi ====== */
+    @media screen and (orientation:landscape) and (min-width:1024px) and (max-width:1366px){
+  .topbar .inner,
+  .page-inner, .settings-inner{
+    max-width: 100%;
+    padding-left: max(30px, env(safe-area-inset-left));
+    padding-right: 24px;
+  }
+}
+    
+@media screen and (max-width: 768px) {
+  /* atur jarak kiri kanan topbar */
+  .topbar {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
   </style>
 </head>
 <body>

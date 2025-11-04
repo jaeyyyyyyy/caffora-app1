@@ -24,152 +24,221 @@ if ($res = $conn->query("SELECT id, name, email, role FROM users ORDER BY role, 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <script src="https://code.iconify.design/2/2.2.1/iconify.min.js"></script>
 
-  <style>
-    :root{
-      --gold:#ffd54f;
-      --gold-soft:#f4d67a;
-      --brown:#4B3F36;
-      --ink:#111827;
-      --radius:18px;
-      --sidebar-w:320px;
-      --line:#E8E2DA;
-      --input-border:#E8E2DA;
-    }
-    *,:before,:after{ box-sizing:border-box; }
-    html,body{ height:100%; }
-    body{
-      background:#FAFAFA;
-      color:var(--ink);
-      font-family:Inter,system-ui,Segoe UI,Roboto,Arial;
-      -webkit-tap-highlight-color: transparent; /* hilangkan highlight biru di mobile */
-    }
+<style>
+:root{
+  --gold:#ffd54f;
+  --gold-soft:#f4d67a;
+  --brown:#4B3F36;
+  --ink:#111827;
+  --radius:18px;
+  --sidebar-w:320px;
+  --line:#E8E2DA;
+  --input-border:#E8E2DA;
+}
+*,:before,:after{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  background:#FAFAFA;
+  color:var(--ink);
+  font-family:Inter,system-ui,Segoe UI,Roboto,Arial;
+  -webkit-tap-highlight-color:transparent;
+}
 
-    /* ===== Sidebar (konsisten admin) ===== */
-    .sidebar{
-      position:fixed; left:-320px; top:0; bottom:0; width:var(--sidebar-w);
-      background:#fff; border-right:1px solid rgba(0,0,0,.05);
-      transition:left .25s ease; z-index:1050; padding:16px 18px; overflow-y:auto;
-    }
-    .sidebar.show{ left:0; }
-    .sidebar-head{ display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px; }
-    .sidebar-inner-toggle,.sidebar-close-btn{
-      background:transparent;border:0;width:40px;height:36px;display:grid;place-items:center;
-    }
-    .hamb-icon{ width:24px;height:20px;display:flex;flex-direction:column;gap:4px;justify-content:space-between; }
-    .hamb-icon span{ height:2px;background:var(--brown);border-radius:99px; }
-    .sidebar .nav-link{
-      display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;font-weight:600;color:#111;text-decoration:none;background:transparent;user-select:none;
-    }
-    .sidebar .nav-link:hover{ background:rgba(255,213,79,0.25); }
-    .sidebar hr{ border-color:rgba(0,0,0,.05); opacity:1; }
+/* ===== Custom radio agar tidak biru ===== */
+input[type="radio"],
+input[type="checkbox"]{
+  accent-color: var(--gold); /* ubah titik radio jadi gold */
+  cursor: pointer;
+}
+input[type="radio"]:focus-visible,
+input[type="checkbox"]:focus-visible{
+  outline:none;
+  box-shadow:0 0 0 3px rgba(255,213,79,.35);
+  border-radius:50%;
+}
+label{
+  cursor:pointer;
+}
 
-    /* Backdrop */
-    .backdrop-mobile{ display:none; }
-    .backdrop-mobile.active{
-      display:block; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:1040;
-    }
+/* ===== Sidebar ===== */
+.sidebar{
+  position:fixed;
+  left:-320px;top:0;bottom:0;
+  width:var(--sidebar-w);
+  background:#fff;
+  border-right:1px solid rgba(0,0,0,.04);
+  transition:left .25s ease;
+  z-index:1050;
+  padding:14px 18px 18px;
+  overflow-y:auto;
+}
+.sidebar.show{ left:0; }
 
-    /* ===== Content & Topbar ===== */
-    .content{ margin-left:0; padding:20px 26px 50px; }
-    .topbar{ display:flex;align-items:center;gap:12px;margin-bottom:16px; }
-    .btn-menu{ background:transparent;border:0;width:40px;height:38px;display:grid;place-items:center; }
-    .search-box{ position:relative;flex:1 1 auto;min-width:0; }
-    .search-input{
-      height:46px;width:100%;border-radius:9999px;padding-left:16px;padding-right:44px;
-      border:1px solid #e5e7eb;background:#fff;outline:none;
-    }
-    .search-input:focus{ border-color:var(--gold-soft); box-shadow:none !important; }
-    .search-icon{ position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:1.1rem;color:var(--brown);cursor:pointer; }
+.sidebar-head{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:10px;
+}
+.sidebar-inner-toggle,.sidebar-close-btn{
+  background:transparent;border:0;width:40px;height:36px;
+  display:grid;place-items:center;
+}
+.hamb-icon{
+  width:24px;height:20px;display:flex;flex-direction:column;
+  justify-content:space-between;gap:4px;
+}
+.hamb-icon span{height:2px;background:var(--brown);border-radius:99px;}
+.sidebar .nav-link{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;border-radius:16px;color:#111;font-weight:600;
+  text-decoration:none;background:transparent;user-select:none;
+}
+.sidebar .nav-link:hover,
+.sidebar .nav-link:focus,
+.sidebar .nav-link:active{
+  background:rgba(255,213,79,0.25);
+  color:#111;outline:none;box-shadow:none;
+}
+.sidebar hr{border-color:rgba(0,0,0,.05);opacity:1;}
 
-    .top-actions{ display:flex;gap:14px; }
-    .icon-btn{ width:38px;height:38px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:var(--brown);text-decoration:none; }
+/* ===== content ===== */
+.content{margin-left:0;padding:16px 14px 40px;}
 
-    .notif-dot{
-      position:absolute; top:3px; right:5px; width:8px; height:8px; background:#4b3f36; border-radius:50%;
-      box-shadow:0 0 0 1.5px #fff;
-    }
-    .d-none{ display:none !important; }
+/* ===== topbar ===== */
+.topbar{
+  display:flex;align-items:center;gap:12px;margin-bottom:16px;
+}
+.btn-menu{
+  background:transparent;border:0;width:40px;height:38px;
+  display:grid;place-items:center;flex:0 0 auto;
+}
 
-    /* ===== Search suggestion (sama index admin) ===== */
-    .search-suggest{
-      position:absolute; top:100%; left:0; margin-top:6px; background:#fff;
-      border:1px solid rgba(247,215,141,.8); border-radius:16px;
-      width:100%; max-height:280px; overflow-y:auto; display:none; z-index:40;
-      box-shadow:0 12px 28px rgba(0,0,0,.08);
-    }
-    .search-suggest.visible{ display:block; }
-    .search-suggest .item{ padding:10px 14px 6px; border-bottom:1px solid rgba(0,0,0,.03); cursor:pointer; }
-    .search-suggest .item:last-child{ border-bottom:0; }
-    .search-suggest .item:hover{ background:#fffbea; }
-    .search-suggest .item small{ display:block; color:#6b7280; font-size:.74rem; margin-top:2px; }
-    .search-empty{ padding:12px 14px; color:#6b7280; font-size:.8rem; }
+/* ===== SEARCH ===== */
+.search-box{position:relative;flex:1 1 auto;min-width:0;}
+.search-input{
+  height:46px;width:100%;border-radius:9999px;
+  padding-left:16px;padding-right:44px;
+  border:1px solid #e5e7eb;background:#fff;
+  outline:none!important;transition:border-color .12s ease;
+}
+.search-input:focus{
+  border-color:var(--gold-soft)!important;
+  background:#fff;box-shadow:none!important;
+}
+.search-icon{
+  position:absolute;right:16px;top:50%;
+  transform:translateY(-50%);
+  font-size:1.1rem;color:var(--brown);cursor:pointer;
+}
+.search-suggest{
+  position:absolute;top:100%;left:0;margin-top:6px;background:#fff;
+  border:1px solid rgba(247,215,141,.8);border-radius:16px;
+  box-shadow:0 12px 28px rgba(0,0,0,.08);
+  width:100%;max-height:280px;overflow-y:auto;display:none;z-index:40;
+}
+.search-suggest.visible{display:block;}
+.search-suggest .item{
+  padding:10px 14px 6px;border-bottom:1px solid rgba(0,0,0,.03);cursor:pointer;
+}
+.search-suggest .item:last-child{border-bottom:0;}
+.search-suggest .item:hover{background:#fffbea;}
+.search-suggest .item small{
+  display:block;color:#6b7280;font-size:.74rem;margin-top:2px;
+}
+.search-empty{padding:12px 14px;color:#6b7280;font-size:.8rem;}
 
-    /* ===== Kartu & Form ===== */
-    .cardx{ background:#fff; border:1px solid #f7d78d; border-radius:var(--radius); padding:18px; }
-    .form-label{ font-weight:600; margin-bottom:.35rem; }
-    .form-control,
-    .form-select{
-      height:46px;border-radius:14px!important;border:1px solid var(--line)!important;background:#fff!important;color:#111!important;box-shadow:none!important;outline:0!important;
-    }
-    .form-control:focus { border-color: var(--gold-soft) !important; box-shadow: none !important; }
-    textarea.form-control{ min-height:120px; resize:none; }
+.top-actions{display:flex;align-items:center;gap:14px;flex:0 0 auto;}
+.icon-btn{
+  width:38px;height:38px;border-radius:999px;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--brown);text-decoration:none;background:transparent;outline:none;
+}
+.icon-btn:focus,.icon-btn:active{
+  outline:none;box-shadow:none;color:var(--brown);
+}
+#btnBell{position:relative;}
+#badgeNotif.notif-dot{
+  position:absolute;top:3px;right:5px;width:8px;height:8px;
+  background:#4b3f36;border-radius:50%;
+  display:inline-block;box-shadow:0 0 0 1.5px #fff;
+}
+#badgeNotif.d-none{display:none!important;}
 
-    .btn-saffron{
-      display:inline-flex;align-items:center;gap:8px;background:var(--gold);color:#111;font-weight:700;
-      padding:.6rem 1.15rem;border-radius:14px;border:1px solid rgba(0,0,0,.02);
-    }
+/* ===== Kartu & Form ===== */
+.cardx{background:#fff;border:1px solid #f7d78d;
+  border-radius:var(--radius);padding:18px;}
+.form-label{font-weight:600;margin-bottom:.35rem;}
+.form-control,.form-select{
+  height:46px;border-radius:14px!important;
+  border:1px solid var(--line)!important;
+  background:#fff!important;color:#111!important;
+  box-shadow:none!important;outline:0!important;
+}
+.form-control:focus{
+  border-color:var(--gold-soft)!important;
+  box-shadow:none!important;
+}
+textarea.form-control{min-height:120px;resize:none;}
+.btn-saffron{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--gold);color:#111;font-weight:700;
+  padding:.6rem 1.15rem;border-radius:14px;
+  border:1px solid rgba(0,0,0,.02);
+}
 
-    /* ===== Custom dropdown cf-select (REFERENSI MU) ===== */
-    .cf-select { position: relative; width: 100%; }
-    .cf-select__trigger {
-      width: 100%;
-      background: #fff;
-      border: 1px solid var(--input-border);
-      border-radius: 14px;
-      padding: 8px 38px 8px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      cursor: pointer;
-      transition: border-color .12s ease;
-      user-select: none;
-      outline: none;                 /* hilangkan outline biru */
-      -webkit-tap-highlight-color: transparent;
-    }
-    .cf-select__trigger:focus-visible,
-    .cf-select.is-open .cf-select__trigger {
-      border-color: var(--gold-soft);
-      outline: none;
-    }
-    .cf-select__text { font-size: .95rem; color: #2b2b2b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .cf-select__icon { flex: 0 0 auto; color: var(--brown); font-size: .9rem; }
-    .cf-select__list {
-      position: absolute;
-      left: 0;
-      top: calc(100% + 6px);
-      width: 100%;
-      background: #fff;
-      border: 1px solid rgba(0,0,0,.02);
-      border-radius: 14px;
-      box-shadow: 0 16px 30px rgba(0,0,0,.09);
-      overflow: hidden;
-      z-index: 40;
-      display: none;
-      max-height: 260px;
-      overflow-y: auto;
-    }
-    .cf-select.is-open .cf-select__list { display: block; }
-    .cf-select__option { padding: 9px 14px; font-size: .9rem; color: #413731; cursor: pointer; background: #fff; }
-    .cf-select__option:hover { background: #FFF2C9; }
-    .cf-select__option.is-active { background: #FFEB9B; font-weight: 600; }
+/* ===== Custom dropdown cf-select ===== */
+.cf-select{position:relative;width:100%;}
+.cf-select__trigger{
+  width:100%;background:#fff;
+  border:1px solid var(--input-border);
+  border-radius:14px;
+  padding:8px 38px 8px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;cursor:pointer;transition:border-color .12s ease;
+  user-select:none;outline:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.cf-select__trigger:focus-visible,
+.cf-select.is-open .cf-select__trigger{
+  border-color:var(--gold-soft);outline:none;
+}
+.cf-select__text{
+  font-size:.95rem;color:#2b2b2b;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.cf-select__icon{flex:0 0 auto;color:var(--brown);font-size:.9rem;}
+.cf-select__list{
+  position:absolute;left:0;top:calc(100% + 6px);
+  width:100%;background:#fff;border:1px solid rgba(0,0,0,.02);
+  border-radius:14px;box-shadow:0 16px 30px rgba(0,0,0,.09);
+  overflow:hidden;z-index:40;display:none;
+  max-height:260px;overflow-y:auto;
+}
+.cf-select.is-open .cf-select__list{display:block;}
+.cf-select__option{
+  padding:9px 14px;font-size:.9rem;color:#413731;
+  cursor:pointer;background:#fff;
+}
+.cf-select__option:hover{background:#FFF2C9;}
+.cf-select__option.is-active{background:#FFEB9B;font-weight:600;}
+.cf-select.is-disabled .cf-select__trigger{
+  background:#f9fafb;border-color:#ececec;color:#9ca3af;cursor:not-allowed;
+}
+.cf-select.is-disabled .cf-select__icon{color:#c1c1c1;}
 
-    /* nonaktif (saat radio bukan "user tertentu") */
-    .cf-select.is-disabled .cf-select__trigger{
-      background:#f9fafb; border-color:#ececec; color:#9ca3af; cursor:not-allowed;
-    }
-    .cf-select.is-disabled .cf-select__icon{ color:#c1c1c1; }
-  </style>
+/* ===== Responsive HP ===== */
+@media screen and (max-width:768px){
+  .topbar{padding-left:12px;padding-right:12px;}
+  .topbar .inner{padding-left:12px;padding-right:12px;max-width:100%;}
+}
+
+@media screen and (min-width: 1450px){
+  .content
+    padding-left: 10px !important;
+    padding-right: 30px !important;
+  }
+  
+</style>
+
 </head>
 <body>
 
@@ -252,11 +321,11 @@ if ($res = $conn->query("SELECT id, name, email, role FROM users ORDER BY role, 
         <div class="mt-2">
           <div class="cf-select is-disabled" id="userSelect" data-target="target_user">
             <div class="cf-select__trigger" tabindex="0" aria-disabled="true">
-              <span class="cf-select__text" id="user_label">— Pilih user —</span>
+              <span class="cf-select__text" id="user_label">Pilih user</span>
               <i class="bi bi-chevron-down cf-select__icon"></i>
             </div>
             <div class="cf-select__list" id="user_list">
-              <div class="cf-select__option is-active" data-value="">— Pilih user —</div>
+              <div class="cf-select__option is-active" data-value="">Pilih user</div>
               <?php foreach ($users as $u):
                 $label = ($u['name'] ?: $u['email']).' — '.$u['role']; ?>
                 <div class="cf-select__option" data-value="<?= (int)$u['id'] ?>">
@@ -350,7 +419,7 @@ if ($res = $conn->query("SELECT id, name, email, role FROM users ORDER BY role, 
       const dis = !rUser.checked;
       if (dis){
         wrap.classList.add('is-disabled'); wrap.classList.remove('is-open');
-        hidden.value = ''; label.textContent = '— Pilih user —';
+        hidden.value = ''; label.textContent = 'Pilih user';
         list.querySelectorAll('.cf-select__option').forEach(o=>o.classList.remove('is-active'));
         list.querySelector('.cf-select__option[data-value=""]')?.classList.add('is-active');
         trigger.setAttribute('aria-disabled','true');
@@ -402,7 +471,7 @@ if ($res = $conn->query("SELECT id, name, email, role FROM users ORDER BY role, 
         (e.target).reset();
         // reset cf-select ke default
         document.getElementById('target_user').value = '';
-        document.getElementById('user_label').textContent = '— Pilih user —';
+        document.getElementById('user_label').textContent = 'Pilih user';
         document.querySelectorAll('#user_list .cf-select__option').forEach(o=>o.classList.remove('is-active'));
         document.querySelector('#user_list .cf-select__option[data-value=""]')?.classList.add('is-active');
       } else {

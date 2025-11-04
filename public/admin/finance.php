@@ -483,8 +483,8 @@ $stmt4->close();
 /* ==== KECILKAN GUTTER FINANCE (desktop) ==== */
 @media (min-width: 992px){
   .content{
-    padding-left: 28px !important;   /* atau 26px jika mau persis dashboard */
-    padding-right: 28px !important;  /* atau 26px */
+    padding-left: 60px !important;   /* atau 26px jika mau persis dashboard */
+    padding-right: 60px !important;  /* atau 26px */
     padding-top: 20px;
     padding-bottom: 60px;
   }
@@ -498,7 +498,19 @@ $stmt4->close();
     padding-right: 10px !important;
   }
 }
+@media (min-width: 370px){
+  .content{
+    padding-left: 8px !important;   /* sedikit lebih rapat di layar lebar */
+    padding-right: 8px !important;
+  }
+}
 
+@media (min-width: 370px){
+  .topbar{
+    padding-left: 4px !important;   /* sedikit lebih rapat di layar lebar */
+    padding-right: 4px !important;
+  }
+}
 
 </style>
 

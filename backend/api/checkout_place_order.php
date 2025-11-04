@@ -5,24 +5,35 @@ session_start();
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth_guard.php';
 require_login(['customer']); // hanya customer yang boleh place order
-
 header('Content-Type: application/json');
 
+// ===== Audit helper (boleh diganti require lib/audit_helper.php) =====
+if (!function_exists('audit_log')) {
+  function audit_log(mysqli $db, int $actorId, string $entity, int $entityId, string $action, string $fromVal = '', string $toVal = '', string $remark = ''): bool {
+    $sql = "INSERT INTO audit_logs (actor_id, entity, entity_id, action, from_val, to_val, remark)
+            VALUES (?,?,?,?,?,?,?)";
+    $stmt = $db->prepare($sql);
+    if(!$stmt){ return false; }
+    $stmt->bind_param('isissss', $actorId, $entity, $entityId, $action, $fromVal, $toVal, $remark);
+    return $stmt->execute();
+  }
+}
+
 try {
-  // Ambil payload dari form/JS
+  $actorId        = (int)($_SESSION['user_id'] ?? 0);
   $customer_name  = trim($_POST['customer_name'] ?? '');
-  $service_type   = trim($_POST['service_type'] ?? 'dine_in'); // dine_in|takeaway|delivery
+  $service_type   = trim($_POST['service_type'] ?? 'dine_in');   // dine_in|takeaway|delivery
   $table_no       = trim($_POST['table_no'] ?? '');
   $payment_method = trim($_POST['payment_method'] ?? 'cash');
 
-  // Keranjang (asumsi disimpan di session: [['menu_id'=>..., 'qty'=>...], ...])
+  // Keranjang (session)
   $cart = $_SESSION['cart'] ?? [];
   if (!$cart) throw new Exception('Keranjang kosong.');
 
   // helper invoice
   $res = $conn->query("SELECT invoice_no FROM orders ORDER BY id DESC LIMIT 1");
   $last = $res?->fetch_assoc()['invoice_no'] ?? null;
-  $n = 1; if ($last && preg_match('(\d+)',$last,$m)) $n = (int)$m[1]+1;
+  $n = 1; if ($last && preg_match('~(\d+)~',$last,$m)) $n = (int)$m[1]+1;
   $invoice_no = sprintf('INV-%03d', $n);
 
   $conn->begin_transaction();
@@ -41,7 +52,7 @@ try {
     $price = (int)$r['price'];
     $sub   = $price*$qty;
     $grand += $sub;
-    $items[] = ['menu_id'=>$menu_id,'qty'=>$qty,'price'=>$price,'subtotal'=>$sub];
+    $items[] = ['menu_id'=>$menu_id,'qty'=>$qty,'price'=>$price,'subtotal'=>$sub,'name'=>$r['name']];
   }
   $stmtM->close();
 
@@ -63,13 +74,29 @@ try {
   }
   $stmtI->close();
 
+  // ===== AUDIT: order created (catat ringkas + detail seperlunya)
+  $toVal = json_encode([
+    'invoice'=>$invoice_no,
+    'customer'=>$customer_name,
+    'service_type'=>$service_type,
+    'table_no'=>$table_no,
+    'payment_method'=>$payment_method,
+    'total'=>$grand,
+    'items_count'=>count($items)
+  ], JSON_UNESCAPED_UNICODE);
+
+  audit_log($conn, $actorId, 'order', (int)$order_id, 'create', '', $toVal, 'place order');
+
+  // (opsional) catat payment_status pending
+  audit_log($conn, $actorId, 'payment', (int)$order_id, 'create_intent', '', 'pending', 'initial payment status');
+
   // kosongkan keranjang
   unset($_SESSION['cart']);
 
   $conn->commit();
   echo json_encode(['ok'=>true,'invoice'=>$invoice_no,'redirect'=>BASE_URL.'/public/customer/history.php']);
 } catch(Throwable $e){
-  if($conn->errno===0) { /* ignore */ } else { $conn->rollback(); }
+  if ($conn && $conn->errno === 0) { /* ignore */ } else { $conn->rollback(); }
   http_response_code(400);
   echo json_encode(['ok'=>false,'error'=>$e->getMessage()]);
 }

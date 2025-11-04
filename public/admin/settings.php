@@ -58,6 +58,22 @@ $avatar = $_SESSION['user_avatar'] ?? '';
       gap:8px;
       min-height:52px;
     }
+
+    @media screen and (min-width: 1450px){
+  .topbar{
+    padding-left: 10px !important;
+    padding-right: 30px !important;
+  }
+}
+
+    @media screen and (orientation:landscape) and (min-width:1024px) and (max-width:1366px){
+  .topbar .inner,
+  .page-inner, .settings-inner{
+    max-width: 100%;
+    padding-left: max(30px, env(safe-area-inset-left));
+    padding-right: 24px;
+  }
+}
         
 .back-link {
   display: inline-flex;

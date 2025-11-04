@@ -1128,7 +1128,7 @@ $email = $_SESSION['user_email'] ?? '';
           <div class="col-md-4">
             <h6>Kontak</h6>
             <p>Jl. Kopi No. 123, Purwokerto</p>
-            <p>0822-1234-5678</p>
+            <p>0878-2302-3379</p>
             <p>
               <a href="mailto:Cafforaproject@gmail.com">Cafforaproject@gmail.com</a>
             </p>

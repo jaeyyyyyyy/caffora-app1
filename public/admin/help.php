@@ -134,7 +134,7 @@ $userName = $_SESSION['user_name'] ?? 'Admin';
 }
     
 @media screen and (max-width: 768px) {
-  /* atur jarak kiri kanan topbar */
+  /* atur jarak kiri kanan topbar ini di hp ngga rotasi y gaes */
   .topbar {
     padding-left: 12px;
     padding-right: 12px;
@@ -302,7 +302,7 @@ $userName = $_SESSION['user_name'] ?? 'Admin';
 
     <!-- Kontak -->
     <div class="contact">
-      <a class="c-row" href="https://wa.me/6285905446517" target="_blank" rel="noopener" aria-label="WhatsApp Caffora">
+      <a class="c-row" href="https://wa.me/628782302337" target="_blank" rel="noopener" aria-label="WhatsApp Caffora">
         <i class="bi bi-whatsapp"></i>
         <span>WhatsApp</span>
         <i class="bi bi-chevron-right chev"></i>

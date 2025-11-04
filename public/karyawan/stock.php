@@ -354,6 +354,25 @@ if ($stmt) {
       border-radius:12px;
       background:#fff;
     }
+
+    @media (min-width: 992px){
+  .content{
+    padding-left: 28px !important;   /* atau 26px jika mau persis dashboard */
+    padding-right: 28px !important;  /* atau 26px */
+    padding-top: 20px;
+    padding-bottom: 60px;
+  }
+  /* optional: biar search bar tak memaksa lebar konten */
+  .search-box{ max-width: 1100px !important; } /* sama seperti dashboard */
+}
+
+@media (min-width: 1200px){
+  .content{
+    padding-left: 26px !important;   /* sedikit lebih rapat di layar lebar */
+    padding-right: 26px !important;
+  }
+}
+
   </style>
 </head>
 <body>

@@ -2,6 +2,7 @@
 // backend/api/orders.php
 declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
+session_start();
 
 require_once __DIR__ . '/../config.php';
 
@@ -12,6 +13,7 @@ if ($mysqli->connect_errno) {
 }
 $mysqli->set_charset('utf8mb4');
 
+/* -------------------- helpers -------------------- */
 function out(array $arr): void {
   echo json_encode($arr, JSON_UNESCAPED_SLASHES);
   exit;
@@ -22,31 +24,33 @@ function bad(string $msg, int $code=400): void {
 }
 
 /**
- * simpan notif ke tabel notifications
+ * Simpan notifikasi.
+ * - user_id bisa NULL (broadcast role) → gunakan NULLIF agar FK aman.
+ * - status default: 'unread' (agar badge muncul).
  */
 function create_notification(mysqli $db, ?int $userId, ?string $role, string $message, ?string $link = null): void {
-  $stmt = $db->prepare("
+  $sql = "
     INSERT INTO notifications (user_id, role, message, status, created_at, link)
-    VALUES (?, ?, ?, 'unread', NOW(), ?)
-  ");
-  if (!$stmt) return;
-  $stmt->bind_param('isss', $userId, $role, $message, $link);
+    VALUES (NULLIF(?,0), ?, ?, 'unread', NOW(), ?)
+  ";
+  if (!$stmt = $db->prepare($sql)) return;
+  $uid = $userId ?? 0; // 0 → jadi NULL oleh NULLIF
+  $stmt->bind_param('isss', $uid, $role, $message, $link);
   $stmt->execute();
   $stmt->close();
 }
 
-/**
- * CFR + tanggal + bulan (3 huruf) + kode jam + random
- */
+/** CFR + tanggal + bulan (3 huruf) + kode jam + random */
 function generateInvoiceNo(): string {
   $prefix   = 'CFR';
   $day      = strtoupper(date('d'));
   $mon      = strtoupper(date('M'));
-  $hourCode = chr(65 + (int)date('G'));           // 0 -> A, 1 -> B, ...
+  $hourCode = chr(65 + (int)date('G')); // 0->A, 1->B, ...
   $rand     = strtoupper(substr(bin2hex(random_bytes(4)), 0, 6));
   return $prefix.$day.$mon.$hourCode.$rand;
 }
 
+/* -------------------- const & enums -------------------- */
 $ALLOWED_ORDER_STATUS   = ['new','processing','ready','completed','cancelled'];
 $ALLOWED_PAYMENT_STATUS = ['pending','paid','failed','refunded','overdue'];
 $ALLOWED_METHOD         = ['cash','bank_transfer','qris','ewallet'];
@@ -70,21 +74,15 @@ if ($action === 'list') {
   if ($q !== '') {
     $where[] = '(invoice_no LIKE ? OR customer_name LIKE ?)';
     $like = '%'.$q.'%';
-    $params[] = $like;
-    $params[] = $like;
-    $types    .= 'ss';
+    $params[] = $like; $params[] = $like; $types .= 'ss';
   }
   if ($order_status !== '') {
     if (!in_array($order_status, $ALLOWED_ORDER_STATUS, true)) bad('Invalid order_status');
-    $where[]  = 'order_status = ?';
-    $params[] = $order_status;
-    $types    .= 's';
+    $where[]  = 'order_status = ?'; $params[] = $order_status; $types .= 's';
   }
   if ($payment_status !== '') {
     if (!in_array($payment_status, $ALLOWED_PAYMENT_STATUS, true)) bad('Invalid payment_status');
-    $where[]  = 'payment_status = ?';
-    $params[] = $payment_status;
-    $types    .= 's';
+    $where[]  = 'payment_status = ?'; $params[] = $payment_status; $types .= 's';
   }
 
   $sql = "SELECT id,user_id,invoice_no,customer_name,service_type,table_no,
@@ -159,7 +157,7 @@ if ($action === 'create') {
   $grand_total  = $subtotal + $tax_amount;
   $total_legacy = $grand_total;
 
-  // value buat payments
+  // untuk payments
   $amount_gross = $grand_total;
   $amount_net   = $grand_total;
   $paid_at      = ($pay_status === 'paid') ? date('Y-m-d H:i:s') : null;
@@ -171,7 +169,7 @@ if ($action === 'create') {
 
   $mysqli->begin_transaction();
   try {
-    // 1. simpan orders
+    // 1) orders
     $stmt = $mysqli->prepare("
       INSERT INTO orders
         (user_id, invoice_no, customer_name, service_type, table_no,
@@ -200,13 +198,12 @@ if ($action === 'create') {
     $order_id = (int)$stmt->insert_id;
     $stmt->close();
 
-    // 2. simpan detail item
+    // 2) order_items
     $stmtItem = $mysqli->prepare("
       INSERT INTO order_items (order_id, menu_id, qty, price, discount, cogs_unit)
       VALUES (?, ?, ?, ?, 0.00, NULL)
     ");
     if (!$stmtItem) throw new Exception('Prepare(item) failed: '.$mysqli->error);
-
     foreach ($items as $it) {
       $menu_id = (int)($it['menu_id'] ?? $it['id'] ?? 0);
       $qty     = (int)($it['qty'] ?? 0);
@@ -217,14 +214,14 @@ if ($action === 'create') {
     }
     $stmtItem->close();
 
-    // 3. invoices (kalau dipakai)
+    // 3) invoices (opsional)
     $stmtInv = $mysqli->prepare("INSERT INTO invoices (order_id, amount) VALUES (?, ?)");
     if (!$stmtInv) throw new Exception('Prepare(invoice) failed: '.$mysqli->error);
     $stmtInv->bind_param('id', $order_id, $grand_total);
     if (!$stmtInv->execute()) throw new Exception('Insert invoice failed: '.$stmtInv->error);
     $stmtInv->close();
 
-    // 4. payments (AUTO)
+    // 4) payments (AUTO)
     $stmtPay = $mysqli->prepare("
       INSERT INTO payments
         (order_id, method, status, amount_gross, discount, tax, shipping, amount_net, paid_at, note)
@@ -240,10 +237,7 @@ if ($action === 'create') {
         note         = VALUES(note)
     ");
     if (!$stmtPay) throw new Exception('Prepare(payment) failed: '.$mysqli->error);
-
     $note = 'auto import from orders #'.$invoice_no;
-
-    // 8 placeholder -> 'issdddss'
     $stmtPay->bind_param(
       'issdddss',
       $order_id,
@@ -258,15 +252,16 @@ if ($action === 'create') {
     if (!$stmtPay->execute()) throw new Exception('Insert payment failed: '.$stmtPay->error);
     $stmtPay->close();
 
-    // 5. notif
+    // 5) notifikasi (semua role → badge muncul)
     if ($user_id) {
       $msg  = 'Pesanan kamu sudah diterima. Invoice: '.$invoice_no;
       $link = '/caffora-app1/public/customer/history.php?invoice='.$invoice_no;
       create_notification($mysqli, (int)$user_id, 'customer', $msg, $link);
     }
     $msgStaff  = 'Pesanan baru dari '.$customer_name.' total Rp '.number_format($grand_total,0,',','.').' ('.$invoice_no.')';
-    $linkStaff = '/caffora-app1/public/karyawan/orders.php';
-    create_notification($mysqli, null, 'karyawan', $msgStaff, $linkStaff);
+    create_notification($mysqli, null, 'karyawan', $msgStaff, '/caffora-app1/public/karyawan/orders.php');
+    $msgAdmin  = '[ADMIN] Pesanan baru: '.$customer_name.' — Rp '.number_format($grand_total,0,',','.').' ('.$invoice_no.')';
+    create_notification($mysqli, null, 'admin', $msgAdmin, '/caffora-app1/public/admin/orders.php');
 
     $mysqli->commit();
     out([
@@ -285,7 +280,7 @@ if ($action === 'create') {
 }
 
 /* ======================================================
-   UPDATE (dipakai karyawan: ready, completed, cancelled, bayar)
+   UPDATE (dipakai karyawan/admin: next status, bayar, metode, cancel)
 ====================================================== */
 if ($action === 'update') {
   if ($_SERVER['REQUEST_METHOD'] !== 'POST') bad('Use POST', 405);
@@ -295,60 +290,72 @@ if ($action === 'update') {
   $id = (int)($data['id'] ?? 0);
   if ($id <= 0) bad('Missing id');
 
-  // ambil order lama
+  // baca order sekarang
   $stmt = $mysqli->prepare("
     SELECT id, user_id, invoice_no, customer_name,
            grand_total, tax_amount, payment_method, payment_status, order_status
-    FROM orders
-    WHERE id = ?
-    LIMIT 1
+    FROM orders WHERE id=? LIMIT 1
   ");
   $stmt->bind_param('i', $id);
   $stmt->execute();
-  $res   = $stmt->get_result();
-  $order = $res->fetch_assoc();
+  $order = $stmt->get_result()->fetch_assoc();
   $stmt->close();
   if (!$order) bad('Order not found', 404);
 
-  $oldOrderStatus = $order['order_status'];
-  $oldPayStatus   = $order['payment_status'];
+  $oldOrderStatus = (string)$order['order_status'];
+  $oldPayStatus   = (string)$order['payment_status'];
   $userIdOrder    = $order['user_id'] !== null ? (int)$order['user_id'] : null;
   $invoiceNo      = (string)$order['invoice_no'];
   $customerName   = (string)$order['customer_name'];
 
-  $fields = [];
-  $params = [];
-  $types  = '';
+  $fields = []; $params = []; $types = '';
+  $newOrderStatus = null; $newPayStatus = null; $newPayMethod = null; $cancelReason = null;
 
-  $newOrderStatus = null;
-  $newPayStatus   = null;
-  $newPayMethod   = null;
-
+  // order_status
   if (isset($data['order_status'])) {
     $val = (string)$data['order_status'];
     if (!in_array($val, $ALLOWED_ORDER_STATUS, true)) bad('Invalid order_status');
-    $fields[] = "order_status = ?";
-    $params[] = $val;
-    $types   .= 's';
+
+    // Guard: tidak boleh "processing" jika belum paid
+    if ($val === 'processing' && $oldPayStatus !== 'paid') {
+      bad('Pembayaran belum Lunas. Set ke paid dulu.');
+    }
+    // Pembatalan hanya untuk pesanan belum dibayar (sesuai requirement)
+    if ($val === 'cancelled' && $oldPayStatus !== 'pending') {
+      bad('Pembatalan hanya untuk pesanan yang belum dibayar.');
+    }
+
+    $fields[] = "order_status = ?"; $params[] = $val; $types .= 's';
     $newOrderStatus = $val;
+
+    if ($val === 'cancelled') {
+      $cancelReason = trim((string)($data['cancel_reason'] ?? ''));
+      if ($cancelReason !== '') { $fields[] = "cancel_reason = ?"; $params[] = $cancelReason; $types .= 's'; }
+      $fields[] = "canceled_by_id = ?"; $params[] = (int)($_SESSION['user_id'] ?? 0); $types .= 'i';
+      $fields[] = "canceled_at = NOW()";
+    }
   }
 
+  // payment_status
   if (isset($data['payment_status'])) {
     $val = (string)$data['payment_status'];
     if (!in_array($val, $ALLOWED_PAYMENT_STATUS, true)) bad('Invalid payment_status');
-    $fields[] = "payment_status = ?";
-    $params[] = $val;
-    $types   .= 's';
+
+    // Aksi sekali arah: paid tidak boleh kembali ke pending
+    if ($oldPayStatus === 'paid' && $val === 'pending') {
+      bad('Pembayaran sudah Lunas dan tidak bisa diubah kembali ke Pending.');
+    }
+
+    $fields[] = "payment_status = ?"; $params[] = $val; $types .= 's';
     $newPayStatus = $val;
   }
 
+  // payment_method
   if (array_key_exists('payment_method', $data)) {
     $val = $data['payment_method'];
     if ($val !== null && $val !== '') {
       if (!in_array($val, $ALLOWED_METHOD, true)) bad('Invalid payment_method');
-      $fields[] = "payment_method = ?";
-      $params[] = $val;
-      $types   .= 's';
+      $fields[] = "payment_method = ?"; $params[] = $val; $types .= 's';
       $newPayMethod = $val;
     } else {
       $fields[] = "payment_method = NULL";
@@ -359,150 +366,92 @@ if ($action === 'update') {
 
   // update orders
   $sql = "UPDATE orders SET ".implode(', ', $fields).", updated_at = NOW() WHERE id = ?";
-  $params[] = $id;
-  $types   .= 'i';
-
+  $params[] = $id; $types .= 'i';
   $stmt = $mysqli->prepare($sql);
   if (!$stmt) bad('Prepare failed: '.$mysqli->error, 500);
   $stmt->bind_param($types, ...$params);
   if (!$stmt->execute()) bad('Update failed: '.$stmt->error, 500);
   $stmt->close();
 
-  // nilai buat sinkron ke payments
+  // ===== sinkron ke payments
   $grand = (float)$order['grand_total'];
   $tax   = (float)$order['tax_amount'];
   $pm    = $newPayMethod ?? $order['payment_method'] ?? 'cash';
   $ps    = $newPayStatus ?? $order['payment_status'] ?? 'pending';
   $os    = $newOrderStatus ?? $order['order_status'];
 
-  // cek sudah ada payment?
-  $stmt = $mysqli->prepare("SELECT id, status FROM payments WHERE order_id = ? LIMIT 1");
+  // payment row
+  $stmt = $mysqli->prepare("SELECT id, status FROM payments WHERE order_id=? LIMIT 1");
   $stmt->bind_param('i', $id);
   $stmt->execute();
-  $resPay = $stmt->get_result();
-  $payRow = $resPay->fetch_assoc();
+  $payRow = $stmt->get_result()->fetch_assoc();
   $stmt->close();
 
-  /* ----------------------------
-     JIKA PESANAN DIBATALKAN
-  -----------------------------*/
   if ($os === 'cancelled') {
-    $wasPaid    = ($oldPayStatus === 'paid' || $ps === 'paid');
-    $newPayStat = $wasPaid ? 'refunded' : 'failed';
-    $noteCancel = 'auto cancel from orders #'.$invoiceNo;
-
+    // Sesuai requirement: batal hanya saat belum dibayar → jadikan FAILED & nol-kan angka
+    $noteCancel = 'cancelled: '.($cancelReason ?: '-').' | from orders #'.$invoiceNo;
     if ($payRow) {
-      if ($wasPaid) {
-        // sudah bayar → refund, biarkan nominal
-        $stmt = $mysqli->prepare("
-          UPDATE payments
-          SET status = ?, paid_at = NOW(), note = ?, method = ?
-          WHERE order_id = ?
-        ");
-        $stmt->bind_param('sssi', $newPayStat, $noteCancel, $pm, $id);
-      } else {
-        // belum bayar → failed, nolkan angka
-        $stmt = $mysqli->prepare("
-          UPDATE payments
-          SET status = ?, amount_gross = 0, discount = 0, tax = 0,
-              shipping = 0, amount_net = 0, paid_at = NULL, note = ?, method = ?
-          WHERE order_id = ?
-        ");
-        $stmt->bind_param('sssi', $newPayStat, $noteCancel, $pm, $id);
-      }
-      $stmt->execute();
-      $stmt->close();
-    } else {
-      if ($wasPaid) {
-        $stmt = $mysqli->prepare("
-          INSERT INTO payments
-            (order_id, method, status, amount_gross, discount, tax, shipping, amount_net, paid_at, note)
-          VALUES
-            (?, ?, 'refunded', ?, 0, ?, 0, ?, NOW(), ?)
-        ");
-        $stmt->bind_param('isdddss', $id, $pm, $grand, $tax, $grand, $noteCancel);
-      } else {
-        $stmt = $mysqli->prepare("
-          INSERT INTO payments
-            (order_id, method, status, amount_gross, discount, tax, shipping, amount_net, paid_at, note)
-          VALUES
-            (?, ?, 'failed', 0, 0, 0, 0, 0, NULL, ?)
-        ");
-        $stmt->bind_param('iss', $id, $pm, $noteCancel);
-      }
-      $stmt->execute();
-      $stmt->close();
-    }
-  }
-  /* ----------------------------
-     JIKA BUKAN DIBATALKAN
-     → di sini kasus kamu (id 78)
-  -----------------------------*/
-  else {
-    if ($payRow) {
-      // update baris payment yang sudah ada
       $stmt = $mysqli->prepare("
         UPDATE payments
-        SET method = ?,
-            status = ?,
-            amount_gross = ?,
-            tax = ?,
-            amount_net = ?,
-            paid_at = CASE WHEN ? = 'paid' THEN NOW() ELSE paid_at END,
-            note = CONCAT('auto resync from orders #', ?)
-        WHERE order_id = ?
+        SET status='failed',
+            amount_gross=0, discount=0, tax=0, shipping=0, amount_net=0,
+            paid_at=NULL, note=?, method=?
+        WHERE order_id=?
       ");
-      $stmt->bind_param(
-        'ssdddssi',
-        $pm,
-        $ps,
-        $grand,
-        $tax,
-        $grand,
-        $ps,
-        $invoiceNo,
-        $id
-      );
-      $stmt->execute();
-      $stmt->close();
+      $stmt->bind_param('ssi', $noteCancel, $pm, $id);
+      $stmt->execute(); $stmt->close();
     } else {
-      // belum ada baris payment → bikin
+      $stmt = $mysqli->prepare("
+        INSERT INTO payments (order_id, method, status, amount_gross, discount, tax, shipping, amount_net, paid_at, note)
+        VALUES (?, ?, 'failed', 0, 0, 0, 0, 0, NULL, ?)
+      ");
+      $stmt->bind_param('iss', $id, $pm, $noteCancel);
+      $stmt->execute(); $stmt->close();
+    }
+
+    // broadcast pembatalan → badge muncul di staf & admin
+    $msgK = 'Pesanan dibatalkan: '.$customerName.' ('.$invoiceNo.')'.($cancelReason ? ' — '.$cancelReason : '');
+    create_notification($mysqli, null, 'karyawan', $msgK, '/caffora-app1/public/karyawan/orders.php');
+    create_notification($mysqli, null, 'admin',    '[ADMIN] '.$msgK, '/caffora-app1/public/admin/orders.php');
+
+  } else {
+    // resync normal
+    if ($payRow) {
+      $stmt = $mysqli->prepare("
+        UPDATE payments
+        SET method=?,
+            status=?,
+            amount_gross=?,
+            tax=?,
+            amount_net=?,
+            paid_at = CASE WHEN ?='paid' THEN NOW() ELSE paid_at END,
+            note = CONCAT('auto resync from orders #', ?)
+        WHERE order_id=?
+      ");
+      $stmt->bind_param('ssdddssi', $pm, $ps, $grand, $tax, $grand, $ps, $invoiceNo, $id);
+      $stmt->execute(); $stmt->close();
+    } else {
       $stmt = $mysqli->prepare("
         INSERT INTO payments
           (order_id, method, status, amount_gross, discount, tax, shipping, amount_net, paid_at, note)
         VALUES
-          (?, ?, ?, ?, 0, ?, 0, ?, CASE WHEN ? = 'paid' THEN NOW() ELSE NULL END,
+          (?, ?, ?, ?, 0, ?, 0, ?, CASE WHEN ?='paid' THEN NOW() ELSE NULL END,
            CONCAT('auto resync from orders #', ?))
       ");
-      $stmt->bind_param(
-        'issdddsss',
-        $id,
-        $pm,
-        $ps,
-        $grand,
-        $tax,
-        $grand,
-        $ps,
-        $invoiceNo
-      );
-      $stmt->execute();
-      $stmt->close();
+      $stmt->bind_param('issdddsss', $id, $pm, $ps, $grand, $tax, $grand, $ps, $invoiceNo);
+      $stmt->execute(); $stmt->close();
     }
   }
 
-  // notif customer kalau status pesanan berubah
+  // ===== notifikasi customer saat status berubah
   if ($userIdOrder && $newOrderStatus !== null && $newOrderStatus !== $oldOrderStatus) {
     $historyLink = '/caffora-app1/public/customer/history.php?invoice='.$invoiceNo;
-    if ($newOrderStatus === 'ready') {
-      $msg = 'Pesanan kamu sudah ready selamat menikmati. ('.$invoiceNo.')';
-      create_notification($mysqli, $userIdOrder, 'customer', $msg, $historyLink);
-    } elseif ($newOrderStatus === 'completed') {
-      $msg = 'Pesanan kamu sudah selesai ('.$invoiceNo.'). Terima kasih sudah pesan di Caffora.';
-      create_notification($mysqli, $userIdOrder, 'customer', $msg, $historyLink);
-    } elseif ($newOrderStatus === 'cancelled') {
-      $msg = 'Pesanan kamu dibatalkan ('.$invoiceNo.').';
-      create_notification($mysqli, $userIdOrder, 'customer', $msg, $historyLink);
-    }
+    if     ($newOrderStatus === 'ready')
+      create_notification($mysqli, $userIdOrder, 'customer', 'Pesanan kamu sudah ready ('.$invoiceNo.').', $historyLink);
+    elseif ($newOrderStatus === 'completed')
+      create_notification($mysqli, $userIdOrder, 'customer', 'Pesanan kamu sudah selesai ('.$invoiceNo.'). Terima kasih.', $historyLink);
+    elseif ($newOrderStatus === 'cancelled')
+      create_notification($mysqli, $userIdOrder, 'customer', 'Pesanan kamu dibatalkan ('.$invoiceNo.').'.($cancelReason ? ' Alasan: '.$cancelReason : ''), $historyLink);
   }
 
   out(['ok'=>true]);

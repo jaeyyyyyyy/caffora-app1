@@ -46,7 +46,9 @@ $avatar = $_SESSION['user_avatar'] ?? '';
       z-index:50;
       background:#fff;
       border-bottom:1px solid #efefef;
-    }
+       padding-right: 60px;
+}
+     
     .topbar .inner{
       max-width:1200px;
       margin:0 auto;
@@ -68,7 +70,9 @@ $avatar = $_SESSION['user_avatar'] ?? '';
   line-height: 1.3;
 }
 
-
+.back-link {
+  padding-right: 26px;
+}
 .back-link .bi {
   font-size: 18px !important;  
   width: 18px;
@@ -258,6 +262,17 @@ $avatar = $_SESSION['user_avatar'] ?? '';
       }
       .value{ max-width:50%; }
     }
+
+    /* ===== Tambahan agar isi halaman tampil lebih lebar di desktop ===== */
+@media (min-width: 992px){
+  main {
+    max-width: 1400px; /* dari 1200px jadi lebih lebar */
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+}
+
+
   </style>
 </head>
 <body>

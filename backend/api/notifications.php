@@ -5,9 +5,9 @@ session_start();
 
 require_once __DIR__ . '/../config.php';
 
-$conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($conn->connect_error) {
-  echo json_encode(['ok' => false, 'error' => 'DB error']);
+  echo json_encode(['ok'=>false,'error'=>'DB connect failed']);
   exit;
 }
 $conn->set_charset('utf8mb4');
@@ -15,42 +15,30 @@ $conn->set_charset('utf8mb4');
 /* ---------- UTIL ---------- */
 function norm_role(string $r): string {
   $r = strtolower(trim($r));
-  // alias → baku
-  if ($r === 'employee' || $r === 'staff' || $r === 'pegawai') return 'karyawan';
-  if ($r === 'pelanggan' || $r === 'customer') return 'customer';
+  if (in_array($r, ['employee','staff','pegawai'], true)) return 'karyawan';
+  if (in_array($r, ['customer','pelanggan'], true)) return 'customer';
   if ($r === 'admin') return 'admin';
   return $r ?: 'customer';
 }
-function jexit(array $payload) {
+function jexit(array $arr): void {
   header('Content-Type: application/json; charset=utf-8');
-  echo json_encode($payload);
+  echo json_encode($arr, JSON_UNESCAPED_SLASHES);
   exit;
 }
-/** insert helper — userId = NULL untuk broadcast; role bisa NULL/‘customer’/‘karyawan’/‘admin’ */
-function insert_notif(mysqli $conn, ?int $userId, ?string $role, string $message, string $link=''): bool {
-  $status = 'unread';
-  if ($userId !== null) {
-    $stmt = $conn->prepare(
-      "INSERT INTO notifications (user_id, role, message, status, link, created_at)
-       VALUES (?, NULL, ?, ?, ?, NOW())"
-    );
-    $stmt->bind_param('isss', $userId, $message, $status, $link);
-  } else {
-    if ($role !== null) $role = norm_role($role);
-    if ($role === null) {
-      $stmt = $conn->prepare(
-        "INSERT INTO notifications (user_id, role, message, status, link, created_at)
-         VALUES (NULL, NULL, ?, ?, ?, NOW())"
-      );
-      $stmt->bind_param('sss', $message, $status, $link);
-    } else {
-      $stmt = $conn->prepare(
-        "INSERT INTO notifications (user_id, role, message, status, link, created_at)
-         VALUES (NULL, ?, ?, ?, ?, NOW())"
-      );
-      $stmt->bind_param('ssss', $role, $message, $status, $link);
-    }
-  }
+
+/**
+ * Simpan notifikasi baru.
+ * - user_id NULL → broadcast
+ * - role NULL → broadcast global
+ * - status default: unread
+ */
+function insert_notif(mysqli $db, ?int $userId, ?string $role, string $message, string $link=''): bool {
+  $role = $role ? norm_role($role) : null;
+  $sql = "INSERT INTO notifications (user_id, role, message, status, link, created_at)
+          VALUES (NULLIF(?,0), ?, ?, 'unread', ?, NOW())";
+  if (!$stmt = $db->prepare($sql)) return false;
+  $uid = $userId ?? 0;
+  $stmt->bind_param('isss', $uid, $role, $message, $link);
   $ok = $stmt->execute();
   $stmt->close();
   return $ok;
@@ -58,36 +46,34 @@ function insert_notif(mysqli $conn, ?int $userId, ?string $role, string $message
 
 /* ---------- SESSION USER ---------- */
 $userId = (int)($_SESSION['user_id'] ?? 0);
-$sessionRoleRaw = (string)($_SESSION['user_role'] ?? '');
-$currentRoleRaw = trim($sessionRoleRaw);
-
-/* fallback role dari DB bila kosong */
-if ($userId > 0 && $currentRoleRaw === '') {
+$userRoleRaw = (string)($_SESSION['user_role'] ?? '');
+if ($userId && !$userRoleRaw) {
   if ($res = $conn->query("SELECT role FROM users WHERE id={$userId} LIMIT 1")) {
     $row = $res->fetch_assoc();
-    $currentRoleRaw = (string)($row['role'] ?? '');
+    $userRoleRaw = (string)($row['role'] ?? '');
     $res->close();
   }
 }
-$currentRole = norm_role($currentRoleRaw);
+$userRole = norm_role($userRoleRaw);
 
 /* ---------- ACTION ---------- */
 $action = $_GET['action'] ?? ($_POST['action'] ?? '');
 
-/* ---------- BASE WHERE untuk pembaca ----------
-   - khusus user: user_id = saya
-   - broadcast: user_id IS NULL dan (role IS NULL atau role = role_saya)
-------------------------------------------------- */
-$roleEsc   = $conn->real_escape_string($currentRole);
-$baseWhere = "(user_id = {$userId} OR (user_id IS NULL AND (role IS NULL OR role = '{$roleEsc}')))";
+/* ---------- BASE WHERE ---------- */
+// Semua role dapat notifikasi dari:
+// - user_id = saya (personal)
+// - broadcast global (user_id IS NULL AND role IS NULL)
+// - broadcast ke role saya
+$roleEsc   = $conn->real_escape_string($userRole);
+$baseWhere = "(user_id = {$userId}
+               OR (user_id IS NULL AND (role IS NULL OR role = '{$roleEsc}')))";
 
-/* =========================
- * CREATE (ADMIN ONLY)
- * ========================= */
+/* =====================================================
+   CREATE (khusus admin kirim manual)
+===================================================== */
 if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-  if (norm_role((string)($_SESSION['user_role'] ?? '')) !== 'admin') {
-    jexit(['ok'=>false,'error'=>'Unauthorized']);
-  }
+  $sessionRole = norm_role($_SESSION['user_role'] ?? '');
+  if ($sessionRole !== 'admin') jexit(['ok'=>false,'error'=>'Unauthorized']);
 
   $targetType = $_POST['target_type'] ?? '';
   $targetRole = norm_role((string)($_POST['target_role'] ?? ''));
@@ -97,74 +83,74 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
   if ($message === '') jexit(['ok'=>false,'error'=>'Pesan wajib diisi']);
 
-  $inserted = 0;
-
   if ($targetType === 'role') {
-    if (!in_array($targetRole, ['customer','karyawan','admin'], true)) {
-      jexit(['ok'=>false,'error'=>'Role target tidak valid']);
-    }
-    if (insert_notif($conn, null, $targetRole, $message, $link)) $inserted = 1;
-
+    insert_notif($conn, null, $targetRole, $message, $link);
   } elseif ($targetType === 'all') {
-    if (insert_notif($conn, null, null, $message, $link)) $inserted = 1;
-
-  } elseif ($targetType === 'user') {
-    if ($targetUser < 1) jexit(['ok'=>false,'error'=>'User target tidak valid']);
-    if (insert_notif($conn, $targetUser, null, $message, $link)) $inserted = 1;
-
+    insert_notif($conn, null, null, $message, $link);
+  } elseif ($targetType === 'user' && $targetUser > 0) {
+    insert_notif($conn, $targetUser, null, $message, $link);
   } else {
-    jexit(['ok'=>false,'error'=>'Target type tidak valid']);
+    jexit(['ok'=>false,'error'=>'Target tidak valid']);
   }
 
-  jexit(['ok'=>true,'inserted'=>$inserted,'message'=>'Sukses']);
+  jexit(['ok'=>true,'message'=>'Notifikasi berhasil dikirim']);
 }
 
-/* =========================
- * UNREAD COUNT (badge)
- * ========================= */
+/* =====================================================
+   UNREAD COUNT (badge penanda semua role)
+===================================================== */
 if ($action === 'unread_count') {
-  $sql = "SELECT COUNT(*) AS c FROM notifications WHERE {$baseWhere} AND status='unread'";
+  $sql = "SELECT COUNT(*) AS c FROM notifications
+          WHERE status='unread' AND (
+            user_id = {$userId}
+            OR (user_id IS NULL AND (role IS NULL OR role = '{$roleEsc}'))
+          )";
   $res = $conn->query($sql);
-  $row = $res ? $res->fetch_assoc() : ['c'=>0];
-  jexit(['ok'=>true,'count'=>(int)($row['c'] ?? 0)]);
+  $count = 0;
+  if ($res) {
+    $row = $res->fetch_assoc();
+    $count = (int)($row['c'] ?? 0);
+    $res->close();
+  }
+  jexit(['ok'=>true,'count'=>$count]);
 }
 
-/* =========================
- * LIST
- * ========================= */
+/* =====================================================
+   LIST
+===================================================== */
 if ($action === 'list') {
   $sql = "SELECT id, message, status, created_at, link
           FROM notifications
           WHERE {$baseWhere}
           ORDER BY created_at DESC
-          LIMIT 50";
+          LIMIT 100";
   $res = $conn->query($sql);
   $items = [];
   while ($row = $res->fetch_assoc()) {
     $items[] = [
       'id'         => (int)$row['id'],
-      'title'      => 'Notifikasi',
-      'message'    => (string)$row['message'],
-      'is_read'    => ($row['status'] === 'read') ? 1 : 0,
+      'message'    => $row['message'],
+      'status'     => $row['status'],
+      'is_read'    => $row['status'] === 'read',
       'link'       => $row['link'],
-      'created_at' => $row['created_at'],
+      'created_at' => $row['created_at']
     ];
   }
   jexit(['ok'=>true,'items'=>$items]);
 }
 
-/* =========================
- * MARK ALL READ
- * ========================= */
+/* =====================================================
+   MARK ALL READ
+===================================================== */
 if ($action === 'mark_all_read') {
   $conn->query("UPDATE notifications SET status='read'
                 WHERE {$baseWhere} AND status='unread'");
   jexit(['ok'=>true]);
 }
 
-/* =========================
- * MARK ONE READ
- * ========================= */
+/* =====================================================
+   MARK ONE READ
+===================================================== */
 if ($action === 'mark_read' && $_SERVER['REQUEST_METHOD'] === 'POST') {
   $id = (int)($_POST['id'] ?? 0);
   if ($id > 0) {
@@ -174,12 +160,9 @@ if ($action === 'mark_read' && $_SERVER['REQUEST_METHOD'] === 'POST') {
   jexit(['ok'=>true]);
 }
 
-/* ==========================================================
- * OPSIONAL: SYSTEM TRIGGER — notifikasi orderan baru
- * Panggil via POST dari flow checkout setelah INSERT order.
- * Field: order_id, customer_id, customer_name, total (angka),
- *        staff_link, customer_link (opsional, bisa kosong)
- * ========================================================== */
+/* =====================================================
+   SYSTEM NOTIF (auto kirim dari orders)
+===================================================== */
 if ($action === 'system_new_order' && $_SERVER['REQUEST_METHOD'] === 'POST') {
   $orderId      = (int)($_POST['order_id'] ?? 0);
   $customerId   = (int)($_POST['customer_id'] ?? 0);
@@ -188,27 +171,22 @@ if ($action === 'system_new_order' && $_SERVER['REQUEST_METHOD'] === 'POST') {
   $staffLink    = trim((string)($_POST['staff_link'] ?? ''));
   $custLink     = trim((string)($_POST['customer_link'] ?? ''));
 
-  if ($orderId < 1 || $customerId < 1) jexit(['ok'=>false,'error'=>'Param tidak lengkap']);
+  if ($orderId < 1) jexit(['ok'=>false,'error'=>'Param tidak lengkap']);
 
-  // ke customer (personal)
-  insert_notif($conn, $customerId, null,
-    "Order #{$orderId} berhasil dibuat. Terima kasih, {$customerName}!",
-    $custLink
-  );
+  // ke customer
+  if ($customerId > 0) {
+    insert_notif($conn, $customerId, 'customer',
+      "Pesanan #{$orderId} berhasil dibuat. Terima kasih, {$customerName}!",
+      $custLink
+    );
+  }
 
-  // ke karyawan (broadcast)
-  insert_notif($conn, null, 'karyawan',
-    "Pesanan baru #{$orderId} dari {$customerName} (Rp " . number_format($total,0,',','.') . ")",
-    $staffLink
-  );
+  // broadcast ke karyawan & admin
+  $msg = "Pesanan baru #{$orderId} dari {$customerName} (Rp ".number_format($total,0,',','.').")";
+  insert_notif($conn, null, 'karyawan', $msg, $staffLink);
+  insert_notif($conn, null, 'admin', $msg, $staffLink);
 
-  // ke admin (broadcast)
-  insert_notif($conn, null, 'admin',
-    "Pesanan baru #{$orderId} dari {$customerName} (Rp " . number_format($total,0,',','.') . ")",
-    $staffLink
-  );
-
-  jexit(['ok'=>true,'message'=>'Sukses']);
+  jexit(['ok'=>true,'message'=>'System notif dikirim ke semua role']);
 }
 
 jexit(['ok'=>false,'error'=>'Invalid action']);

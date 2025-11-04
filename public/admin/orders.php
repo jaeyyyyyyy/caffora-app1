@@ -171,7 +171,10 @@ $adminName = $_SESSION['user_name'] ?? 'Admin';
     <i class="bi bi-gear"></i> Settings
   </a>
   <hr>
-   <a class="nav-link" href="<?= BASE_URL ?>/public/karyawan/help.php"><i class="bi bi-question-circle"></i> Help Center</a>
+ <a class="nav-link" href="<?= BASE_URL ?>/public/admin/help.php">
+  <i class="bi bi-question-circle"></i> Help Center
+</a>
+
   <a class="nav-link" href="<?= BASE_URL ?>/backend/logout.php">
     <i class="bi bi-box-arrow-right"></i> Logout
   </a>

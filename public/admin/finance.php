@@ -479,7 +479,28 @@ $stmt4->close();
 
   /* ===== Minor utilities for overflow safety ===== */
   .text-truncate-1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  </style>
+  
+/* ==== KECILKAN GUTTER FINANCE (desktop) ==== */
+@media (min-width: 992px){
+  .content{
+    padding-left: 28px !important;   /* atau 26px jika mau persis dashboard */
+    padding-right: 28px !important;  /* atau 26px */
+    padding-top: 20px;
+    padding-bottom: 60px;
+  }
+  /* optional: biar search bar tak memaksa lebar konten */
+  .search-box{ max-width: 1100px !important; } /* sama seperti dashboard */
+}
+
+@media (min-width: 1200px){
+  .content{
+    padding-left: 10px !important;   /* sedikit lebih rapat di layar lebar */
+    padding-right: 10px !important;
+  }
+}
+
+
+</style>
 
 </head>
 <body>
@@ -517,7 +538,10 @@ $stmt4->close();
     <i class="bi bi-gear"></i> Settings
   </a>
   <hr>
-   <a class="nav-link" href="<?= BASE_URL ?>/public/admin/help.php"><i class="bi bi-question-circle"></i> Help Center</a>
+  <a class="nav-link" href="<?= BASE_URL ?>/public/admin/help.php">
+  <i class="bi bi-question-circle"></i> Help Center
+</a>
+
   <a class="nav-link" href="<?= BASE_URL ?>/backend/logout.php">
     <i class="bi bi-box-arrow-right"></i> Logout
   </a>

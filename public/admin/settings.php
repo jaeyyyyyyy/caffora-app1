@@ -66,6 +66,7 @@ $avatar = $_SESSION['user_avatar'] ?? '';
   }
 }
 
+   /* ====== kode responsif ipad rotasi ====== */
     @media screen and (orientation:landscape) and (min-width:1024px) and (max-width:1366px){
   .topbar .inner,
   .page-inner, .settings-inner{

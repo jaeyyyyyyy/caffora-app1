@@ -101,6 +101,7 @@ $menus = $res?->fetch_all(MYSQLI_ASSOC) ?? [];
       --sidebar-w:320px;
       --input-border:#E8E2DA;
       --bg:#FAFAFA;
+      --btn-radius:14px; /* konsisten dengan users */
     }
     *{ box-sizing:border-box; font-family:Poppins,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
     body{ background:var(--bg); color:var(--ink); }
@@ -152,14 +153,41 @@ $menus = $res?->fetch_all(MYSQLI_ASSOC) ?? [];
     .table thead th{ background:#fffbe6; white-space:nowrap; }
     .thumb{ width:48px; height:48px; object-fit:cover; border-radius:10px; border:1px solid #ececec; }
 
-    /* ===== BUTTON ===== */
-    .btn-saffron{
-      background:var(--gold); border:1px solid rgba(0,0,0,.02); color:#111;
-      font-weight:600; border-radius:14px; padding:.55rem 1.35rem;
+    /* ===== BUTTONS (samakan dengan users) ===== */
+    .btn-saffron,.btn-add-main,.modal-footer .btn{
+      background-color: var(--gold);
+      color: var(--brown) !important;
+      border: 0;
+      border-radius: var(--btn-radius);
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: 600;
+      font-size: .88rem;
+      padding: 10px 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      white-space: nowrap;
+      box-shadow: none;
     }
     .btn-saffron:hover{ background:#FFE07A; color:#111; }
 
-    /* ===== FORM STYLE (supaya ga biru) ===== */
+    /* tombol Tambah (SVG plus tebal, sama seperti users) */
+    .btn-add-main{
+      background:var(--gold); border:1px solid rgba(0,0,0,.02); color:#111;
+      border-radius:var(--btn-radius); padding:.6rem 1.1rem;
+      display:inline-flex; align-items:center; gap:.55rem;
+    }
+    .btn-add-main:hover{ background:#FFE07A; }
+    .btn-add-main svg.icon-plus{
+      width:18px; height:18px;
+      stroke:currentColor; fill:none;
+      stroke-width:3.2;
+      stroke-linecap:round; stroke-linejoin:round;
+      display:inline-block;
+    }
+
+    /* ===== FORM STYLE ===== */
     .form-control,.form-select{
       border:1px solid var(--input-border) !important; border-radius:14px !important;
       box-shadow:none !important; outline:none !important; font-size:.95rem;
@@ -188,12 +216,25 @@ $menus = $res?->fetch_all(MYSQLI_ASSOC) ?? [];
 
     .btn i{ font-size:16px; vertical-align:middle; }
 
-    /* ====== MODAL CLEAN ====== */
+    /* ====== MODAL (samakan dengan users) ====== */
     .modal-content{ border-radius:12px !important; border:none !important; box-shadow:0 20px 40px rgba(0,0,0,.15); overflow:hidden !important; }
     .modal-header{ border-bottom:none !important; padding-bottom:.5rem; }
     .modal-footer{ border-top:none !important; background:#fff !important; padding-top:.75rem; padding-bottom:3rem; }
 
-    @media(min-width:992px){ .content{ padding:20px 26px 50px; } }
+    /* Tombol Batalkan abu-abu seperti contoh */
+    .modal-footer .btn-outline-secondary{
+      background:#F3F4F6;                  /* abu lembut */
+      color:#111827;                       /* teks gelap */
+      border:1px solid #E5E7EB !important; /* garis halus */
+      border-radius:var(--btn-radius) !important;
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: 700;
+      box-shadow:none;
+    }
+    .modal-footer .btn-outline-secondary:hover{
+      background:#ECEFF3;
+      border-color:#E5E7EB !important;
+    }
   </style>
 </head>
 <body>
@@ -247,8 +288,10 @@ $menus = $res?->fetch_all(MYSQLI_ASSOC) ?? [];
 
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h2 class="fw-bold m-0">Kelola Menu</h2>
-    <button class="btn btn-saffron" data-bs-toggle="modal" data-bs-target="#menuModal" onclick="openAdd()">
-      <i class="bi bi-plus-lg"></i> Tambah Menu
+    <!-- Samakan dengan Users: btn-add-main + SVG plus -->
+    <button class="btn-add-main d-print-none" data-bs-toggle="modal" data-bs-target="#menuModal" onclick="openAdd()">
+      <svg class="icon-plus" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"></path></svg>
+      <span>Tambah Menu</span>
     </button>
   </div>
 
@@ -374,7 +417,8 @@ $menus = $res?->fetch_all(MYSQLI_ASSOC) ?? [];
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Batal</button>
+        <!-- Sama seperti users: Batalkan abu-abu -->
+        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Batalkan</button>
         <button class="btn btn-saffron" type="submit">Simpan</button>
       </div>
     </form>

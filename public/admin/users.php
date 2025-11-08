@@ -1,4 +1,4 @@
-<?php
+<?php  
 // public/admin/users.php
 declare(strict_types=1);
 session_start();
@@ -138,6 +138,7 @@ if ($res) {
       --sidebar-w:320px;
       --input-border:#E8E2DA;
       --bg:#FAFAFA;
+      --btn-radius:14px; /* pusat radius tombol, termasuk Batal */
     }
     *{ box-sizing:border-box; font-family:Poppins,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
     body{ background:var(--bg); color:var(--ink); }
@@ -188,13 +189,42 @@ if ($res) {
     .cardx{ background:#fff; border:1px solid #f7d78d; border-radius:var(--radius); padding:18px; }
     .table thead th{ background:#fffbe6; }
 
-    /* tombol kuning */
-    .btn-saffron,.btn-add-main{
-      background:var(--gold); border:1px solid rgba(0,0,0,.02); color:#111;
-      font-weight:600; border-radius:14px; padding:.55rem 1.35rem;
-      display:inline-flex; align-items:center; gap:.4rem;
+    /* ===== Buttons (Arial) ===== */
+    .btn-saffron,.btn-add-main,.modal-footer .btn{
+      background-color: var(--gold);
+      color: var(--brown) !important;
+      border: 0;
+      border-radius: 14px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: 600;
+      font-size: .88rem;
+      padding: 10px 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      white-space: nowrap;
+      box-shadow: none;
     }
-    .btn-saffron:hover,.btn-add-main:hover{ background:#FFE07A; color:#111; }
+    .btn-saffron:hover{ background:#FFE07A; color:#111; }
+
+    /* tombol Tambah User – clean */
+    .btn-add-main{
+      background:var(--gold); border:1px solid rgba(0,0,0,.02); color:#111;
+      border-radius:var(--btn-radius); padding:.6rem 1.1rem;
+      display:inline-flex; align-items:center; gap:.55rem;
+    }
+    .btn-add-main:hover{ background:#FFE07A; }
+    /* SVG plus tebal */
+    .btn-add-main svg.icon-plus{
+      width:18px; height:18px;
+      stroke:currentColor; fill:none;
+      stroke-width:3.2;
+      stroke-linecap:round; stroke-linejoin:round;
+      display:inline-block;
+    }
+    /* jika masih ada .plus-dot di HTML lama, matikan saja */
+    .btn-add-main .plus-dot{ display:none !important; }
 
     /* form */
     .form-control{
@@ -216,7 +246,7 @@ if ($res) {
     .cf-select__list{
       position:absolute; left:0; top:calc(100% + 6px); width:100%; background:#fff;
       border:1px solid rgba(0,0,0,.02); border-radius:14px; box-shadow:0 14px 30px rgba(0,0,0,.09);
-      display:none; max-height:240px; overflow-y:auto; z-index:9999;
+      display:none; max-height:240px; overflow-y:auto; z-index:200000; /* > modal */
     }
     .cf-select.is-open .cf-select__list{ display:block; }
     .cf-select__option{ padding:9px 14px; font-size:.88rem; color:#413731; cursor:pointer; }
@@ -228,6 +258,28 @@ if ($res) {
       .search-box{ max-width:1100px; }
     }
     @media print{ .d-print-none{ display:none !important; } }
+
+    /* ===== Modal polish ===== */
+    .modal-content{ border:0 !important; box-shadow:0 18px 50px rgba(0,0,0,.16); border-radius:18px; }
+    .modal-header{ border-bottom:0 !important; }
+    .modal-footer{ border-top:0 !important; }
+    .modal-body{ padding-bottom:110px; } /* ruang dropdown agar tak keluar */
+
+    /* Batal seperti contoh (abu-abu) */
+    .modal-footer .btn-outline-secondary{
+      background:#F3F4F6;                  /* abu lembut */
+      color:#111827;                       /* teks gelap */
+      border:1px solid #E5E7EB !important; /* garis halus */
+      border-radius:var(--btn-radius) !important;
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: 700;
+      box-shadow:none;
+    }
+    .modal-footer .btn-outline-secondary:hover{
+      background:#ECEFF3;
+      border-color:#E5E7EB !important;
+    }
+    .modal-footer .btn-saffron{ border-radius:var(--btn-radius) !important; }
   </style>
 </head>
 <body>
@@ -235,12 +287,15 @@ if ($res) {
 <!-- backdrop -->
 <div id="backdrop" class="backdrop-mobile"></div>
 
-<!-- Sidebar -->
+<!-- sidebar -->
 <aside class="sidebar" id="sideNav">
   <div class="sidebar-head">
     <button class="sidebar-inner-toggle" id="toggleSidebarInside" aria-label="Tutup menu"></button>
-    <button class="sidebar-close-btn" id="closeSidebar" aria-label="Tutup menu"><i class="bi bi-x-lg"></i></button>
+    <button class="sidebar-close-btn" id="closeSidebar" aria-label="Tutup menu">
+      <i class="bi bi-x-lg"></i>
+    </button>
   </div>
+
   <nav class="nav flex-column gap-2" id="sidebar-nav">
     <a class="nav-link" href="<?= BASE_URL ?>/public/admin/index.php"><i class="bi bi-house-door"></i> Dashboard</a>
     <a class="nav-link" href="<?= BASE_URL ?>/public/admin/orders.php"><i class="bi bi-receipt"></i> Orders</a>
@@ -248,6 +303,7 @@ if ($res) {
     <a class="nav-link" href="<?= BASE_URL ?>/public/admin/users.php"><i class="bi bi-people"></i> Users</a>
     <a class="nav-link" href="<?= BASE_URL ?>/public/admin/finance.php"><i class="bi bi-cash-coin"></i> Finance</a>
     <a class="nav-link" href="<?= BASE_URL ?>/public/admin/notifications_send.php"><i class="bi bi-megaphone"></i> Kirim Notifikasi</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/audit.php"><i class="bi bi-shield-check"></i> Audit Log</a>
     <a class="nav-link" href="<?= BASE_URL ?>/public/admin/settings.php"><i class="bi bi-gear"></i> Settings</a>
     <hr>
     <a class="nav-link" href="<?= BASE_URL ?>/public/admin/help.php"><i class="bi bi-question-circle"></i> Help Center</a>
@@ -282,7 +338,11 @@ if ($res) {
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h2 class="fw-bold m-0">Kelola User</h2>
     <button class="btn-add-main d-print-none" data-bs-toggle="modal" data-bs-target="#userModal" onclick="openAdd()">
-      <i class="bi bi-plus-lg"></i> Tambah User
+      <!-- SVG plus tebal -->
+      <svg class="icon-plus" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 5v14M5 12h14"></path>
+      </svg>
+      <span>Tambah User</span>
     </button>
   </div>
 
@@ -348,7 +408,7 @@ if ($res) {
     <form class="modal-content" method="post">
       <div class="modal-header">
         <h5 class="modal-title" id="userTitle">Tambah User</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" name="action" id="action" value="add">
@@ -402,7 +462,8 @@ if ($res) {
 
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Batal</button>
+        <!-- Tombol Batal seperti gambar -->
+        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Batalkan</button>
         <button class="btn btn-saffron" type="submit">Simpan</button>
       </div>
     </form>
@@ -444,7 +505,34 @@ async function refreshAdminNotifBadge(){
 refreshAdminNotifBadge();
 setInterval(refreshAdminNotifBadge, 30000);
 
-/* ===== Modal ===== */
+/* ===== Custom Select ===== */
+document.addEventListener('click', function(e){
+  document.querySelectorAll('.cf-select').forEach(sel=>{
+    const trig = sel.querySelector('.cf-select__trigger');
+    const list = sel.querySelector('.cf-select__list');
+    if (trig.contains(e.target)) {
+      sel.classList.toggle('is-open');
+    } else if (!list.contains(e.target)) {
+      sel.classList.remove('is-open');
+    }
+  });
+});
+document.querySelectorAll('.cf-select').forEach(sel=>{
+  const targetId = sel.getAttribute('data-target');
+  const hidden = document.getElementById(targetId);
+  const label  = document.getElementById(targetId + '_label');
+  sel.querySelectorAll('.cf-select__option').forEach(opt=>{
+    opt.addEventListener('click', function(){
+      sel.querySelectorAll('.cf-select__option').forEach(o=>o.classList.remove('is-active'));
+      this.classList.add('is-active');
+      hidden.value = this.getAttribute('data-value');
+      label.textContent = this.textContent.trim();
+      sel.classList.remove('is-open');
+    });
+  });
+});
+
+/* ===== Modal Helpers ===== */
 const modalEl = document.getElementById('userModal');
 const modal = new bootstrap.Modal(modalEl);
 

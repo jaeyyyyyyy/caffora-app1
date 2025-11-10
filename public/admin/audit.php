@@ -16,7 +16,7 @@ $adminName = htmlspecialchars($_SESSION['user_name'] ?? 'Admin', ENT_QUOTES, 'UT
   <title>Audit Log — Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Bootstrap (untuk modal custom range) & Icons & Iconify -->
+  <!-- Bootstrap (modal custom range) & Icons & Iconify -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <script src="https://code.iconify.design/2/2.2.1/iconify.min.js"></script>
@@ -31,6 +31,7 @@ $adminName = htmlspecialchars($_SESSION['user_name'] ?? 'Admin', ENT_QUOTES, 'UT
       --sidebar-w:320px;
       --soft:#fff7d1;
       --hover:#ffefad;
+      --btn-radius:14px;
     }
     *,:before,:after{ box-sizing:border-box; }
     body{
@@ -39,7 +40,7 @@ $adminName = htmlspecialchars($_SESSION['user_name'] ?? 'Admin', ENT_QUOTES, 'UT
       font-weight:500; margin:0;
     }
 
-    /* ===== Sidebar (sama seperti finance) ===== */
+    /* ===== Sidebar (match Finance) ===== */
     .sidebar{
       position:fixed; left:-320px; top:0; bottom:0; width:var(--sidebar-w);
       background:#fff; border-right:1px solid rgba(0,0,0,.05);
@@ -65,14 +66,14 @@ $adminName = htmlspecialchars($_SESSION['user_name'] ?? 'Admin', ENT_QUOTES, 'UT
     }
     .backdrop-mobile.active{ display:block; }
 
-    /* ===== Content + Topbar (match finance) ===== */
+    /* ===== Content + Topbar (match Finance) ===== */
     .content{ margin-left:0; padding:16px 14px 50px; }
     .topbar{ display:flex; align-items:center; gap:12px; margin-bottom:16px; }
     .btn-menu{ background:transparent; border:0; width:40px; height:38px; display:grid; place-items:center; }
     .hamb-icon{ width:24px; height:20px; display:flex; flex-direction:column; justify-content:space-between; gap:4px; }
     .hamb-icon span{ height:2px; background:var(--brown); border-radius:99px; }
 
-    /* Search (aktif/consisten) */
+    /* Search */
     .search-box{ position:relative; flex:1 1 420px; min-width:220px; }
     .search-input{
       height:46px; width:100%; border-radius:9999px; padding-left:16px; padding-right:44px;
@@ -93,17 +94,9 @@ $adminName = htmlspecialchars($_SESSION['user_name'] ?? 'Admin', ENT_QUOTES, 'UT
       color:var(--brown); text-decoration:none; background:transparent; outline:none;
     }
 
-    /* ===== Range + Export (identik finance) ===== */
-    .range-wrap{
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-start;
-    }
+    /* ===== Periode + Download (identik Finance) ===== */
+    .range-wrap{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-start; }
     .select-ghost{ position:absolute !important; width:1px; height:1px; opacity:0; pointer-events:none; left:-9999px; top:auto; overflow:hidden; }
-    .btn-gold{
-      display:inline-flex; align-items:center; gap:8px; height:42px; background:#ffd54f;
-      border:1px solid rgba(0,0,0,.06); border-radius:12px; padding:0 14px; font-weight:700; color:#111;
-      text-decoration:none; white-space:nowrap;
-    }
-    .btn-gold:hover{ filter:brightness(.97); color:#111; text-decoration:none; }
     .select-custom{ position:relative; display:inline-block; max-width:100%; }
     .select-toggle{
       width:200px; max-width:100%; height:42px; display:flex; align-items:center; justify-content:space-between;
@@ -121,6 +114,24 @@ $adminName = htmlspecialchars($_SESSION['user_name'] ?? 'Admin', ENT_QUOTES, 'UT
     .select-item:hover{ background:var(--hover); }
     .select-item.active{ background:var(--soft); }
 
+    /* Tombol Download sama Finance */
+    .btn-download{
+      background-color: var(--gold);
+      color: var(--brown);
+      border: 0;
+      border-radius: var(--btn-radius);
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: 600;
+      font-size: .9rem;
+      padding: 10px 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      line-height: 1;
+      text-decoration:none;
+    }
+    .btn-download:hover{ filter: brightness(.97); color: var(--brown); }
+
     .period{ color:#6b7280; margin:6px 0 14px; font-weight:600; }
 
     /* ===== Card + Table ===== */
@@ -131,7 +142,7 @@ $adminName = htmlspecialchars($_SESSION['user_name'] ?? 'Admin', ENT_QUOTES, 'UT
     .badge{ display:inline-flex; align-items:center; padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700; background:#fff; border:1.4px solid var(--gold-border); color:#111; }
     .muted{ color:#6b7280; }
 
-    /* ===== Responsive (match finance) ===== */
+    /* ===== Responsive (match Finance) ===== */
     @media (min-width:992px){
       .content{
         padding-left:60px !important; padding-right:60px !important;
@@ -146,31 +157,46 @@ $adminName = htmlspecialchars($_SESSION['user_name'] ?? 'Admin', ENT_QUOTES, 'UT
       .content{ padding-left:8px !important; padding-right:8px !important; }
       .topbar{ padding-left:4px !important; padding-right:4px !important; }
     }
+
+    /* ===== Mobile tweaks (<=575.98px) — grid 2 kolom seperti Finance ===== */
     @media (max-width:575.98px){
       .content{ padding:14px 12px 70px; }
       .topbar{ gap:10px; }
       .search-box{ min-width:0; width:100%; order:2; flex:1 1 100%; }
       .top-actions{ order:3; }
       .btn-menu{ order:1; }
-      .range-wrap{ gap:8px; width:100%; justify-content:stretch; }
-      .select-custom{ width:100%; }
+      .card{ padding:16px; }
+
+      .range-wrap{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:8px;
+        width:100%;
+      }
+      .range-wrap .select-custom{ width:100%; }
       .select-toggle{ width:100%; height:40px; padding:0 12px; }
       .select-menu{ min-width:100%; max-width:100vw; }
-      .btn-gold{ height:40px; padding:0 12px; width:100%; justify-content:center; }
-      .card{ padding:16px; }
+      #btnDownload{
+        width:100%;
+        height:44px;
+        display:inline-flex; align-items:center; justify-content:center;
+        gap:8px; border:1px solid rgba(0,0,0,.06); border-radius:14px;
+        padding:0 12px; font-weight:700;
+      }
+      #btnDownload svg{ width:18px; height:18px; }
     }
     @media (max-width:360px){
       .icon-btn{ width:34px; height:34px; }
       .search-input{ height:40px; padding-left:12px; padding-right:38px; }
       .select-toggle{ height:38px; }
-      .btn-gold{ height:38px; }
+      #btnDownload{ height:38px; }
     }
   </style>
 </head>
 <body>
 
 <div id="backdrop" class="backdrop-mobile"></div>
-      <!-- sidebar -->
+<!-- sidebar -->
 <aside class="sidebar" id="sideNav">
   <div class="sidebar-head">
     <button class="sidebar-inner-toggle" id="toggleSidebarInside" aria-label="Tutup menu"></button>
@@ -180,49 +206,25 @@ $adminName = htmlspecialchars($_SESSION['user_name'] ?? 'Admin', ENT_QUOTES, 'UT
   </div>
 
   <nav class="nav flex-column gap-2" id="sidebar-nav">
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/index.php">
-      <i class="bi bi-house-door"></i> Dashboard
-    </a>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/orders.php">
-      <i class="bi bi-receipt"></i> Orders
-    </a>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/catalog.php">
-      <i class="bi bi-box-seam"></i> Catalog
-    </a>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/users.php">
-      <i class="bi bi-people"></i> Users
-    </a>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/finance.php">
-      <i class="bi bi-cash-coin"></i> Finance
-    </a>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/notifications_send.php">
-      <i class="bi bi-megaphone"></i> Kirim Notifikasi
-    </a>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/audit.php">
-      <i class="bi bi-shield-check"></i> Audit Log
-    </a>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/settings.php">
-      <i class="bi bi-gear"></i> Settings
-    </a>
-
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/index.php"><i class="bi bi-house-door"></i> Dashboard</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/orders.php"><i class="bi bi-receipt"></i> Orders</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/catalog.php"><i class="bi bi-box-seam"></i> Catalog</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/users.php"><i class="bi bi-people"></i> Users</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/finance.php"><i class="bi bi-cash-coin"></i> Finance</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/notifications_send.php"><i class="bi bi-megaphone"></i> Kirim Notifikasi</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/audit.php"><i class="bi bi-shield-check"></i> Audit Log</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/settings.php"><i class="bi bi-gear"></i> Settings</a>
     <hr>
-
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/help.php">
-      <i class="bi bi-question-circle"></i> Help Center
-    </a>
-
-    <a class="nav-link" href="<?= BASE_URL ?>/backend/logout.php">
-      <i class="bi bi-box-arrow-right"></i> Logout
-    </a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/help.php"><i class="bi bi-question-circle"></i> Help Center</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/backend/logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
   </nav>
 </aside>
-
 
 <!-- Content -->
 <main class="content">
   <div class="container-xxl px-2 px-xl-3">
 
-    <!-- Topbar sama finance -->
+    <!-- Topbar -->
     <div class="topbar">
       <button class="btn-menu" id="openSidebar" aria-label="Buka menu">
         <div class="hamb-icon"><span></span><span></span><span></span></div>
@@ -247,7 +249,7 @@ $adminName = htmlspecialchars($_SESSION['user_name'] ?? 'Admin', ENT_QUOTES, 'UT
 
     <h2 class="fw-bold mb-1">Audit Log</h2>
 
-    <!-- Periode + Export (visual sama finance) -->
+    <!-- Periode + Download (visually same with Finance) -->
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
       <div>
         <div class="text-muted small mb-1">Periode ditampilkan</div>
@@ -255,7 +257,7 @@ $adminName = htmlspecialchars($_SESSION['user_name'] ?? 'Admin', ENT_QUOTES, 'UT
       </div>
 
       <div class="range-wrap">
-        <!-- native select (ghost) untuk aksesibilitas -->
+        <!-- native select (ghost) -->
         <select id="rangeSelectGhost" class="select-ghost" tabindex="-1" aria-hidden="true" hidden>
           <option value="today">Hari ini</option>
           <option value="7">7 hari</option>
@@ -277,7 +279,14 @@ $adminName = htmlspecialchars($_SESSION['user_name'] ?? 'Admin', ENT_QUOTES, 'UT
           </div>
         </div>
 
-        <a id="btnExport" class="btn-gold" href="#"><i class="bi bi-download"></i><span>Export CSV</span></a>
+        <!-- tombol download: sama dengan Finance -->
+        <button id="btnDownload" class="btn-download">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="20" height="20">
+            <path d="M12 3a1 1 0 011 1v8.586l2.293-2.293a1 1 0 111.414 1.414l-4.001 4a1 1 0 01-1.414 0l-4.001-4a1 1 0 111.414-1.414L11 12.586V4a1 1 0 011-1z"></path>
+            <path d="M5 19a1 1 0 011-1h12a1 1 0 110 2H6a1 1 0 01-1-1z"></path>
+          </svg>
+          <span>Download</span>
+        </button>
       </div>
     </div>
 
@@ -306,7 +315,7 @@ $adminName = htmlspecialchars($_SESSION['user_name'] ?? 'Admin', ENT_QUOTES, 'UT
   </div>
 </main>
 
-<!-- Modal Custom Range (Bootstrap, sama finance) -->
+<!-- Modal Custom Range -->
 <div class="modal fade" id="modalCustom" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
     <form class="modal-content" id="customForm">
@@ -326,7 +335,7 @@ $adminName = htmlspecialchars($_SESSION['user_name'] ?? 'Admin', ENT_QUOTES, 'UT
       </div>
       <div class="modal-footer flex-wrap gap-2">
         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
-        <button type="submit" class="btn-gold" style="border:0">Terapkan</button>
+        <button type="submit" class="btn-download" style="border:0">Terapkan</button>
       </div>
     </form>
   </div>
@@ -340,17 +349,13 @@ const API  = BASE + '/backend/api/audit_logs.php';
 const els = {
   sideNav: document.getElementById('sideNav'),
   backdrop: document.getElementById('backdrop'),
-  openSide: document.getElementById('openSidebar'),
-  closeSide: document.getElementById('closeSidebar'),
 
   rangeBtn:  document.getElementById('rangeBtn'),
   rangeMenu: document.getElementById('rangeMenu'),
   rangeText: document.getElementById('rangeText'),
-  rangeGhost:document.getElementById('rangeSelectGhost'),
 
   periodText: document.getElementById('periodText'),
   tbody: document.getElementById('tbody'),
-  btnExport: document.getElementById('btnExport'),
 
   modalCustom: document.getElementById('modalCustom'),
   customForm:  document.getElementById('customForm'),
@@ -364,25 +369,28 @@ const state = {
   rows: []
 };
 
-/* ===== Sidebar (persis finance) ===== */
+/* ===== Sidebar (match Finance) ===== */
 document.getElementById('openSidebar')?.addEventListener('click',()=>{
-  els.sideNav.classList.add('show'); els.backdrop.classList.add('active');
+  els.sideNav.classList.add('show'); document.getElementById('backdrop')?.classList.add('active');
 });
 document.getElementById('closeSidebar')?.addEventListener('click',()=>{
-  els.sideNav.classList.remove('show'); els.backdrop.classList.remove('active');
+  els.sideNav.classList.remove('show'); document.getElementById('backdrop')?.classList.remove('active');
 });
-els.backdrop?.addEventListener('click',()=>{
-  els.sideNav.classList.remove('show'); els.backdrop.classList.remove('active');
+document.getElementById('backdrop')?.addEventListener('click',()=>{
+  els.sideNav.classList.remove('show'); document.getElementById('backdrop')?.classList.remove('active');
 });
 document.querySelectorAll('#sidebar-nav .nav-link').forEach(a=>{
   a.addEventListener('click',function(){
     document.querySelectorAll('#sidebar-nav .nav-link').forEach(l=>l.classList.remove('active'));
     this.classList.add('active');
-    if (window.innerWidth < 1200){ els.sideNav.classList.remove('show'); els.backdrop.classList.remove('active'); }
+    if (window.innerWidth < 1200){
+      els.sideNav.classList.remove('show');
+      document.getElementById('backdrop')?.classList.remove('active');
+    }
   });
 });
 
-/* ===== Search aktif (sama finance) ===== */
+/* ===== Search (same logic as Finance) ===== */
 function attachSearch(inputEl, suggestEl){
   if (!inputEl || !suggestEl) return;
   const ADMIN_EP = "<?= BASE_URL ?>/backend/api/admin_search.php";
@@ -461,8 +469,8 @@ function summarize(row){
   return (a||'Aksi') + ' pada ' + (e||'entitas');
 }
 
-/* ===== Range dropdown (UX sama finance) ===== */
-const bsModal = new bootstrap.Modal(els.modalCustom);
+/* ===== Range dropdown (UX seperti Finance) ===== */
+const bsModal = new bootstrap.Modal(document.getElementById('modalCustom'));
 function setPreset(preset){
   const now = new Date();
   const to = now.toISOString().slice(0,10);
@@ -471,10 +479,10 @@ function setPreset(preset){
   else if (preset==='7'){ from = new Date(now.getTime() - 6*864e5).toISOString().slice(0,10); }
   else if (preset==='30'){ from = new Date(now.getTime() - 29*864e5).toISOString().slice(0,10); }
   state.range = { preset, from, to };
-  els.rangeText.textContent = (preset==='today'?'Hari ini': preset==='7'?'7 hari':'30 hari');
-  // set active item visual
-  els.rangeMenu.querySelectorAll('.select-item').forEach(x=>x.classList.remove('active'));
-  const active = els.rangeMenu.querySelector(`.select-item[data-value="${preset}"]`);
+  document.getElementById('rangeText').textContent = (preset==='today'?'Hari ini': preset==='7'?'7 hari':'30 hari');
+  // visual active
+  document.querySelectorAll('#rangeMenu .select-item').forEach(x=>x.classList.remove('active'));
+  const active = document.querySelector(`#rangeMenu .select-item[data-value="${preset}"]`);
   if (active) active.classList.add('active');
   fetchData();
 }
@@ -482,34 +490,38 @@ function applyRange(v){
   if (v === 'custom'){ bsModal.show(); return; }
   setPreset(v);
 }
-els.rangeBtn?.addEventListener('click', ()=>{
-  const shown = els.rangeMenu.classList.toggle('show');
-  els.rangeBtn.setAttribute('aria-expanded', shown ? 'true':'false');
-  if (shown) els.rangeBtn.focus();
+document.getElementById('rangeBtn')?.addEventListener('click', ()=>{
+  const menu = document.getElementById('rangeMenu');
+  const shown = menu.classList.toggle('show');
+  document.getElementById('rangeBtn').setAttribute('aria-expanded', shown ? 'true':'false');
 });
 document.addEventListener('click', (e)=>{
-  if (!els.rangeMenu.contains(e.target) && e.target !== els.rangeBtn) {
-    els.rangeMenu.classList.remove('show');
-    els.rangeBtn.setAttribute('aria-expanded','false');
+  const menu = document.getElementById('rangeMenu');
+  if (!menu.contains(e.target) && e.target !== document.getElementById('rangeBtn')) {
+    menu.classList.remove('show');
+    document.getElementById('rangeBtn').setAttribute('aria-expanded','false');
   }
 });
 document.addEventListener('keydown',(e)=>{
-  if (e.key === 'Escape'){ els.rangeMenu.classList.remove('show'); els.rangeBtn.setAttribute('aria-expanded','false'); }
+  if (e.key === 'Escape'){
+    document.getElementById('rangeMenu').classList.remove('show');
+    document.getElementById('rangeBtn').setAttribute('aria-expanded','false');
+  }
 });
-els.rangeMenu.querySelectorAll('.select-item').forEach(it=>{
+document.querySelectorAll('#rangeMenu .select-item').forEach(it=>{
   it.addEventListener('click', ()=>{
-    els.rangeMenu.querySelectorAll('.select-item').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('#rangeMenu .select-item').forEach(x=>x.classList.remove('active'));
     it.classList.add('active');
-    els.rangeText.textContent = it.textContent.trim();
+    document.getElementById('rangeText').textContent = it.textContent.trim();
     applyRange(it.dataset.value);
   });
 });
-els.customForm?.addEventListener('submit',(ev)=>{
+document.getElementById('customForm')?.addEventListener('submit',(ev)=>{
   ev.preventDefault();
-  const from = els.from.value, to = els.to.value;
+  const from = document.getElementById('from').value, to = document.getElementById('to').value;
   if (!from || !to) return;
   state.range = { preset:'custom', from, to };
-  els.rangeText.textContent = 'Custom…';
+  document.getElementById('rangeText').textContent = 'Custom…';
   bsModal.hide();
   fetchData();
 });
@@ -522,25 +534,26 @@ async function fetchData(){
 
   const labFrom = state.range.from || state.range.to || '';
   const labTo   = state.range.to   || state.range.from || '';
-  els.periodText.textContent = (labFrom && labTo)
+  document.getElementById('periodText').textContent = (labFrom && labTo)
     ? `${labFrom.split('-').reverse().join('/')} – ${labTo.split('-').reverse().join('/')}`
     : '(semua)';
 
-  els.tbody.innerHTML = `<tr><td colspan="7" class="muted">Memuat data…</td></tr>`;
+  document.getElementById('tbody').innerHTML = `<tr><td colspan="7" class="muted">Memuat data…</td></tr>`;
   try{
     const res  = await fetch(`${API}?${p.toString()}`, {credentials:'same-origin'});
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || 'Gagal memuat');
-    // tampilkan hanya entitas order & payment (sesuai bisnis)
+    // tampilkan hanya entitas order & payment
     state.rows = (json.data || []).filter(r => r && (r.entity==='order' || r.entity==='payment'));
     render(state.rows);
   }catch(e){
-    els.tbody.innerHTML = `<tr><td colspan="7" class="muted">Error: ${h(e.message)}</td></tr>`;
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="7" class="muted">Error: ${h(e.message)}</td></tr>`;
   }
 }
 function render(rows){
+  const tb = document.getElementById('tbody');
   if (!rows.length){
-    els.tbody.innerHTML = `<tr><td colspan="7" class="muted">Tidak ada data pada periode ini.</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="7" class="muted">Tidak ada data pada periode ini.</td></tr>`;
     return;
   }
   let html = '';
@@ -559,11 +572,11 @@ function render(rows){
       <td>${h(r.remark || '—')}</td>
     </tr>`;
   });
-  els.tbody.innerHTML = html;
+  tb.innerHTML = html;
 }
 
-/* ===== Export CSV (UI sama finance, sumber dari state.rows) ===== */
-els.btnExport?.addEventListener('click',(e)=>{
+/* ===== Download CSV — sama Finance (ambil dari state.rows) ===== */
+document.getElementById('btnDownload')?.addEventListener('click',(e)=>{
   e.preventDefault();
   const rows = state.rows || [];
   if (!rows.length){ alert('Tidak ada data untuk diekspor.'); return; }
@@ -590,7 +603,7 @@ els.btnExport?.addEventListener('click',(e)=>{
   URL.revokeObjectURL(a.href);
 });
 
-/* ===== Init (default 7 hari seperti finance) ===== */
+/* ===== Init (default 7 hari) ===== */
 setPreset('7');
 </script>
 </body>

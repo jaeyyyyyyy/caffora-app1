@@ -279,7 +279,7 @@ $stmt4->close();
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://code.iconify.design/2/2.2.1/iconify.min.js"></script>
 
-  <style> 
+  <style>
   :root{
     --gold:#FFD54F;
     --gold-border:#f7d78d;
@@ -289,10 +289,11 @@ $stmt4->close();
     --sidebar-w:320px;
     --soft:#fff7d1;
     --hover:#ffefad;
+    --btn-radius:14px;
+    --input-border:#E8E2DA;
   }
   *,:before,:after{ box-sizing:border-box; }
 
-  /* ——— Font lebih ringan ——— */
   body{
     background:#FAFAFA; color:var(--ink);
     font-family:Inter,system-ui,Segoe UI,Roboto,Arial;
@@ -301,273 +302,212 @@ $stmt4->close();
 
   /* ===== Sidebar ===== */
   .sidebar{
-    position:fixed;
-    left:-320px; top:0; bottom:0; width:var(--sidebar-w);
+    position:fixed; left:-320px; top:0; bottom:0; width:var(--sidebar-w);
     background:#fff; border-right:1px solid rgba(0,0,0,.05);
     transition:left .25s ease; z-index:1050; padding:16px 18px; overflow-y:auto;
   }
   .sidebar.show{ left:0; }
   .sidebar-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
-  .sidebar-inner-toggle, .sidebar-close-btn{
-    background:transparent; border:0; width:40px; height:36px; display:grid; place-items:center;
-  }
+  .sidebar-inner-toggle, .sidebar-close-btn{ background:transparent; border:0; width:40px; height:36px; display:grid; place-items:center; }
   .hamb-icon{ width:24px; height:20px; display:flex; flex-direction:column; justify-content:space-between; gap:4px; }
   .hamb-icon span{ height:2px; background:var(--brown); border-radius:99px; }
-  .sidebar .nav-link{
-    display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:16px;
-    font-weight:600; color:#111; text-decoration:none; background:transparent; user-select:none;
-  }
+  .sidebar .nav-link{ display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:16px; font-weight:600; color:#111; text-decoration:none; }
   .sidebar .nav-link:hover{ background:rgba(255,213,79,0.25); }
   .sidebar hr{ border-color:rgba(0,0,0,.05); opacity:1; }
 
-  /* Backdrop mobile */
-  .backdrop-mobile{
-    position:fixed; inset:0; background:rgba(0,0,0,.25); z-index:1040; display:none;
-  }
+  /* Backdrop */
+  .backdrop-mobile{ position:fixed; inset:0; background:rgba(0,0,0,.25); z-index:1040; display:none; }
   .backdrop-mobile.active{ display:block; }
 
-  /* CONTENT + TOPBAR */
-  .content{margin-left:0;padding:16px 14px 50px;}
-   .topbar{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
-  .btn-menu{background:transparent;border:0;width:40px;height:38px;display:grid;place-items:center;}
-  .hamb-icon{width:24px;height:20px;display:flex;flex-direction:column;justify-content:space-between;gap:4px;}
-  .hamb-icon span{height:2px;background:var(--brown);border-radius:99px;}
+  /* ===== Content & Topbar (DISESUAIKAN) ===== */
+  .content{ padding:16px 14px 50px; }
+  .topbar{ display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .btn-menu{ background:transparent; border:0; width:40px; height:38px; display:grid; place-items:center; }
+  .hamb-icon{ width:24px; height:20px; display:flex; flex-direction:column; justify-content:space-between; gap:4px; }
+  .hamb-icon span{ height:2px; background:var(--brown); border-radius:99px; }
 
-  /* SEARCH */
-  .search-box{position:relative;flex:1 1 420px;min-width:220px;}
+  /* Search */
+  .search-box{ position:relative; flex:1 1 420px; min-width:220px; }
   .search-input{
-    height:46px;width:100%;border-radius:9999px;padding-left:16px;padding-right:44px;
-    border:1px solid #e5e7eb;background:#fff;outline:none;transition:all .12s;
+    height:46px; width:100%; border-radius:9999px; padding-left:16px; padding-right:44px;
+    border:1px solid #e5e7eb; background:#fff; outline:none; transition:all .12s;
   }
-  .search-input:focus{border-color:var(--gold);box-shadow:none;}
-  .search-icon{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--brown);cursor:pointer;}
+  .search-input:focus{ border-color:var(--gold); box-shadow:none; }
+  .search-icon{ position:absolute; right:16px; top:50%; transform:translateY(-50%); color:var(--brown); cursor:pointer; }
   .search-suggest{
-    position:absolute;top:100%;left:0;margin-top:6px;background:#fff;border:1px solid rgba(247,215,141,.8);
-    border-radius:16px;width:100%;max-height:280px;overflow-y:auto;display:none;z-index:40;
+    position:absolute; top:100%; left:0; margin-top:6px; background:#fff; border:1px solid rgba(247,215,141,.8);
+    border-radius:16px; width:100%; max-height:280px; overflow-y:auto; display:none; z-index:40;
   }
-  .search-suggest.visible{display:block;}
-  .search-empty{padding:12px 14px;color:#6b7280;font-size:.8rem;}
+  .search-suggest.visible{ display:block; }
+  .search-empty{ padding:12px 14px; color:#6b7280; font-size:.8rem; }
 
   .top-actions{ display:flex; align-items:center; gap:14px; flex:0 0 auto; }
-  .icon-btn{
-    width:38px;height:38px;border-radius:999px;display:flex;align-items:center;justify-content:center;
-    color:var(--brown); text-decoration:none; background:transparent; outline:none;
-  }
+  .icon-btn{ width:38px; height:38px; border-radius:999px; display:flex; align-items:center; justify-content:center; color:var(--brown); text-decoration:none; background:transparent; outline:none; }
 
-  /* GENERIC CARDS */
-  .cardx{background:#fff;border:1px solid var(--gold-border);border-radius:var(--radius);padding:18px;min-width:0;}
-  .kpi .value{font-size:2rem;font-weight:700;letter-spacing:.2px;}
+  /* Cards */
+  .cardx{ background:#fff; border:1px solid var(--gold-border); border-radius:var(--radius); padding:18px; min-width:0; }
+  .kpi .value{ font-size:2rem; font-weight:700; letter-spacing:.2px; }
 
-  /* Summary cards */
-  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
-  .summary-card{background:#fff;border:1px solid var(--gold-border);border-radius:20px;padding:18px 20px;min-width:0;}
-  .summary-card .label{color:#6b7280;font-weight:600;}
-  .summary-card .value{margin-top:6px;font-size:2.05rem;font-weight:700;color:#0f172a;line-height:1;}
+  .summary-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .summary-card{ background:#fff; border:1px solid var(--gold-border); border-radius:20px; padding:18px 20px; min-width:0; }
+  .summary-card .label{ color:#6b7280; font-weight:600; }
+  .summary-card .value{ margin-top:6px; font-size:2.05rem; font-weight:700; color:#0f172a; line-height:1; }
 
-  /* Top menu */
-  .top-menu-item{display:flex;align-items:center;gap:14px;padding:12px 10px;border-bottom:1px solid rgba(17,24,39,.05);}
-  .top-menu-item:last-child{border-bottom:0;}
-  .top-menu-thumb{width:46px;height:46px;border-radius:16px;overflow:hidden;background:#f3f4f6;flex:0 0 auto;}
-  .top-menu-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-  .top-menu-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-  .top-menu-sub{font-size:.78rem;color:#6b7280;white-space:nowrap;}
+  .top-menu-item{ display:flex; align-items:center; gap:14px; padding:12px 10px; border-bottom:1px solid rgba(17,24,39,.05); }
+  .top-menu-item:last-child{ border-bottom:0; }
+  .top-menu-thumb{ width:46px; height:46px; border-radius:16px; overflow:hidden; background:#f3f4f6; flex:0 0 auto; }
+  .top-menu-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .top-menu-name{ font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+  .top-menu-sub{ font-size:.78rem; color:#6b7280; white-space:nowrap; }
 
-  /* Range + Export group — custom dropdown */
-  .range-wrap{
-    display:flex;gap:10px;align-items:center;flex-wrap:wrap;
-    justify-content:flex-start;
-  }
+  /* Range + Download */
+  .range-wrap{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-start; }
 
-  /* native select disembunyikan */
-  .select-ghost{ position:absolute !important; width:1px;height:1px;opacity:0;pointer-events:none; left:-9999px; top:auto; overflow:hidden; }
+  .select-ghost{ position:absolute !important; width:1px; height:1px; opacity:0; pointer-events:none; left:-9999px; top:auto; overflow:hidden; }
 
-  .btn-gold{display:inline-flex;align-items:center;gap:8px;height:42px;background:#ffd54f;border:1px solid rgba(0,0,0,.06);border-radius:12px;padding:0 14px;font-weight:700;color:#111;text-decoration:none;white-space:nowrap;}
-  .btn-gold:hover{filter:brightness(.97);color:#111;text-decoration:none;}
-
-  /* Custom select */
-  .select-custom{position:relative;display:inline-block;max-width:100%;}
+  .select-custom{ position:relative; display:inline-block; max-width:100%; }
   .select-toggle{
-    width:200px;max-width:100%;height:42px;display:flex;align-items:center;justify-content:space-between;
-    gap:10px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:0 14px;
-    cursor:pointer;user-select:none; outline:0;
+    width:200px; max-width:100%; height:42px; display:flex; align-items:center; justify-content:space-between;
+    gap:10px; background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:0 14px;
+    cursor:pointer; user-select:none; outline:0;
   }
-  .select-toggle:focus{border-color:#ffd54f;}
-  .select-caret{font-size:16px;color:#111;}
+  .select-toggle:focus{ border-color:#ffd54f; }
+  .select-caret{ font-size:16px; color:#111; }
   .select-menu{
-    position:absolute;top:46px;left:0;z-index:1060;background:#fff;border:1px solid rgba(247,215,141,.9);
-    border-radius:14px;box-shadow:0 12px 28px rgba(0,0,0,.08);min-width:100%;display:none;padding:6px;max-height:280px;overflow:auto;
+    position:absolute; top:46px; left:0; z-index:1060; background:#fff; border:1px solid rgba(247,215,141,.9);
+    border-radius:14px; box-shadow:0 12px 28px rgba(0,0,0,.08); min-width:100%; display:none; padding:6px; max-height:280px; overflow:auto;
   }
-  .select-menu.show{display:block;}
-  .select-item{padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600;color:#374151;}
-  .select-item:hover{background:var(--hover);}
-  .select-item.active{background:var(--soft);}
+  .select-menu.show{ display:block; }
+  .select-item{ padding:10px 12px; border-radius:10px; cursor:pointer; font-weight:600; color:#374151; }
+  .select-item:hover{ background:var(--hover); }
+  .select-item.active{ background:var(--soft); }
 
-  /* ====== Chart size (fluid height) ====== */
-  #revChart{width:100% !important;max-height:330px;}
-  .chart-wrapper{min-height:220px;height:clamp(220px, 38vh, 360px);}
-
-  /* ====== Grid tightening for small laptops ====== */
-  @media (min-width:992px) and (max-width:1199.98px){
-    .summary-grid{gap:14px;}
-    .summary-card{padding:16px;}
-    .summary-card .value{font-size:1.85rem;}
-    #revChart{max-height:300px;}
-    .chart-wrapper{height:clamp(220px, 34vh, 320px);}
+  /* Tombol Download (base) */
+  .btn-download{
+    background-color: var(--gold);
+    color: var(--brown);
+    border: 0;
+    border-radius: var(--btn-radius);
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 600;
+    font-size: .9rem;
+    padding: 10px 18px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1;
   }
+  .btn-download:hover{ filter: brightness(.97); }
 
-  /* =========================
-     RESPONSIVE: iPad (768–991)
-     ========================= */
+  /* Chart */
+  #revChart{ width:100% !important; max-height:330px; }
+  .chart-wrapper{ min-height:220px; height:clamp(220px, 38vh, 360px); }
+
+  /* ====== Responsive ====== */
+  @media (min-width:992px){
+    .content{ padding:20px 26px 50px; }
+    .search-box{ max-width:1100px; }
+  }
   @media (min-width:768px) and (max-width:991.98px){
-    .content{padding:18px 16px 60px;}
-    .topbar{gap:10px;}
-    .search-box{min-width:0; flex:1 1 60%;}
-    .summary-grid{grid-template-columns:1fr 1fr; gap:14px;}
-    .summary-card{padding:16px;}
-    .summary-card .value{font-size:1.8rem;}
-    .kpi .value{font-size:1.85rem;}
-    .select-toggle{height:40px;}
-    .btn-gold{height:40px;padding:0 12px;}
-    #revChart{max-height:280px !important;}
-    .chart-wrapper{height:clamp(220px, 32vh, 300px);}
+    .content{ padding:18px 16px 60px; }
+    .summary-grid{ grid-template-columns:1fr 1fr; gap:14px; }
+    .summary-card{ padding:16px; }
+    .summary-card .value{ font-size:1.8rem; }
+    #revChart{ max-height:300px; }
+    .chart-wrapper{ height:clamp(220px, 34vh, 320px); }
   }
 
-  /* =================================
-     RESPONSIVE: Mobile (≤ 575 / ≤ 480)
-     ================================= */
+  /* ===== Mobile tweaks (<=575.98px) ===== */
+  .search-box{ min-width:0; } /* biar bisa menyusut */
+
   @media (max-width:575.98px){
-    .content{padding:14px 12px 70px;}
-    .topbar{gap:10px;}
-    .search-box{min-width:0; width:100%; order:2; flex:1 1 100%;}
-    .top-actions{order:3;}
-    .btn-menu{order:1;}
-    .range-wrap{gap:8px;width:100%;justify-content:stretch;}
-    .select-custom{width:100%;}
-    .select-toggle{width:100%; height:40px; padding:0 12px;}
-    .select-menu{min-width:100%; max-width:100vw;}
-    .btn-gold{height:40px; padding:0 12px; width:100%; justify-content:center;}
-    .summary-grid{grid-template-columns:1fr;gap:12px;}
-    .cardx{padding:16px;}
-    .kpi .value{font-size:1.7rem;}
-    .summary-card .value{font-size:1.65rem;}
-    #revChart{max-height:240px !important;}
-    .chart-wrapper{height:240px;}
-    /* Stack dua kolom utama jadi vertikal */
-    .row-finance-main > [class*="col-"]{min-width:0;}
+    .content{ padding:14px 12px 70px; } /* kiri-kanan sama seperti halaman lain */
+    .summary-grid{ grid-template-columns:1fr; gap:12px; }
+    .cardx{ padding:16px; }
+    #revChart{ max-height:240px !important; }
+    .chart-wrapper{ height:240px; }
+
+    /* Topbar konsisten */
+    .topbar{ padding:8px 0; gap:8px; }
+    .btn-menu{ width:36px; height:34px; flex:0 0 36px; margin-left:-2px; order:1; }
+    .top-actions{ order:3; flex:0 0 auto; gap:8px; }
+    .icon-btn{ width:34px; height:34px; }
+    .search-box{
+      order:2; flex:1 1 auto;
+      max-width: clamp(140px, calc(100% - 120px), 100%);
+    }
+    .search-input{ height:40px; }
+
+    /* Range + Download mengikuti gaya halaman Audit */
+    .range-wrap{ gap:8px; width:100%; }
+    .range-wrap .select-custom{ width:100%; flex:1 0 100%; }
+    #btnDownload{
+      flex:1 0 100%;
+      width:100%;
+      height:44px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;   /* teks & ikon center */
+      gap:8px;
+      border:1px solid rgba(0,0,0,.06);
+      border-radius:14px;
+      padding:0 12px;
+      font-weight:700;          /* tebal seperti Audit */
+    }
+    #btnDownload svg{ width:18px; height:18px; }
   }
 
-  /* =========================
-     MICRO DEVICES (≤ 360px)
-     ========================= */
   @media (max-width:360px){
-    .topbar{gap:8px;}
-    .icon-btn{width:34px;height:34px;}
-    .search-input{height:40px;padding-left:12px;padding-right:38px;}
-    .select-toggle{height:38px;}
-    .btn-gold{height:38px;}
-    .summary-card{padding:14px;}
-    .summary-card .value{font-size:1.5rem;}
+    .top-actions{ gap:6px; }
+    .search-box{ max-width: calc(100% - 128px); } /* ekstra ruang device sempit */
   }
 
-  /* =========================
-     DESKTOP TWEAKS (≥1200px)
-     ========================= */
+  /* ===== Desktop padding tweak tetap seperti sebelumnya ===== */
   @media (min-width:1200px){
-    .content{padding:20px 24px 60px;}
-    .search-box{max-width:1100px;}
+    .content{ padding-left:16px !important; padding-right:16px !important; }
+    .topbar{ padding-left:4px; padding-right:4px; }
+    .btn-menu{ margin-left:-6px; }
   }
-
-  /* ===== Minor utilities for overflow safety ===== */
-  .text-truncate-1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  
-/* ==== KECILKAN GUTTER FINANCE (desktop) ==== */
-@media (min-width: 992px){
-  .content{
-    padding-left: 60px !important;   /* atau 26px jika mau persis dashboard */
-    padding-right: 60px !important;  /* atau 26px */
-    padding-top: 20px;
-    padding-bottom: 60px;
+  @media (min-width:1400px){
+    .content{ padding-left:12px !important; padding-right:12px !important; }
+    .btn-menu{ margin-left:-10px; }
   }
-  /* optional: biar search bar tak memaksa lebar konten */
-  .search-box{ max-width: 1100px !important; } /* sama seperti dashboard */
+  @media (max-width:575.98px){
+  .range-wrap{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:8px;
+  }
+  .range-wrap .select-custom,
+  #btnDownload{ width:100%; flex:unset; }
 }
 
-@media (min-width: 1200px){
-  .content{
-    padding-left: 10px !important;   /* sedikit lebih rapat di layar lebar */
-    padding-right: 10px !important;
-  }
-}
-@media (min-width: 370px){
-  .content{
-    padding-left: 8px !important;   /* sedikit lebih rapat di layar lebar */
-    padding-right: 8px !important;
-  }
-}
-
-
-
-@media (min-width: 370px){
-  .topbar{
-    padding-left: 4px !important;   /* sedikit lebih rapat di layar lebar */
-    padding-right: 4px !important;
-  }
-}
-
-
-</style>
-
+  </style>
 </head>
 <body>
 
 <div id="backdrop" class="backdrop-mobile"></div>
-      <!-- sidebar -->
+<!-- sidebar -->
 <aside class="sidebar" id="sideNav">
   <div class="sidebar-head">
     <button class="sidebar-inner-toggle" id="toggleSidebarInside" aria-label="Tutup menu"></button>
-    <button class="sidebar-close-btn" id="closeSidebar" aria-label="Tutup menu">
-      <i class="bi bi-x-lg"></i>
-    </button>
+    <button class="sidebar-close-btn" id="closeSidebar" aria-label="Tutup menu"><i class="bi bi-x-lg"></i></button>
   </div>
 
   <nav class="nav flex-column gap-2" id="sidebar-nav">
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/index.php">
-      <i class="bi bi-house-door"></i> Dashboard
-    </a>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/orders.php">
-      <i class="bi bi-receipt"></i> Orders
-    </a>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/catalog.php">
-      <i class="bi bi-box-seam"></i> Catalog
-    </a>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/users.php">
-      <i class="bi bi-people"></i> Users
-    </a>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/finance.php">
-      <i class="bi bi-cash-coin"></i> Finance
-    </a>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/notifications_send.php">
-      <i class="bi bi-megaphone"></i> Kirim Notifikasi
-    </a>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/audit.php">
-      <i class="bi bi-shield-check"></i> Audit Log
-    </a>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/settings.php">
-      <i class="bi bi-gear"></i> Settings
-    </a>
-
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/index.php"><i class="bi bi-house-door"></i> Dashboard</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/orders.php"><i class="bi bi-receipt"></i> Orders</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/catalog.php"><i class="bi bi-box-seam"></i> Catalog</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/users.php"><i class="bi bi-people"></i> Users</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/finance.php"><i class="bi bi-cash-coin"></i> Finance</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/notifications_send.php"><i class="bi bi-megaphone"></i> Kirim Notifikasi</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/audit.php"><i class="bi bi-shield-check"></i> Audit Log</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/settings.php"><i class="bi bi-gear"></i> Settings</a>
     <hr>
-
-    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/help.php">
-      <i class="bi bi-question-circle"></i> Help Center
-    </a>
-
-    <a class="nav-link" href="<?= BASE_URL ?>/backend/logout.php">
-      <i class="bi bi-box-arrow-right"></i> Logout
-    </a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/admin/help.php"><i class="bi bi-question-circle"></i> Help Center</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/backend/logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
   </nav>
 </aside>
-
 
 <!-- Content -->
 <main class="content">
@@ -602,7 +542,7 @@ $stmt4->close();
         <div class="fw-semibold"><?= $startDate->format('d M Y') ?> – <?= $endDate->format('d M Y') ?></div>
       </div>
 
-      <!-- Custom Dropdown Periode + Export -->
+      <!-- Custom Dropdown Periode + Download CSV -->
       <div class="range-wrap">
         <select id="rangeSelect" class="select-ghost" tabindex="-1" aria-hidden="true" hidden>
           <option value="today"  <?= $range==='today'?'selected':''; ?>>Hari ini</option>
@@ -626,7 +566,14 @@ $stmt4->close();
           </div>
         </div>
 
-        <a id="btnExport" class="btn-gold" href="#"><i class="bi bi-download"></i><span>Export CSV</span></a>
+        <!-- ====== BUTTON DOWNLOAD ====== -->
+        <button id="btnDownload" class="btn-download">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="20" height="20">
+            <path d="M12 3a1 1 0 011 1v8.586l2.293-2.293a1 1 0 111.414 1.414l-4.001 4a1 1 0 01-1.414 0l-4.001-4a1 1 0 111.414-1.414L11 12.586V4a1 1 0 011-1z"></path>
+            <path d="M5 19a1 1 0 011-1h12a1 1 0 110 2H6a1 1 0 01-1-1z"></path>
+          </svg>
+          <span>Download</span>
+        </button>
       </div>
     </div>
 
@@ -746,7 +693,7 @@ $stmt4->close();
       </div>
       <div class="modal-footer flex-wrap gap-2">
         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
-        <button type="submit" class="btn-gold" style="border:0">Terapkan</button>
+        <button type="submit" class="btn-download">Terapkan</button>
       </div>
     </form>
   </div>
@@ -757,15 +704,9 @@ $stmt4->close();
 /* Sidebar */
 const sideNav = document.getElementById('sideNav');
 const backdrop = document.getElementById('backdrop');
-document.getElementById('openSidebar')?.addEventListener('click',()=>{
-  sideNav.classList.add('show'); backdrop.classList.add('active');
-});
-document.getElementById('closeSidebar')?.addEventListener('click',()=>{
-  sideNav.classList.remove('show'); backdrop.classList.remove('active');
-});
-backdrop?.addEventListener('click',()=>{
-  sideNav.classList.remove('show'); backdrop.classList.remove('active');
-});
+document.getElementById('openSidebar')?.addEventListener('click',()=>{ sideNav.classList.add('show'); backdrop.classList.add('active'); });
+document.getElementById('closeSidebar')?.addEventListener('click',()=>{ sideNav.classList.remove('show'); backdrop.classList.remove('active'); });
+backdrop?.addEventListener('click',()=>{ sideNav.classList.remove('show'); backdrop.classList.remove('active'); });
 document.querySelectorAll('#sidebar-nav .nav-link').forEach(a=>{
   a.addEventListener('click',function(){
     document.querySelectorAll('#sidebar-nav .nav-link').forEach(l=>l.classList.remove('active'));
@@ -774,7 +715,7 @@ document.querySelectorAll('#sidebar-nav .nav-link').forEach(a=>{
   });
 });
 
-/* Search aktif */
+/* Search suggest */
 function attachSearch(inputEl, suggestEl){
   if (!inputEl || !suggestEl) return;
   const ADMIN_EP = "<?= BASE_URL ?>/backend/api/admin_search.php";
@@ -820,7 +761,7 @@ async function refreshAdminNotifBadge(){
 }
 refreshAdminNotifBadge(); setInterval(refreshAdminNotifBadge, 30000);
 
-/* ===== Custom Period Dropdown (tanpa delay) ===== */
+/* ===== Custom Period Dropdown ===== */
 const rangeBtn  = document.getElementById('rangeBtn');
 const rangeMenu = document.getElementById('rangeMenu');
 const rangeText = document.getElementById('rangeText');
@@ -838,7 +779,6 @@ function applyRange(v){
 rangeBtn?.addEventListener('click', ()=>{
   const shown = rangeMenu.classList.toggle('show');
   rangeBtn.setAttribute('aria-expanded', shown ? 'true':'false');
-  if (shown) rangeBtn.focus();
 });
 document.addEventListener('click', (e)=>{
   if (!rangeMenu.contains(e.target) && e.target !== rangeBtn) {
@@ -866,8 +806,8 @@ customForm?.addEventListener('submit',(ev)=>{
   window.location.href = url.toString();
 });
 
-/* Export CSV (ikut periode aktif pada URL) */
-document.getElementById('btnExport')?.addEventListener('click',(e)=>{
+/* ====== DOWNLOAD CSV ====== */
+document.getElementById('btnDownload')?.addEventListener('click',(e)=>{
   e.preventDefault();
   const url = new URL(window.location.href);
   url.searchParams.set('export','csv');
@@ -902,7 +842,7 @@ new Chart(document.getElementById('revChart'),{
   }
 });
 
-/* Donut distribusi status — ikut periode */
+/* Donut distribusi status */
 const dLabels = <?= json_encode($distLabels) ?>;
 const dOrders = <?= json_encode($distOrders) ?>;
 new Chart(document.getElementById('statusDonut'),{
@@ -911,19 +851,17 @@ new Chart(document.getElementById('statusDonut'),{
     labels:dLabels,
     datasets:[{
       data:dOrders,
-     backgroundColor:['#ffe761','#eae3c0','#facf43','#fdeb9e','#edde3bff']
+      backgroundColor:['#ffe761','#eae3c0','#facf43','#fdeb9e','#edde3bff']
     }]
   },
   options:{
     responsive:true,
     cutout:'60%',
-    plugins:{
-      legend:{ position:'bottom' },
-    }
+    plugins:{ legend:{ position:'bottom' } }
   }
 });
 
-// Legend sederhana (horizontal)
+// Legend sederhana
 (function(){
   const el = document.getElementById('statusLegend'); if (!el) return;
   const parts = dLabels.map((lb,i)=> `${lb}: <b>${dOrders[i]??0}</b>`);

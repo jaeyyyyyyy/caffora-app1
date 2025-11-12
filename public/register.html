@@ -27,8 +27,6 @@
         --muted: #8b8179;
         --surface-rgb: 255, 255, 255;
       }
-
-      /* ===== Base ===== */
       html,
       body {
         height: 100%;
@@ -72,7 +70,6 @@
             );
         }
       }
-
       .reg-wrap {
         min-height: 100vh;
         display: flex;
@@ -82,8 +79,6 @@
         position: relative;
         z-index: 1;
       }
-
-      /* Card glass — lebih lebar untuk 2 kolom */
       .reg-card {
         width: 100%;
         max-width: 720px;
@@ -96,18 +91,21 @@
           0 5px 14px rgba(0, 0, 0, 0.04),
           inset 0 1px 0 rgba(255, 255, 255, 0.35);
         padding: 22px 24px 20px;
-
-        /* === animasi masuk (glass) === */
         opacity: 0;
         transform: translateY(12px) scale(0.985);
         filter: saturate(0.95) blur(2px);
         animation: cardIn 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.04s forwards;
       }
-
+      @keyframes cardIn {
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          filter: none;
+        }
+      }
       .header-brand {
         text-align: center;
         margin-bottom: 14px;
-        /* animasi isi */
         opacity: 0;
         transform: translateY(6px);
         animation: fadeUp 0.5s ease-out 0.16s forwards;
@@ -123,7 +121,6 @@
         font-size: 0.85rem;
       }
 
-      /* ===== Grid form: kiri = Nama+Email, kanan = Password+Konfirmasi ===== */
       .form-grid {
         display: grid;
         gap: 16px 18px;
@@ -141,6 +138,7 @@
           grid-column: 1 / -1;
         }
       }
+
       .form-label {
         font-size: 13px;
         font-weight: 600;
@@ -163,8 +161,14 @@
         outline: none !important;
         box-shadow: none !important;
         border-color: rgba(246, 198, 58, 0.8);
-        border-width: 1px; /* garis fokus tipis */
         background-color: rgba(255, 255, 255, 0.98);
+      }
+      .hint {
+        font-size: 0.8rem;
+        margin-top: 4px;
+      }
+      .hint.error {
+        color: #000000;
       }
 
       .pw-wrap {
@@ -189,11 +193,6 @@
         justify-content: center;
         color: var(--brown);
         cursor: pointer;
-        transition: transform 0.15s ease, opacity 0.15s ease;
-      }
-      .pw-toggle:hover {
-        transform: scale(1.06);
-        opacity: 0.9;
       }
 
       .agree-row {
@@ -203,19 +202,16 @@
         font-size: 12.5px;
         color: var(--muted);
         margin-top: 2px;
-
-        /* animasi isi */
         opacity: 0;
         transform: translateY(6px);
         animation: fadeUp 0.45s ease-out 0.56s forwards;
       }
       .agree-row input[type="checkbox"] {
-        width: 15px;
-        height: 15px;
+        width: 14px;
+        height: 14px;
         cursor: pointer;
       }
 
-      /* ===== Button: ukuran sama seperti login (dibatasi max-width & di-center) ===== */
       .btn-brand {
         width: 100%;
         max-width: 420px;
@@ -228,24 +224,15 @@
         font-size: 0.92rem;
         margin: 0 auto;
         display: block;
-
-        /* animasi isi */
         opacity: 0;
         transform: translateY(6px);
         animation: fadeUp 0.45s ease-out 0.64s forwards;
-        transition: transform 0.12s ease, box-shadow 0.18s ease,
-          filter 0.18s ease;
-      }
-      .btn-brand:hover {
-        transform: translateY(-1px);
-        filter: brightness(0.98);
       }
       .btn-brand:disabled {
         opacity: 0.55;
         cursor: not-allowed;
       }
 
-      /* "atau daftar dengan" */
       .social-title {
         text-align: center;
         font-size: 13px;
@@ -253,44 +240,37 @@
         color: var(--muted);
         margin: 14px 0 8px;
       }
-
-      /* icon baris */
       .social-row {
         display: flex;
         justify-content: center;
         gap: 18px;
         margin-bottom: 6px;
-      }
-      .social-row a svg {
-        transition: transform 0.2s ease, opacity 0.2s ease;
+        opacity: 0;
+        transform: translateY(6px);
+        animation: fadeUp 0.5s ease-out 0.52s forwards;
       }
       .social-row a:hover svg {
         transform: translateY(-3px) scale(1.05);
         opacity: 0.9;
       }
-
-      /* "Sudah punya akun?" — samakan dengan login */
       .to-login {
         text-align: center;
         margin-top: 10px;
-        font-size: 15px;
         color: var(--ink);
-        font-weight: 400;
       }
-
-      /* link Login */
       .to-login a {
         color: #1a73e8;
         text-decoration: none;
         font-weight: 500;
-        transition: color 0.2s ease, transform 0.15s ease;
       }
-      .to-login a:hover {
-        color: var(--gold) !important;
-        transform: translateY(-1px);
+      @keyframes fadeUp {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
-      /* ===== Modal S&K (tetap) ===== */
+      /* ===== Modal S&K ===== */
       .modal.custom-terms {
         position: fixed;
         inset: 0;
@@ -304,19 +284,38 @@
       .modal.custom-terms.open {
         display: flex;
       }
+
+      /* Scroll seluruh kartu, border tetap melengkung rapi */
       .modal-card {
         width: 100%;
         max-width: 640px;
-        max-height: 90vh;
+        max-height: 70vh;
         background: #fff;
         border-radius: 14px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
+        overflow: auto;
+        display: block;
+        scrollbar-gutter: stable both-edges; /* jaga radius tetap utuh */
       }
+
+      .modal-card::-webkit-scrollbar {
+        width: 10px;
+      }
+      .modal-card::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 10px;
+      }
+      .modal-card::-webkit-scrollbar-track {
+        background: transparent;
+        margin: 14px;
+      }
+      .modal-card {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
+      }
+
+      /* Head & foot tanpa border agar minimalis */
       .modal-head {
         padding: 14px 16px 12px;
-        border-bottom: 1px solid #eee;
         display: flex;
         justify-content: space-between;
         gap: 12px;
@@ -326,29 +325,38 @@
         font-weight: 600;
         font-size: 1.1rem;
       }
+
       .modal-body {
-        flex: 1;
-        overflow: auto;
         padding: 16px;
         line-height: 1.6;
         font-size: 0.9rem;
+        overflow: visible;
       }
+
       .modal-foot {
         padding: 12px 16px;
-        border-top: 1px solid #eee;
         display: flex;
         gap: 10px;
         justify-content: flex-end;
       }
+
+      /* Tombol Batal & Setuju */
       .btn-outline-foot {
-        background: #fff;
-        border: 1px solid #ddd;
+        background: #f3f3f3;
+        border: 0px solid #d1d1d1;
+        color: #333;
         border-radius: 12px;
         height: 38px;
         padding: 0 16px;
         font-weight: 600;
         cursor: pointer;
+        transition: background-color 0.2s ease, border-color 0.2s ease;
       }
+      .btn-outline-foot:hover {
+        background: #e0e0e0;
+        border-color: #bbb;
+      }
+
       .btn-accept {
         background: var(--gold);
         color: var(--brown);
@@ -358,13 +366,16 @@
         padding: 0 16px;
         font-weight: 600;
         cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+      .btn-accept:hover {
+        background: #f7cc40;
       }
       .btn-accept:disabled {
         background: #f0e3b0;
         color: #9b8a5d;
       }
 
-      /* ===== Mobile ===== */
       @media (max-width: 768px) {
         body {
           background: #fff;
@@ -378,95 +389,14 @@
           padding: 0 16px 16px;
         }
         .form-grid {
-          display: grid;
           grid-template-columns: 1fr;
           gap: 14px;
         }
         .stack {
-          display: grid;
           gap: 14px;
-        }
-        .col-span-2 {
-          grid-column: auto;
         }
         .btn-brand {
           max-width: 100%;
-        }
-      }
-
-      /* ====== Animasi bottom section ====== */
-      .social-title,
-      .social-row,
-      .to-login {
-        opacity: 0;
-        transform: translateY(6px);
-        animation: fadeUp 0.55s ease-out forwards;
-      }
-      /* delay */
-      .social-row {
-        animation-delay: 0.12s;
-      }
-      .to-login {
-        animation-delay: 0.22s;
-      }
-
-      /* icons hover subtle lift */
-      .social-row a {
-        transition: transform 0.2s ease, opacity 0.2s ease;
-      }
-      .social-row a:hover {
-        transform: translateY(-3px) scale(1.05);
-        opacity: 0.9;
-      }
-      .form-grid .stack:first-child .mb-field:nth-child(1) {
-        opacity: 0;
-        transform: translateY(6px);
-        animation: fadeUp 0.45s ease-out 0.24s forwards;
-      }
-      .form-grid .stack:first-child .mb-field:nth-child(2) {
-        opacity: 0;
-        transform: translateY(6px);
-        animation: fadeUp 0.45s ease-out 0.32s forwards;
-      }
-      .form-grid .stack:last-child .mb-field:nth-child(1) {
-        opacity: 0;
-        transform: translateY(6px);
-        animation: fadeUp 0.45s ease-out 0.4s forwards;
-      }
-      .form-grid .stack:last-child .mb-field:nth-child(2) {
-        opacity: 0;
-        transform: translateY(6px);
-        animation: fadeUp 0.45s ease-out 0.48s forwards;
-      }
-
-      /* ====== Keyframes ====== */
-      @keyframes fadeUp {
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      @keyframes cardIn {
-        0% {
-          opacity: 0;
-          transform: translateY(12px) scale(0.985);
-          filter: saturate(0.95) blur(2px);
-        }
-        70% {
-          filter: saturate(1) blur(0);
-        }
-        100% {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-          filter: none;
-        }
-      }
-
-      /* ====== Reduced motion support ====== */
-      @media (prefers-reduced-motion: reduce) {
-        * {
-          animation: none !important;
-          transition: none !important;
         }
       }
     </style>
@@ -480,14 +410,15 @@
           <p class="muted mb-0">Buat akun pelanggan</p>
         </div>
 
+        <!-- FORM -->
         <form
           id="registerForm"
-          action="../backend/register.php"
+          action="/backend/auth_register.php"
           method="post"
           novalidate
         >
           <div class="form-grid">
-            <!-- Kolom kiri: Nama + Email -->
+            <!-- kiri -->
             <div class="stack">
               <div class="mb-field">
                 <label class="form-label" for="name">Username</label>
@@ -496,25 +427,29 @@
                   id="name"
                   name="name"
                   class="form-control"
-                  placeholder="Minimal 5 karakter "
-                  required
+                  placeholder="Minimal 5 huruf (A–Z)"
+                  autocomplete="off"
                 />
+                <small id="nameHint" class="hint"></small>
               </div>
+
               <div class="mb-field">
                 <label class="form-label" for="email">Email</label>
+                <!-- type=text agar tidak ada bubble “Input tidak valid” -->
                 <input
-                  type="email"
+                  type="text"
                   id="email"
                   name="email"
                   class="form-control"
-                  placeholder="Email@contoh.com"
-                  required
+                  placeholder="email@contoh.com"
+                  autocomplete="off"
+                  inputmode="email"
                 />
-                <small id="emailHint" class="input-hint"></small>
+                <small id="emailHint" class="hint"></small>
               </div>
             </div>
 
-            <!-- Kolom kanan: Password + Konfirmasi -->
+            <!-- kanan -->
             <div class="stack">
               <div class="mb-field">
                 <label class="form-label" for="password">Password</label>
@@ -524,8 +459,7 @@
                     id="password"
                     name="password"
                     class="form-control pw-input"
-                    placeholder="Minimal 6 karakter (huruf dan angka)"
-                    required
+                    placeholder="Minimal 6 karakter (huruf & angka)"
                   />
                   <button
                     type="button"
@@ -536,7 +470,9 @@
                     <i id="eyeIcon1" class="bi bi-eye"></i>
                   </button>
                 </div>
+                <small id="pwHint" class="hint"></small>
               </div>
+
               <div class="mb-field">
                 <label class="form-label" for="confirm_password"
                   >Konfirmasi Password</label
@@ -548,7 +484,6 @@
                     name="confirm_password"
                     class="form-control pw-input"
                     placeholder="Ulangi password"
-                    required
                   />
                   <button
                     type="button"
@@ -559,10 +494,11 @@
                     <i id="eyeIcon2" class="bi bi-eye"></i>
                   </button>
                 </div>
+                <small id="cpwHint" class="hint"></small>
               </div>
             </div>
 
-            <!-- Setuju S&K (span 2 kolom) -->
+            <!-- S&K -->
             <div class="agree-row col-span-2">
               <input id="agree" name="agree" type="checkbox" disabled />
               <label for="agree" class="m-0">
@@ -576,9 +512,15 @@
               </label>
             </div>
 
-            <!-- Button (span 2 kolom, tapi lebarnya dibatasi seperti login) -->
+            <!-- Tombol -->
             <div class="col-span-2">
-              <button type="submit" class="btn-brand" id="btnSubmit">
+              <button
+                type="submit"
+                class="btn-brand"
+                id="btnSubmit"
+                formnovalidate
+                disabled
+              >
                 Daftar
               </button>
             </div>
@@ -587,14 +529,13 @@
 
         <div class="social-title">atau daftar dengan</div>
         <div class="social-row">
-          <!-- Google -->
-          <a href="#" aria-label="Daftar dengan Google" title="Google">
-            <svg
+          <!-- ikon dipertahankan -->
+          <a href="#" aria-label="Google" title="Google"
+            ><svg
               xmlns="http://www.w3.org/2000/svg"
               width="22"
               height="22"
               viewBox="0 0 533.5 544.3"
-              role="img"
             >
               <path
                 fill="#4285F4"
@@ -611,39 +552,32 @@
               <path
                 fill="#EA4335"
                 d="M272.1 107.3c39.7 0 75.3 13.7 103.3 40.6l77.5-77.5C406.1 24.8 345 0 272.1 0 165.4 0 74.3 61.9 29.8 149.6l89.7 69.3c21.6-64.2 81.7-111.6 152.6-111.6z"
-              />
-            </svg>
-          </a>
-          <!-- Apple -->
-          <a href="#" aria-label="Daftar dengan Apple" title="Apple">
-            <svg
+              /></svg
+          ></a>
+          <a href="#" aria-label="Apple" title="Apple"
+            ><svg
               xmlns="http://www.w3.org/2000/svg"
               width="22"
               height="22"
               viewBox="0 0 24 24"
-              role="img"
               fill="#000"
             >
               <path
                 d="M16.365 1.43c0 1-.41 1.98-1.07 2.7-.69.76-1.84 1.34-2.85 1.24-.13-1.06.46-2.1 1.11-2.77.73-.75 1.99-1.3 2.81-1.17zM20.53 17.08c-.46 1.07-1.01 2.12-1.8 3.16-.96 1.25-2.16 2.8-3.74 2.83-1.4.03-1.85-.82-3.43-.82-1.58 0-2.07.8-3.46.85-1.59.06-2.8-1.35-3.77-2.59-2.06-2.62-3.65-7.41-1.52-10.64 1.08-1.66 2.9-2.71 4.92-2.74 1.53-.03 2.97 1.02 3.43 1.02.46 0 2.38-1.26 4.01-1.07.68.03 2.59.28 3.82 2.16-3.36 1.78-2.83 6.41.54 7.83z"
-              />
-            </svg>
-          </a>
-          <!-- Facebook -->
-          <a href="#" aria-label="Daftar dengan Facebook" title="Facebook">
-            <svg
+              /></svg
+          ></a>
+          <a href="#" aria-label="Facebook" title="Facebook"
+            ><svg
               xmlns="http://www.w3.org/2000/svg"
               width="22"
               height="22"
               viewBox="0 0 24 24"
-              role="img"
             >
               <path
                 fill="#1877F2"
                 d="M24 12a12 12 0 1 0-13.875 11.85v-8.385H7.077V12h3.048V9.356c0-3.012 1.793-4.687 4.533-4.687 1.312 0 2.686.235 2.686.235v2.953h-1.514c-1.494 0-1.96.929-1.96 1.883V12h3.328l-.532 3.465h-2.796v8.385A12.002 12.002 0 0 0 24 12"
-              />
-            </svg>
-          </a>
+              /></svg
+          ></a>
         </div>
 
         <div class="to-login">
@@ -652,7 +586,7 @@
       </div>
     </div>
 
-    <!-- ===== MODAL S&K ===== -->
+    <!-- MODAL S&K -->
     <div
       class="modal custom-terms"
       id="termsModal"
@@ -666,26 +600,152 @@
             <h3 class="modal-title" id="termsTitle">Syarat &amp; Ketentuan</h3>
             <div style="font-size: 0.8rem; color: #888">Caffora</div>
           </div>
-          <button class="btn-outline-foot" id="closeTerms">Tutup</button>
+          <!-- tombol Tutup dihapus: cukup Batal / backdrop / Setuju menutup -->
         </div>
-        <div class="modal-body" id="termsBody">
-          <p>
-            <strong>1. Akun &amp; Privasi</strong> – data Anda kami gunakan
-            untuk keperluan layanan.
-          </p>
-          <p><strong>2. Keamanan</strong> – jaga kerahasiaan password.</p>
-          <p>
-            <strong>3. Pemesanan &amp; Pembayaran</strong> – pesanan sah setelah
-            pembayaran terkonfirmasi.
-          </p>
-          <p><strong>4. Refund</strong> – mengikuti kebijakan gerai.</p>
-          <p>
-            <strong>5. Perubahan</strong> – Caffora dapat memperbarui ketentuan
-            ini sewaktu-waktu.
-          </p>
-          <p>Scroll sampai bawah agar bisa menekan tombol <em>Setuju</em>.</p>
-          <div style="height: 260px"></div>
+
+        <div
+          class="modal-body"
+          id="termsBody"
+          style="font-size: 0.92rem; line-height: 1.6"
+        >
+          <ol
+            style="
+              list-style-type: upper-alpha;
+              padding-left: 1.1rem;
+              margin: 0;
+            "
+          >
+            <li>
+              <strong>Akun & Keamanan</strong>
+              <ol style="list-style-type: decimal; padding-left: 1rem">
+                <li>
+                  Pengguna wajib memberikan data yang benar dan valid saat
+                  pendaftaran.
+                </li>
+                <li>
+                  Pengguna bertanggung jawab atas kerahasiaan akun dan aktivitas
+                  yang terjadi.
+                </li>
+                <li>
+                  Caffora berhak menonaktifkan akun atas indikasi penyalahgunaan
+                  atau pelanggaran.
+                </li>
+              </ol>
+            </li>
+
+            <li>
+              <strong>Informasi Menu & Harga</strong>
+              <ol style="list-style-type: decimal; padding-left: 1rem">
+                <li>
+                  Menu, harga, dan ketersediaan dapat berubah sewaktu-waktu.
+                </li>
+                <li>
+                  Jika terjadi kesalahan informasi atau sistem, Caffora berhak
+                  melakukan pembatalan.
+                </li>
+              </ol>
+            </li>
+
+            <li>
+              <strong>Pemesanan & Pembayaran</strong>
+              <ol style="list-style-type: decimal; padding-left: 1rem">
+                <li>
+                  Pesanan dianggap sah setelah pembayaran berhasil dan
+                  terverifikasi.
+                </li>
+                <li>
+                  Metode pembayaran mengikuti opsi yang tersedia pada
+                  aplikasi/gerai.
+                </li>
+              </ol>
+            </li>
+
+            <li>
+              <strong>Layanan Dine-in & Takeaway</strong>
+              <ol style="list-style-type: decimal; padding-left: 1rem">
+                <li>
+                  Pesanan dine-in hanya dapat digunakan di gerai Caffora yang
+                  berlaku.
+                </li>
+                <li>
+                  Pesanan takeaway wajib diambil sesuai estimasi waktu
+                  pengambilan.
+                </li>
+                <li>
+                  Keterlambatan pengambilan dapat memengaruhi kualitas, dan
+                  tidak menjadi dasar penggantian.
+                </li>
+              </ol>
+            </li>
+
+            <li>
+              <strong>Pembatalan & Pengembalian Dana</strong>
+              <ol style="list-style-type: decimal; padding-left: 1rem">
+                <li>
+                  Pembatalan hanya dapat dilakukan sebelum pesanan diproses.
+                </li>
+                <li>
+                  Pesanan yang sudah diproses tidak dapat dibatalkan kecuali
+                  terjadi kesalahan dari pihak Caffora.
+                </li>
+                <li>
+                  Proses refund mengikuti prosedur dan waktu pemrosesan pihak
+                  penyedia pembayaran.
+                </li>
+              </ol>
+            </li>
+
+            <li>
+              <strong>Keluhan & Kualitas Produk</strong>
+              <ol style="list-style-type: decimal; padding-left: 1rem">
+                <li>Periksa pesanan saat diterima.</li>
+                <li>
+                  Keluhan terkait kualitas dapat diajukan maksimal 1×24 jam.
+                </li>
+              </ol>
+            </li>
+
+            <li>
+              <strong>Privasi Data</strong>
+              <ol style="list-style-type: decimal; padding-left: 1rem">
+                <li>
+                  Data Pengguna digunakan untuk kebutuhan layanan dan
+                  operasional.
+                </li>
+                <li>
+                  Caffora tidak membagikan data tanpa dasar hukum atau izin sah.
+                </li>
+              </ol>
+            </li>
+
+            <li>
+              <strong>Kekayaan Intelektual</strong>
+              <ol style="list-style-type: decimal; padding-left: 1rem">
+                <li>Logo, desain, dan konten merupakan milik Caffora.</li>
+                <li>
+                  Dilarang memperbanyak atau menggunakan konten tanpa izin
+                  tertulis.
+                </li>
+              </ol>
+            </li>
+
+            <li>
+              <strong>Batasan Tanggung Jawab</strong>
+              <ol style="list-style-type: decimal; padding-left: 1rem">
+                <li>
+                  Layanan dapat dipengaruhi kondisi teknis dan operasional.
+                </li>
+                <li>
+                  Tanggung jawab maksimal atas keluhan valid adalah sebesar
+                  nilai transaksi terkait.
+                </li>
+              </ol>
+            </li>
+          </ol>
+
+          <div style="height: 100px"></div>
         </div>
+
         <div class="modal-foot">
           <button class="btn-outline-foot" id="cancelTerms">Batal</button>
           <button class="btn-accept" id="acceptTerms" disabled>Setuju</button>
@@ -694,17 +754,135 @@
     </div>
 
     <script>
-      // toggle password
+      // ===== Helpers =====
+      const qs = (s) => document.querySelector(s);
+      const nameEl = qs("#name"),
+        nameHint = qs("#nameHint");
+      const emailEl = qs("#email"),
+        emailHint = qs("#emailHint");
+      const pwEl = qs("#password"),
+        cpwEl = qs("#confirm_password");
+      const pwHint = qs("#pwHint"),
+        cpwHint = qs("#cpwHint");
+      const agreeCb = qs("#agree"),
+        btnSubmit = qs("#btnSubmit");
+      const form = qs("#registerForm");
+      const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+
+      function setHint(el, msg, isErr) {
+        el.textContent = msg || "";
+        el.classList.toggle("error", !!isErr);
+      }
+
+      let emailTaken = false;
+      let emailChecking = false; // <-- baru
+
+      function updateSubmitState() {
+        const uok = /^[A-Za-z]{5,}$/.test(nameEl.value.trim());
+        const eok = EMAIL_RE.test(emailEl.value.trim());
+        const pok = pwEl.value.length >= 6;
+        const cok = cpwEl.value && cpwEl.value === pwEl.value;
+        // kunci juga saat sedang cek email
+        btnSubmit.disabled =
+          !(uok && eok && pok && cok && agreeCb.checked) ||
+          emailTaken ||
+          emailChecking;
+      }
+
+      // Username: filter huruf saja (hilangin angka/underscore)
+      nameEl.addEventListener("input", () => {
+        const cleaned = nameEl.value.replace(/[^A-Za-z]/g, "");
+        if (cleaned !== nameEl.value) nameEl.value = cleaned;
+        setHint(
+          nameHint,
+          nameEl.value && nameEl.value.length < 5
+            ? "Minimal 5 huruf (A–Z)."
+            : "",
+          nameEl.value.length && nameEl.value.length < 5
+        );
+        updateSubmitState();
+      });
+
+      // Email exists checker (debounce + lock submit saat cek)
+      let debounce = null;
+      async function doCheckEmail() {
+        const val = emailEl.value.trim();
+        if (!EMAIL_RE.test(val)) {
+          setHint(emailHint, "", false);
+          emailTaken = false;
+          updateSubmitState();
+          return;
+        }
+        emailChecking = true;
+        updateSubmitState(); // <-- lock
+        try {
+          const url = new URL("/backend/check_email.php", location.origin);
+          url.searchParams.set("email", val);
+          const res = await fetch(url.toString(), {
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              Accept: "application/json",
+            },
+            cache: "no-store",
+          });
+          const data = await res.json().catch(() => ({}));
+          if (data && data.exists) {
+            setHint(
+              emailHint,
+              "Email tersebut sudah terdaftar. Silakan login.",
+              true
+            );
+            emailTaken = true;
+          } else {
+            setHint(emailHint, "", false);
+            emailTaken = false;
+          }
+        } catch (_) {
+          // kalau gagal cek, jangan menghalangi user, tapi jangan tampilkan error
+          setHint(emailHint, "", false);
+          emailTaken = false;
+        } finally {
+          emailChecking = false;
+          updateSubmitState();
+        }
+      }
+      emailEl.addEventListener("input", () => {
+        clearTimeout(debounce);
+        debounce = setTimeout(doCheckEmail, 400);
+      });
+
+      // Password checks
+      function checkPw() {
+        setHint(
+          pwHint,
+          pwEl.value.length && pwEl.value.length < 6
+            ? "Minimal 6 karakter."
+            : "",
+          pwEl.value.length < 6
+        );
+        setHint(
+          cpwHint,
+          cpwEl.value && cpwEl.value !== pwEl.value
+            ? "Konfirmasi tidak sama."
+            : "",
+          cpwEl.value && cpwEl.value !== pwEl.value
+        );
+        updateSubmitState();
+      }
+      pwEl.addEventListener("input", checkPw);
+      cpwEl.addEventListener("input", checkPw);
+
+      // Toggle password
       (function () {
         const pairs = [
           { input: "password", btn: "togglePw1", icon: "eyeIcon1" },
           { input: "confirm_password", btn: "togglePw2", icon: "eyeIcon2" },
         ];
         pairs.forEach(({ input, btn, icon }) => {
-          const pw = document.getElementById(input);
-          const b = document.getElementById(btn);
-          const ic = document.getElementById(icon);
-          b.addEventListener("click", function () {
+          const pw = document.getElementById(input),
+            b = document.getElementById(btn),
+            ic = document.getElementById(icon);
+          b.addEventListener("click", () => {
             const show = pw.type === "password";
             pw.type = show ? "text" : "password";
             ic.classList.toggle("bi-eye", !show);
@@ -713,21 +891,24 @@
         });
       })();
 
-      // modal S&K
+      // ===== modal S&K =====
       (function () {
         const modal = document.getElementById("termsModal");
         const openBtn = document.getElementById("openTerms");
-        const closeBtn = document.getElementById("closeTerms");
         const cancelBtn = document.getElementById("cancelTerms");
         const acceptBtn = document.getElementById("acceptTerms");
-        const termsBody = document.getElementById("termsBody");
         const agreeCb = document.getElementById("agree");
+
+        // kontainer scroll sekarang seluruh kartu
+        const modalCard = document.querySelector("#termsModal .modal-card");
+        const termsBody = document.getElementById("termsBody");
 
         function openModal() {
           modal.classList.add("open");
-          termsBody.scrollTop = 0;
+          modalCard.scrollTop = 0;
+          // Jika kontennya pendek, langsung enable
           setTimeout(() => {
-            if (termsBody.scrollHeight <= termsBody.clientHeight + 2) {
+            if (modalCard.scrollHeight <= modalCard.clientHeight + 2) {
               acceptBtn.disabled = false;
             }
           }, 50);
@@ -740,13 +921,13 @@
           e.preventDefault();
           openModal();
         });
-        closeBtn.addEventListener("click", closeModal);
         cancelBtn.addEventListener("click", closeModal);
 
-        termsBody.addEventListener("scroll", () => {
+        // aktifkan "Setuju" ketika sudah scroll ke dasar konten
+        modalCard.addEventListener("scroll", () => {
           const atBottom =
-            termsBody.scrollTop + termsBody.clientHeight >=
-            termsBody.scrollHeight - 2;
+            modalCard.scrollTop + modalCard.clientHeight >=
+            modalCard.scrollHeight - 2;
           if (atBottom) acceptBtn.disabled = false;
         });
 
@@ -756,111 +937,113 @@
           closeModal();
         });
 
+        // klik backdrop menutup modal
         modal.addEventListener("click", (ev) => {
           if (ev.target === modal) closeModal();
         });
       })();
 
-      // cek email
-      (function () {
-        const emailInput = document.getElementById("email");
-        const emailHint = document.getElementById("emailHint");
-        const submitBtn = document.getElementById("btnSubmit");
-        const form = document.getElementById("registerForm");
+      // Submit: tampilkan error field dari server, jangan redirect kalau gagal
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-        let emailTaken = false,
-          debounce = null;
-
-        function setHint(msg, isError) {
-          emailHint.textContent = msg || "";
-          emailHint.classList.remove("error");
-          if (isError) emailHint.classList.add("error");
+        const uname = nameEl.value.trim();
+        const email = emailEl.value.trim();
+        if (!/^[A-Za-z]{5,}$/.test(uname)) {
+          setHint(nameHint, "Minimal 5 huruf (A–Z).", true);
+          return;
+        }
+        if (!EMAIL_RE.test(email)) {
+          setHint(emailHint, "Format email tidak valid.", true);
+          return;
+        }
+        if (emailTaken) {
+          setHint(
+            emailHint,
+            "Email tersebut sudah terdaftar. Silakan login.",
+            true
+          );
+          return;
+        }
+        if (pwEl.value.length < 6) {
+          setHint(pwHint, "Minimal 6 karakter.", true);
+          return;
+        }
+        if (pwEl.value !== cpwEl.value) {
+          setHint(cpwHint, "Konfirmasi tidak sama.", true);
+          return;
+        }
+        if (!agreeCb.checked) {
+          return;
         }
 
-        async function doCheckEmail() {
-          const val = emailInput.value.trim();
-          if (!val || !val.includes("@") || val.endsWith("@")) {
-            setHint("", false);
-            emailTaken = false;
-            submitBtn.disabled = false;
-            return;
-          }
-          try {
-            const url = new URL("../backend/check_email.php", location.href);
-            url.searchParams.set("email", val);
-            const res = await fetch(url.toString(), {
-              headers: {
-                "X-Requested-With": "XMLHttpRequest",
-                Accept: "application/json",
-              },
-            });
-            const data = await res.json();
-            if (data && data.exists) {
-              setHint("Email tersebut sudah terdaftar. Silakan login.", true);
-              emailTaken = true;
-              submitBtn.disabled = true;
-            } else {
-              setHint("", false);
-              emailTaken = false;
-              submitBtn.disabled = false;
-            }
-          } catch (_) {
-            setHint("", false);
-            emailTaken = false;
-            submitBtn.disabled = false;
-          }
-        }
-
-        emailInput.addEventListener("keyup", () => {
-          clearTimeout(debounce);
-          debounce = setTimeout(doCheckEmail, 500);
-        });
-        emailInput.addEventListener("blur", () => {
-          clearTimeout(debounce);
-          doCheckEmail();
-        });
-
-        form.addEventListener("submit", function (e) {
-          if (emailTaken) {
-            e.preventDefault();
-            setHint("Email tersebut sudah terdaftar. Silakan login.", true);
-            return;
-          }
-          const p1 = document.getElementById("password").value.trim();
-          const p2 = document.getElementById("confirm_password").value.trim();
-          if (p1 !== p2) {
-            e.preventDefault();
-            alert("Konfirmasi password tidak sama.");
-            return;
-          }
-          const agree = document.getElementById("agree");
-          if (!agree.checked) {
-            e.preventDefault();
-            alert("Silakan baca & setujui Syarat & Ketentuan.");
-            return;
-          }
-
-          e.preventDefault();
+        btnSubmit.disabled = true;
+        try {
           const fd = new FormData(form);
-          const emailNow = emailInput.value.trim();
-          const registerUrl = "../backend/register.php";
+          const res = await fetch("/backend/auth_register.php", {
+            method: "POST",
+            body: fd,
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              Accept: "application/json",
+            },
+            cache: "no-store",
+          });
 
-          if (navigator.sendBeacon) {
-            const payload = new URLSearchParams();
-            for (const [k, v] of fd.entries()) payload.append(k, v);
-            navigator.sendBeacon(registerUrl, payload);
-          } else {
-            fetch(registerUrl, {
-              method: "POST",
-              body: fd,
-              keepalive: true,
-            }).catch(() => {});
+          const isJson = res.headers
+            .get("content-type")
+            ?.includes("application/json");
+          if (isJson) {
+            const data = await res.json().catch(() => ({}));
+
+            if (data?.ok && data?.redirect) {
+              location.href = data.redirect;
+              return;
+            }
+
+            // Tampilkan pesan dari server sesuai field
+            if (data?.field === "email" && data?.code === "email_exists") {
+              setHint(
+                emailHint,
+                "Email tersebut sudah terdaftar. Silakan login.",
+                true
+              );
+              return;
+            }
+            if (data?.field === "name" && data?.msg) {
+              setHint(nameHint, data.msg, true);
+              return;
+            }
+            if (data?.field === "password" && data?.msg) {
+              setHint(pwHint, data.msg, true);
+              return;
+            }
+            if (data?.field === "confirm_password" && data?.msg) {
+              setHint(cpwHint, data.msg, true);
+              return;
+            }
+
+            // kalau server kirim ok:false tanpa field, tampilkan general
+            if (data?.ok === false && data?.msg) {
+              alert(data.msg);
+              return;
+            }
           }
-          window.location.href =
-            "/caffora-app1/public/verify_otp.html?email=" +
-            encodeURIComponent(emailNow);
-        });
-      })();
+
+          // kalau bukan JSON (atau kosong), tetap arahkan (fallback)
+          location.href =
+            "/public/verify_otp.html?email=" + encodeURIComponent(email);
+        } catch (_) {
+          // jaringan error → arahkan ke verify (kebijakan kamu sebelumnya)
+          location.href =
+            "/public/verify_otp.html?email=" + encodeURIComponent(email);
+        } finally {
+          btnSubmit.disabled = false;
+        }
+      });
+
+      // init state
+      updateSubmitState();
     </script>
   </body>
 </html>

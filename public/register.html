@@ -753,7 +753,7 @@
       </div>
     </div>
 
-    <script>
+           <script>
       // ===== Helpers =====
       const qs = (s) => document.querySelector(s);
       const nameEl = qs("#name"),
@@ -775,21 +775,20 @@
       }
 
       let emailTaken = false;
-      let emailChecking = false; // <-- baru
+      let emailChecking = false;
 
       function updateSubmitState() {
         const uok = /^[A-Za-z]{5,}$/.test(nameEl.value.trim());
         const eok = EMAIL_RE.test(emailEl.value.trim());
         const pok = pwEl.value.length >= 6;
         const cok = cpwEl.value && cpwEl.value === pwEl.value;
-        // kunci juga saat sedang cek email
         btnSubmit.disabled =
           !(uok && eok && pok && cok && agreeCb.checked) ||
           emailTaken ||
           emailChecking;
       }
 
-      // Username: filter huruf saja (hilangin angka/underscore)
+      // Username
       nameEl.addEventListener("input", () => {
         const cleaned = nameEl.value.replace(/[^A-Za-z]/g, "");
         if (cleaned !== nameEl.value) nameEl.value = cleaned;
@@ -803,7 +802,7 @@
         updateSubmitState();
       });
 
-      // Email exists checker (debounce + lock submit saat cek)
+      // Email exists checker
       let debounce = null;
       async function doCheckEmail() {
         const val = emailEl.value.trim();
@@ -814,7 +813,7 @@
           return;
         }
         emailChecking = true;
-        updateSubmitState(); // <-- lock
+        updateSubmitState();
         try {
           const url = new URL("/backend/check_email.php", location.origin);
           url.searchParams.set("email", val);
@@ -838,7 +837,6 @@
             emailTaken = false;
           }
         } catch (_) {
-          // kalau gagal cek, jangan menghalangi user, tapi jangan tampilkan error
           setHint(emailHint, "", false);
           emailTaken = false;
         } finally {
@@ -898,15 +896,11 @@
         const cancelBtn = document.getElementById("cancelTerms");
         const acceptBtn = document.getElementById("acceptTerms");
         const agreeCb = document.getElementById("agree");
-
-        // kontainer scroll sekarang seluruh kartu
         const modalCard = document.querySelector("#termsModal .modal-card");
-        const termsBody = document.getElementById("termsBody");
 
         function openModal() {
           modal.classList.add("open");
           modalCard.scrollTop = 0;
-          // Jika kontennya pendek, langsung enable
           setTimeout(() => {
             if (modalCard.scrollHeight <= modalCard.clientHeight + 2) {
               acceptBtn.disabled = false;
@@ -923,7 +917,6 @@
         });
         cancelBtn.addEventListener("click", closeModal);
 
-        // aktifkan "Setuju" ketika sudah scroll ke dasar konten
         modalCard.addEventListener("scroll", () => {
           const atBottom =
             modalCard.scrollTop + modalCard.clientHeight >=
@@ -935,15 +928,19 @@
           agreeCb.disabled = false;
           agreeCb.checked = true;
           closeModal();
+          // penting: update state tombol setelah setuju
+          updateSubmitState();
         });
 
-        // klik backdrop menutup modal
         modal.addEventListener("click", (ev) => {
           if (ev.target === modal) closeModal();
         });
+
+        // kalau nanti checkbox diubah manual
+        agreeCb.addEventListener("change", updateSubmitState);
       })();
 
-      // Submit: tampilkan error field dari server, jangan redirect kalau gagal
+      // Submit
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -977,6 +974,9 @@
           return;
         }
 
+        const verifyUrl =
+          "/public/verify_otp.html?email=" + encodeURIComponent(email);
+
         btnSubmit.disabled = true;
         try {
           const fd = new FormData(form);
@@ -993,15 +993,18 @@
           const isJson = res.headers
             .get("content-type")
             ?.includes("application/json");
+
           if (isJson) {
             const data = await res.json().catch(() => ({}));
 
-            if (data?.ok && data?.redirect) {
-              location.href = data.redirect;
+            // kalau ok:true -> redirect, pakai data.redirect kalau ada,
+            // kalau tidak ada, pakai verify_otp.html
+            if (data?.ok) {
+              const target = data.redirect || verifyUrl;
+              location.href = target;
               return;
             }
 
-            // Tampilkan pesan dari server sesuai field
             if (data?.field === "email" && data?.code === "email_exists") {
               setHint(
                 emailHint,
@@ -1022,28 +1025,24 @@
               setHint(cpwHint, data.msg, true);
               return;
             }
-
-            // kalau server kirim ok:false tanpa field, tampilkan general
             if (data?.ok === false && data?.msg) {
               alert(data.msg);
               return;
             }
           }
 
-          // kalau bukan JSON (atau kosong), tetap arahkan (fallback)
-          location.href =
-            "/public/verify_otp.html?email=" + encodeURIComponent(email);
+          // fallback kalau bukan JSON / tidak ada ok:true
+          location.href = verifyUrl;
         } catch (_) {
-          // jaringan error → arahkan ke verify (kebijakan kamu sebelumnya)
-          location.href =
-            "/public/verify_otp.html?email=" + encodeURIComponent(email);
+          // error jaringan → tetap arahkan ke verify
+          location.href = verifyUrl;
         } finally {
           btnSubmit.disabled = false;
         }
       });
 
-      // init state
       updateSubmitState();
     </script>
+   
   </body>
 </html>

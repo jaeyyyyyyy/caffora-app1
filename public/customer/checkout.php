@@ -1,4 +1,4 @@
-<?php   
+<?php    
 // public/customer/checkout.php
 declare(strict_types=1);
 
@@ -56,19 +56,27 @@ $userId      = (int)($_SESSION['user_id']  ?? 0);
       align-items:center;
       gap:10px;
     }
-    .back-link{
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
-      color:var(--brown);
-      text-decoration:none;
-      font-weight:600;
-      font-size:1rem;
-      line-height:1.3;
-      cursor:pointer;
-    }
-    .back-link i{ font-size:1.1rem; }
+   .back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--brown);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.3;
+}
 
+/* Ikon panah versi 18x18 fix */
+.back-link i {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;      /* ukuran ikon */
+  line-height: 18px;    /* biar pas secara vertikal */
+}
     .page {
       max-width: 1200px;
       margin: 14px auto 32px;
@@ -87,38 +95,12 @@ $userId      = (int)($_SESSION['user_id']  ?? 0);
     .name { font-weight: 600; font-size: 1rem; line-height: 1.3; color: #2b2b2b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .line-right { flex-shrink: 0; font-weight: 600; font-size: .95rem; color: var(--brown); text-align: right; min-width: 90px; }
 
-    /* blok total */
-    .tot-block{
-      margin-top: 10px;
-      border-top: 2px dashed rgba(0,0,0,.05);
-      padding-top: 10px;
-    }
-    .tot-line{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-bottom:6px;
-      font-size:.93rem;
-      color:#4b3f36;
-    }
+    .tot-block{ margin-top: 10px; border-top: 2px dashed rgba(0,0,0,.05); padding-top: 10px; }
+    .tot-line{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:.93rem; color:#4b3f36; }
     .tot-line strong{ font-weight:600; }
-    .tot-grand{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-top:6px;
-      font-weight:700;
-      font-size:1rem;
-      color:#2b2b2b;
-    }
+    .tot-grand{ display:flex; justify-content:space-between; align-items:center; margin-top:6px; font-weight:700; font-size:1rem; color:#2b2b2b; }
 
-    .form-label {
-      font-weight: 600;
-      font-size: 1rem;
-      line-height: 1.3;
-      color: #2b2b2b;
-      margin-bottom: 6px;
-    }
+    .form-label { font-weight: 600; font-size: 1rem; line-height: 1.3; color: #2b2b2b; margin-bottom: 6px; }
     .form-control {
       width: 100%;
       max-width: 100%;
@@ -147,26 +129,14 @@ $userId      = (int)($_SESSION['user_id']  ?? 0);
       transition: border-color .12s ease;
     }
     .cf-select__trigger:focus-visible,
-    .cf-select.is-open .cf-select__trigger {
-      border-color: var(--gold-soft);
-      outline: none;
-    }
+    .cf-select.is-open .cf-select__trigger { border-color: var(--gold-soft); outline: none; }
     .cf-select__text { font-size: .95rem; color: #2b2b2b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .cf-select__icon { flex: 0 0 auto; color: var(--brown); font-size: .9rem; }
     .cf-select__list {
-      position: absolute;
-      left: 0;
-      top: calc(100% + 6px);
-      width: 100%;
-      background: #fff;
-      border: 1px solid rgba(0,0,0,.02);
-      border-radius: 14px;
+      position: absolute; left: 0; top: calc(100% + 6px); width: 100%;
+      background: #fff; border: 1px solid rgba(0,0,0,.02); border-radius: 14px;
       box-shadow: 0 16px 30px rgba(0,0,0,.09);
-      overflow: hidden;
-      z-index: 40;
-      display: none;
-      max-height: 260px;
-      overflow-y: auto;
+      overflow: hidden; z-index: 40; display: none; max-height: 260px; overflow-y: auto;
     }
     .cf-select.is-open .cf-select__list { display: block; }
     .cf-select__option { padding: 9px 14px; font-size: .9rem; color: #413731; cursor: pointer; background: #fff; }
@@ -174,21 +144,21 @@ $userId      = (int)($_SESSION['user_id']  ?? 0);
     .cf-select__option.is-active { background: #FFEB9B; font-weight: 600; }
 
     .btn-primary-cf {
-  background-color: var(--gold);
-  color: var(--brown) !important;
-  border: 0;
-  border-radius: 14px;
-  font-family: Arial, Helvetica, sans-serif; /* ← ini yang bikin kaya versi pertama */
-  font-weight: 600;
-  font-size: .88rem;
-  padding: 10px 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  white-space: nowrap;
-  box-shadow: none;
-}
+      background-color: var(--gold);
+      color: var(--brown) !important;
+      border: 0;
+      border-radius: 14px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: 600;
+      font-size: .88rem;
+      padding: 10px 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      white-space: nowrap;
+      box-shadow: none;
+    }
 
     .form-line-2 { display: block; gap: 18px; }
     .form-line-2 .flex-1 { width: 100%; }
@@ -196,38 +166,16 @@ $userId      = (int)($_SESSION['user_id']  ?? 0);
     @media (min-width: 992px) {
       .form-line-2 { display: flex; gap: 18px; align-items: flex-start; }
       .form-line-2 .flex-1 { flex: 1 1 0; }
+      .page { padding-bottom: 80px; }
+      #checkoutForm { padding-bottom: 60px; }
     }
 
     @media (max-width: 600px) {
-      .topbar-inner,
-      .page { max-width: 100%; padding: 12px 16px; }
+      .topbar-inner, .page { max-width: 100%; padding: 12px 16px; }
       .page{ margin: 10px auto 90px; }
     }
 
-    @keyframes spin {
-      from{ transform:rotate(0) }
-      to{ transform:rotate(360deg) }
-    }
-
-        @media (min-width: 992px) {
-      .form-line-2 { display: flex; gap: 18px; align-items: flex-start; }
-      .form-line-2 .flex-1 { flex: 1 1 0; }
-
-      /* tambahan padding untuk desktop agar dropdown tidak kepotong */
-      .page {
-        padding-bottom: 80px;
-      }
-      #checkoutForm {
-        padding-bottom: 60px;
-      }
-    }
-
-    @media (max-width: 600px) {
-      .topbar-inner,
-      .page { max-width: 100%; padding: 12px 16px; }
-      .page{ margin: 10px auto 90px; }
-    }
-
+    @keyframes spin { from{ transform:rotate(0) } to{ transform:rotate(360deg) } }
   </style>
 </head>
 <body>
@@ -247,7 +195,7 @@ $userId      = (int)($_SESSION['user_id']  ?? 0);
     <div id="summary"></div>
 
     <!-- FORM -->
-    <form id="checkoutForm" class="mt-4 pb-4"><!-- padding bawah supaya dropdown ga ketutup -->
+    <form id="checkoutForm" class="mt-4 pb-4">
       <div class="mb-3 field-name">
         <label class="form-label">Nama Customer</label>
         <input
@@ -259,7 +207,7 @@ $userId      = (int)($_SESSION['user_id']  ?? 0);
         >
       </div>
 
-      <!-- 2 kolom: kiri = tipe layanan + nomor meja, kanan = metode bayar -->
+      <!-- 2 kolom -->
       <div class="form-line-2">
         <div class="flex-1">
           <div class="mb-3 field-service">
@@ -277,14 +225,9 @@ $userId      = (int)($_SESSION['user_id']  ?? 0);
             <input type="hidden" id="service_type" value="dine_in">
           </div>
 
-          <!-- NOMOR MEJA DIPINDAH KE BAWAH TIPE LAYANAN -->
           <div class="mb-3" id="tableWrap">
             <label class="form-label">Nomor Meja</label>
-            <input
-              type="text"
-              class="form-control"
-              id="table_no"
-              placeholder="Misal: 05">
+            <input type="text" class="form-control" id="table_no" placeholder="Misal: 05">
           </div>
         </div>
 
@@ -307,21 +250,23 @@ $userId      = (int)($_SESSION['user_id']  ?? 0);
       </div>
 
       <div class="d-flex justify-content-end mb-3 field-submit">
-        <button type="submit" class="btn-primary-cf">Buat Pesanan</button>
+        <button type="submit" class="btn-primary-cf">Konfirmasi Pesanan</button>
       </div>
     </form>
   </main>
 
   <script>
   (function(){
-    const APP_BASE   = '/caffora-app1';
-    const API_CREATE = APP_BASE + '/backend/api/orders.php?action=create';
-    const HISTORY_URL= APP_BASE + '/public/customer/history.php';
+    // ====== FIX: BASE DINAMIS (tidak hardcode) ======
+    const PUBLIC_SPLIT = '/public/';
+    const idxBase = window.location.pathname.indexOf(PUBLIC_SPLIT);
+    const APP_BASE = idxBase > -1 ? window.location.pathname.slice(0, idxBase) : '';
+
+    const API_CREATE  = APP_BASE + '/backend/api/orders.php?action=create';
+    const HISTORY_URL = APP_BASE + '/public/customer/history.php';
 
     const KEY_CART   = 'caffora_cart';
     const KEY_SELECT = 'caffora_cart_selected';
-
-    // pajak Indonesia (PPN/restoran) → 11%
     const TAX_RATE   = 0.11;
 
     const $summary    = document.getElementById('summary');
@@ -335,17 +280,10 @@ $userId      = (int)($_SESSION['user_id']  ?? 0);
     const rp  = n => 'Rp ' + Number(n||0).toLocaleString('id-ID');
     const esc = s => String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
-    const getCart = () => {
-      try { return JSON.parse(localStorage.getItem(KEY_CART) || '[]'); }
-      catch { return []; }
-    };
+    const getCart = () => { try { return JSON.parse(localStorage.getItem(KEY_CART) || '[]'); } catch { return []; } };
     const setCart = items => localStorage.setItem(KEY_CART, JSON.stringify(items));
-    const getSelectedIds = () => {
-      try { return JSON.parse(localStorage.getItem(KEY_SELECT) || '[]'); }
-      catch { return []; }
-    };
+    const getSelectedIds = () => { try { return JSON.parse(localStorage.getItem(KEY_SELECT) || '[]'); } catch { return []; } };
 
-    // render ringkasan + pajak
     function renderSummary(){
       const cart   = getCart();
       const selIds = getSelectedIds().map(String);
@@ -375,36 +313,23 @@ $userId      = (int)($_SESSION['user_id']  ?? 0);
           </div>`;
       });
 
-      // hitung pajak dan total
       const tax   = Math.round(subtotal * TAX_RATE);
       const total = subtotal + tax;
 
       html += `
         <div class="tot-block">
-          <div class="tot-line">
-            <span>Subtotal</span>
-            <span>${rp(subtotal)}</span>
-          </div>
-          <div class="tot-line">
-            <span>Pajak 11%</span>
-            <span>${rp(tax)}</span>
-          </div>
-          <div class="tot-grand">
-            <span>Total</span>
-            <span>${rp(total)}</span>
-          </div>
-        </div>
-      `;
+          <div class="tot-line"><span>Subtotal</span><span>${rp(subtotal)}</span></div>
+          <div class="tot-line"><span>Pajak 11%</span><span>${rp(tax)}</span></div>
+          <div class="tot-grand"><span>Total</span><span>${rp(total)}</span></div>
+        </div>`;
       $summary.innerHTML = html;
 
-      // simpan ke dataset supaya nanti submit bisa pakai angka yang sama
       $summary.dataset.subtotal = subtotal;
       $summary.dataset.tax      = tax;
       $summary.dataset.total    = total;
     }
     renderSummary();
 
-    // init select custom
     (function initCfSelect(){
       const selects = document.querySelectorAll('.cf-select');
       const closeAll = () => selects.forEach(s=>s.classList.remove('is-open'));
@@ -440,7 +365,6 @@ $userId      = (int)($_SESSION['user_id']  ?? 0);
       document.addEventListener('click', ()=>closeAll());
     })();
 
-    // show/hide nomor meja sesuai tipe layanan
     function syncTableField(valNow){
       const v = valNow ?? $serviceHid.value;
       if (v === 'dine_in'){
@@ -481,7 +405,6 @@ $userId      = (int)($_SESSION['user_id']  ?? 0);
         return;
       }
 
-      // ambil angka dari summary yang sudah dihitung
       const subtotal = Number($summary.dataset.subtotal || 0);
       const tax      = Number($summary.dataset.tax || 0);
       const grand    = Number($summary.dataset.total || 0);
@@ -510,7 +433,15 @@ $userId      = (int)($_SESSION['user_id']  ?? 0);
           credentials:'same-origin',
           body: JSON.stringify(payload)
         });
-        const js = await res.json().catch(()=>({ok:false, error:'Invalid JSON'}));
+
+        // Robust parser: coba JSON, kalau gagal baca teks mentah
+        let js;
+        try { js = await res.json(); }
+        catch {
+          const txt = await res.text();
+          throw new Error(txt ? txt.substring(0, 300) : 'Invalid JSON');
+        }
+
         if (!res.ok || !js.ok) throw new Error(js.error || ('HTTP '+res.status));
 
         const remaining = cart.filter(it => !selIds.includes(String(it.id)));

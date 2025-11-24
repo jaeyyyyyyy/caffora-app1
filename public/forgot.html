@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <title>Caffora — Lupa Password</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Fonts & Bootstrap (samakan dengan login.html) -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --gold: #ffd54f;
+        --brown: #4b3f36;
+        --ink: #2e2823;
+        --muted: #8b8179;
+        --bg: #fff9f0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Poppins", sans-serif;
+        background: radial-gradient(
+            circle at 0 0,
+            #fff3d7 0,
+            rgba(255, 243, 215, 0) 55%
+          ),
+          radial-gradient(
+            circle at 100% 100%,
+            #ffe0c2 0,
+            rgba(255, 224, 194, 0) 55%
+          ),
+          var(--bg);
+        color: var(--brown);
+      }
+
+      .auth-card {
+        width: 100%;
+        max-width: 420px;
+        background: #ffffff;
+        border-radius: 24px;
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
+        padding: 28px 26px 24px;
+      }
+
+      .brand {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .brand-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(145deg, #ffeb99, #ffc94f);
+        color: var(--brown);
+        font-size: 22px;
+        margin-bottom: 6px;
+      }
+
+      .brand-title {
+        font-family: "Playfair Display", serif;
+        font-size: 22px;
+        letter-spacing: 0.5px;
+      }
+
+      .brand-subtitle {
+        font-size: 0.86rem;
+        color: var(--muted);
+      }
+
+      .form-label {
+        font-size: 0.86rem;
+        font-weight: 500;
+        margin-bottom: 4px;
+        color: var(--ink);
+      }
+
+      .form-control {
+        border-radius: 999px;
+        padding: 10px 14px;
+        border: 1px solid #e4e4e7;
+        font-size: 0.9rem;
+      }
+
+      .form-control:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 0.1rem rgba(255, 213, 79, 0.4);
+      }
+
+      .btn-gold {
+        border-radius: 999px;
+        width: 100%;
+        padding: 10px 16px;
+        border: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        background: linear-gradient(135deg, #ffd54f, #f9b923);
+        color: #3c2a17;
+        box-shadow: 0 10px 24px rgba(249, 185, 35, 0.35);
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+      }
+
+      .btn-gold:disabled {
+        opacity: 0.8;
+        cursor: wait;
+        box-shadow: none;
+      }
+
+      .btn-gold:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 16px 30px rgba(249, 185, 35, 0.45);
+      }
+
+      .alert-inline {
+        border-radius: 14px;
+        padding: 8px 10px;
+        font-size: 0.8rem;
+        margin-bottom: 10px;
+      }
+
+      .back-link {
+        font-size: 0.85rem;
+        color: var(--muted);
+        text-align: center;
+        margin-top: 14px;
+      }
+
+      .back-link a {
+        color: var(--brown);
+        font-weight: 500;
+        text-decoration: none;
+      }
+
+      .back-link a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="auth-card">
+      <div class="brand">
+        <div class="brand-icon">☕</div>
+        <div class="brand-title">Caffora</div>
+        <div class="brand-subtitle">Setel ulang kata sandi akun Anda</div>
+      </div>
+
+      <div id="alertBox" class="alert alert-inline d-none" role="alert"></div>
+
+      <form id="forgotForm" autocomplete="off" novalidate>
+        <div class="mb-3">
+          <label for="email" class="form-label">Email terdaftar</label>
+          <input
+            type="email"
+            class="form-control"
+            id="email"
+            name="email"
+            placeholder="nama@email.com"
+            required
+          />
+        </div>
+
+        <button type="submit" id="btnSubmit" class="btn-gold">
+          Kirim link reset
+        </button>
+      </form>
+
+      <div class="back-link">
+        Ingat kata sandi? <a href="login.html">Kembali ke halaman login</a>
+      </div>
+    </main>
+
+    <script>
+      const form = document.getElementById("forgotForm");
+      const alertBox = document.getElementById("alertBox");
+      const btnSubmit = document.getElementById("btnSubmit");
+
+      function showAlert(message, type = "info") {
+        alertBox.textContent = message;
+        alertBox.className =
+          "alert alert-inline alert-" + (type === "error" ? "danger" : type);
+        alertBox.classList.remove("d-none");
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        alertBox.classList.add("d-none");
+
+        const email = document.getElementById("email").value.trim();
+        if (!email) {
+          showAlert("Email tidak boleh kosong.", "error");
+          return;
+        }
+
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = "Mengirim link reset...";
+
+        try {
+          const res = await fetch("backend/auth_forgot.php", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({ email }),
+          });
+
+          const data = await res.json().catch(() => ({}));
+
+          if (data.status === "success") {
+            showAlert(
+              "Jika email terdaftar, link reset password telah dikirim ke inbox Anda.",
+              "success"
+            );
+            form.reset();
+          } else {
+            // Pesan tetap generik biar tidak bisa enumerate email
+            showAlert(
+              "Jika email terdaftar, link reset password akan dikirim ke inbox Anda.",
+              "info"
+            );
+          }
+        } catch (err) {
+          console.error(err);
+          showAlert("Terjadi kesalahan koneksi ke server.", "error");
+        } finally {
+          btnSubmit.disabled = false;
+          btnSubmit.textContent = "Kirim link reset";
+        }
+      });
+    </script>
+  </body>
+</html>

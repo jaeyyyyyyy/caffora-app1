@@ -22,7 +22,7 @@
     />
 
     <!-- Global css -->
-    <link href="assets/css/style.css" rel="stylesheet" />
+    <link href="/public/assets/css/style.css" rel="stylesheet" />
 
     <style>
       :root {
@@ -236,7 +236,7 @@
           content: "";
           position: absolute;
           inset: 0;
-          background-image: url("./assets/img/hero.jpg");
+          background-image: url("/public/assets/img/hero.jpg");
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
@@ -262,7 +262,7 @@
 
       /* Hero background for desktop & iPad (non-mobile) */
       section.hero {
-        background-image: url("./assets/img/hero.jpg");
+        background-image: url("/public/assets/img/hero.jpg");
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
@@ -728,7 +728,7 @@
           <!-- Login/Register -->
           <a
             id="authLinkDesktop"
-            href="login.html"
+            href="/login.html"
             class="btn-brand d-none d-lg-inline-flex"
             >Login / Register</a
           >
@@ -762,8 +762,14 @@
           <i class="bi bi-list" style="font-size: 2rem"></i>
         </h5>
       </div>
+
       <div class="offcanvas-body d-flex flex-column gap-2">
-        <a href="login.html" class="offcanvas-login">Login / Register</a>
+        <!-- Tambahkan ini -->
+        <a href="/public/login.html" class="offcanvas-login"
+          >Login / Register</a
+        >
+        <!-- /Tambahan -->
+
         <ul class="nav flex-column mt-1" id="mobileNavList">
           <li class="nav-item">
             <a class="nav-link js-offlink" href="#hero" data-target="#hero"
@@ -890,7 +896,7 @@
           </div>
           <div class="col-lg-6 about-img-wrap">
             <img
-              src="assets/img/cafforaf.jpg"
+              src="/public/assets/img/cafforaf.jpg"
               alt="Ruang Caffora yang nyaman"
               class="about-img"
             />
@@ -899,20 +905,18 @@
       </div>
     </section>
 
-    <!-- FOOTER -->
+    <!-- ================= FOOTER ================= -->
     <footer>
       <div class="container">
         <div class="row g-4 align-items-start">
           <div class="col-md-4 mb-4 mb-md-0">
             <h5>Caffora</h5>
-            <p>
-              Coffee <br />
-              Dessert <br />
-              Space
-            </p>
+            <p>Coffee <br />Dessert <br />Space</p>
             <div class="footer-icons">
               <a href="#"><i class="bi bi-instagram"></i></a>
-              <a href="#"><i class="bi bi-facebook"></i></a>
+              <a href="https://twitter.com/cafforacafe" aria-label="Twitter">
+                <i class="bi bi-twitter-x"></i>
+              </a>
               <a href="#"><i class="bi bi-whatsapp"></i></a>
               <a href="#"><i class="bi bi-tiktok"></i></a>
             </div>
@@ -926,22 +930,28 @@
           </div>
           <div class="col-md-4">
             <h6>Kontak</h6>
-            <p>Jl. Kopi No. 123, Purwokerto</p>
-            <p>0878-2302-337</p>
             <p>
-              <a href="mailto:Cafforaproject@gmail.com"
-                >Cafforaproject@gmail.com</a
+              <a href="https://maps.app.goo.gl/Fznq9KLusdNXH2RE7"
+                >Jl. D.I. Panjaitan No. 128</a
               >
+            </p>
+            <p><a href="https://wa.me/6287823023379">0878-2302-3379</a></p>
+            <p>
+              <a href="mailto:Helpcaffora@gmail.com">Helpcaffora@gmail.com</a>
             </p>
           </div>
         </div>
+
         <hr class="border-secondary-subtle my-4" />
+
         <div
           class="d-flex flex-wrap justify-content-between align-items-center small"
         >
           <div>© 2025 Caffora — All rights reserved</div>
           <div class="d-flex gap-3">
-            <a href="#">Terms</a><a href="#">Privacy</a><a href="#">Policy</a>
+            <a href="#">Terms</a>
+            <a href="#">Privacy</a>
+            <a href="#">Policy</a>
           </div>
         </div>
       </div>
@@ -983,7 +993,7 @@
     </script>
 
     <!-- app (render menu, filter, dll) — cache bust -->
-    <script src="assets/js/app.js?v=1013" defer></script>
+    <script src="/public/assets/js/app.js?v=1013" defer></script>
 
     <!-- nav active & offcanvas scroll + close icon -->
     <script>

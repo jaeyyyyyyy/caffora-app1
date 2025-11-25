@@ -1,13 +1,29 @@
 <?php
-// backend/auth_status.php
-declare(strict_types=1);
-session_start();
-header('Content-Type: application/json');
+// Pembuka file PHP
 
-$logged = isset($_SESSION['user_id']); // atau logika yang kamu pakai
+// backend/auth_status.php
+// File untuk mengecek status login user (dipakai oleh frontend)
+
+declare(strict_types=1);
+// Aktifkan strict typing agar tipe data lebih ketat
+
+session_start();
+// Mulai atau lanjutkan sesi agar bisa baca $_SESSION
+
+header('Content-Type: application/json');
+// Set header respons sebagai JSON
+
+$logged = isset($_SESSION['user_id']);
+// Cek apakah user sudah login (ada user_id di session)
+
 $role = $_SESSION['user_role'] ?? null;
+// Ambil role user dari session (jika tidak ada → null)
 
 echo json_encode([
   'logged_in' => $logged,
-  'role' => $role
+  // Kirim status login: true/false
+
+  'role'      => $role
+  // Kirim role user: admin/karyawan/customer/null
 ]);
+// Encode array ke JSON dan kirim ke client

@@ -1,116 +1,162 @@
 <?php
 // backend/auth_guard.php
+
+// Aktifkan strict typing agar tipe data lebih ketat
 declare(strict_types=1);
 
+// Import file config (berisi BASE_URL, $conn, fungsi redirect(), dll.)
 require_once __DIR__ . '/config.php'; // BASE_URL, $conn, redirect()
 
+// Jika session belum aktif, maka mulai session baru
 if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
+  session_start(); // start session
 }
 
 /**
- * Normalisasi nama role dari DB / session jadi 3 saja:
+ * Normalisasi role secara ketat hanya ke 3 nilai:
  * - admin
  * - karyawan
- * - customer  (default)
+ * - customer
+ * Selain itu otomatis dianggap "customer".
  */
-function cf_normalize_role(?string $raw): string
+function cf_role_strict(?string $raw): string
 {
-    $r = strtolower(trim($raw ?? ''));
+  // Ubah nilai role mentah ke huruf kecil + buang spasi di kiri/kanan
+  $r = strtolower(
+    trim($raw ?? '')
+  );
 
-    // semua nama admin yang mungkin kamu pakai
-    if (in_array($r, ['admin', 'administrator', 'superadmin', 'admin_master', 'owner'], true)) {
-        return 'admin';
-    }
+  // Jika persis "admin" → kembalikan "admin"
+  if ($r === 'admin') {
+    return 'admin';
+  }
 
-    // semua nama karyawan/staff yang mungkin kamu pakai
-    if (in_array($r, ['karyawan', 'staff', 'kasir', 'barista', 'pegawai'], true)) {
-        return 'karyawan';
-    }
+  // Jika persis "karyawan" → kembalikan "karyawan"
+  if ($r === 'karyawan') {
+    return 'karyawan';
+  }
 
-    // sisanya anggap customer
-    return 'customer';
+  // Selain itu dianggap sebagai "customer"
+  return 'customer';
 }
 
 /**
- * Pastikan user sudah login (opsional: role tertentu).
- * @param array $allowedRoles contoh ['customer'] atau ['admin','karyawan']
- * @return array data user (id,name,email,status,role)
+ * Pastikan user sudah login (boleh juga membatasi ke role tertentu).
+ * @param array $allowedRoles contoh: ['customer'] atau ['admin','karyawan']
+ * @return array data user (id,name,email,status,role,avatar,phone)
  */
-function require_login(array $allowedRoles = []) : array {
-    global $conn;
+function require_login(array $allowedRoles = []) : array
+{
+  // Gunakan koneksi database global
+  global $conn;
 
-    // 1) belum login → lempar ke login
-    if (empty($_SESSION['user_id'])) {
-        // pakai BASE_URL biar gak relatif
-        redirect(rtrim(BASE_URL, '/') . '/public/login.html?err=' . urlencode('Silakan login dulu.'));
+  // 1) Jika belum login → arahkan ke halaman login
+  if (empty($_SESSION['user_id'])) {
+    // Redirect ke login dengan pesan error di query string
+    redirect(
+      '/public/login.html?err=' .
+      urlencode('Silakan login dulu.')
+    );
+  }
+
+  // Ambil user_id dari session dan paksa menjadi integer
+  $userId = (int) $_SESSION['user_id'];
+
+  // 2) Ambil data user dari database berdasarkan id
+  $stmt = $conn->prepare(
+    'SELECT id, name, email, status, role, avatar, phone 
+     FROM users 
+     WHERE id=? 
+     LIMIT 1'
+  );
+
+  // Jika prepare gagal → kirim HTTP 500 lalu hentikan script
+  if (!$stmt) {
+    http_response_code(500);               // set status 500 internal server error
+    exit('Database prepare failed.');      // pesan sederhana lalu exit
+  }
+
+  // Bind parameter id user ke statement
+  $stmt->bind_param(
+    'i',          // tipe parameter: integer
+    $userId       // nilai parameter
+  );
+
+  // Jalankan query
+  $stmt->execute();
+
+  // Ambil hasil query dalam bentuk objek result
+  $res = $stmt->get_result();
+
+  // Ambil satu baris data user sebagai array asosiatif
+  $currentUser = $res->fetch_assoc();
+
+  // Tutup prepared statement
+  $stmt->close();
+
+  // 3) Jika user tidak ditemukan → hapus session dan paksa login ulang
+  if (!$currentUser) {
+    session_unset();   // hapus semua data session
+    session_destroy(); // hancurkan session
+    redirect(
+      '/public/login.html?err=' .
+      urlencode('Sesi berakhir. Silakan login ulang.')
+    );
+  }
+
+  // 4) Jika status user belum "active" → arahkan ke halaman verifikasi OTP
+  if (($currentUser['status'] ?? 'pending') !== 'active') {
+    redirect(
+      '/public/verify_otp.html?email=' .
+      urlencode((string) $currentUser['email'])
+    );
+  }
+
+  // 5) Normalisasi role user menjadi salah satu dari 3 role ketat
+  $normRole = cf_role_strict(
+    $currentUser['role'] ?? 'customer'
+  );
+
+  // Simpan kembali data penting ke session agar konsisten dipakai frontend
+  $_SESSION['user_name']   = (string) $currentUser['name'];        // nama user
+  $_SESSION['user_email']  = (string) $currentUser['email'];       // email user
+  $_SESSION['user_role']   = $normRole;                            // role normal
+  $_SESSION['user_phone']  = (string) ($currentUser['phone']  ?? '');   // no HP
+  $_SESSION['user_avatar'] = (string) ($currentUser['avatar'] ?? '');   // avatar
+
+  // 6) Jika fungsi dipanggil dengan batasan role tertentu
+  if ($allowedRoles) {
+    // Normalisasi semua role yang diizinkan ke 3 role ketat tadi
+    $allowedStrict = array_map(
+      'cf_role_strict',
+      $allowedRoles
+    );
+
+    // Jika role user TIDAK terdapat di daftar role yang diizinkan
+    if (!in_array($normRole, $allowedStrict, true)) {
+      // Arahkan user ke dashboard sesuai role aktualnya
+      if ($normRole === 'admin') {
+        redirect('/public/admin/index.php');       // dashboard admin
+      } elseif ($normRole === 'karyawan') {
+        redirect('/public/karyawan/index.php');    // dashboard karyawan
+      } else {
+        redirect('/public/customer/index.php');    // dashboard customer
+      }
     }
+  }
 
-    $userId = (int) $_SESSION['user_id'];
+  // Tambahkan field role yang sudah dinormalisasi ke array user
+  $currentUser['role'] = $normRole;
 
-    // 2) ambil user dari DB
-    $stmt = $conn->prepare('SELECT id, name, email, status, role, avatar, phone FROM users WHERE id=? LIMIT 1');
-    if (!$stmt) {
-        // boleh juga redirect ke error page
-        die('Database prepare failed: ' . $conn->error);
-    }
-
-    $stmt->bind_param('i', $userId);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $currentUser = $res->fetch_assoc();
-    $stmt->close();
-
-    // 3) kalau user gak ketemu → paksa logout
-    if (!$currentUser) {
-      session_unset();
-      session_destroy();
-      redirect(rtrim(BASE_URL, '/') . '/public/login.html?err=' . urlencode('Sesi berakhir. Silakan login ulang.'));
-    }
-
-    // 4) kalau status belum active → ke verifikasi
-    if (($currentUser['status'] ?? 'pending') !== 'active') {
-        redirect(rtrim(BASE_URL, '/') . '/public/verify_otp.html?email=' . urlencode($currentUser['email']));
-    }
-
-    // 5) NORMALISASI ROLE
-    $normRole = cf_normalize_role($currentUser['role'] ?? 'customer');
-
-    // simpan balik ke session (biar konsisten di JS juga)
-    $_SESSION['user_name']   = $currentUser['name'];
-    $_SESSION['user_email']  = $currentUser['email'];
-    $_SESSION['user_role']   = $normRole;
-    $_SESSION['user_phone']  = $currentUser['phone'] ?? '';
-    $_SESSION['user_avatar'] = $currentUser['avatar'] ?? '';
-
-    // 6) kalau halaman ini minta role tertentu → cek
-    if ($allowedRoles) {
-        // allowed juga kita normalisasi
-        $allowed = array_map('cf_normalize_role', $allowedRoles);
-
-        if (!in_array($normRole, $allowed, true)) {
-            // ROLE TIDAK DIIZINKAN → arahkan ke dashboard sesuai role aktual
-            $base = rtrim(BASE_URL, '/');
-
-            if ($normRole === 'admin') {
-                redirect($base . '/public/admin/index.php');
-            } elseif ($normRole === 'karyawan') {
-                redirect($base . '/public/karyawan/index.php');
-            } else {
-                redirect($base . '/public/customer/index.php');
-            }
-        }
-    }
-
-    // jangan lupa kembalikan user (kalau mau dipakai di file pemanggil)
-    // tambahkan role yang sudah dinormalisasi
-    $currentUser['role'] = $normRole;
-    return $currentUser;
+  // Kembalikan seluruh data user ke pemanggil
+  return $currentUser;
 }
 
 /**
- * helper buat halaman yang cuma boleh 1 role
+ * Helper untuk halaman yang hanya boleh diakses satu role tertentu.
  */
-function require_role(string $role) : array {
-    return require_login([$role]);
+function require_role(string $role) : array
+{
+  // Panggil require_login dengan array berisi satu role yang diizinkan
+  return require_login([$role]);
 }

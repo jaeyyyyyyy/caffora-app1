@@ -1,4 +1,5 @@
 <?php
+
 // Pembuka file PHP
 
 // backend/auth_status.php
@@ -20,10 +21,10 @@ $role = $_SESSION['user_role'] ?? null;
 // Ambil role user dari session (jika tidak ada → null)
 
 echo json_encode([
-  'logged_in' => $logged,
-  // Kirim status login: true/false
+    'logged_in' => $logged,
+    // Kirim status login: true/false
 
-  'role'      => $role
-  // Kirim role user: admin/karyawan/customer/null
+    'role' => $role,
+    // Kirim role user: admin/karyawan/customer/null
 ]);
 // Encode array ke JSON dan kirim ke client

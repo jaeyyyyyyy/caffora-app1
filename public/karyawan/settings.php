@@ -1,270 +1,476 @@
 <?php
-// public/karyawan/settings.php
+// ==== Lokasi file: halaman pengaturan untuk role karyawan ====
+ // public/karyawan/settings.php
+
+// ==== Mode strict type untuk keamanan tipe data ====
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../backend/auth_guard.php';
-require_login(['karyawan']);
-require_once __DIR__ . '/../../backend/config.php';
+// ==== Import auth guard untuk proteksi akses halaman ====
+require_once __DIR__.'/../../backend/auth_guard.php';
 
-$BASE   = BASE_URL;
-$userId = (int)($_SESSION['user_id'] ?? 0);
-$name   = $_SESSION['user_name']  ?? 'Karyawan';
-$email  = $_SESSION['user_email'] ?? '';
-$phone  = $_SESSION['user_phone'] ?? '';
+// ==== Wajib login sebagai karyawan sebelum bisa mengakses ====
+require_login(['karyawan']);
+
+// ==== Import file config (koneksi DB, BASE_URL, dll) ====
+require_once __DIR__.'/../../backend/config.php';
+
+// ==== Base URL untuk mempermudah penggunaan asset & link ====
+$BASE = BASE_URL;
+
+// ==== Ambil user_id dari session (default 0 jika tidak ada) ====
+$userId = (int) ($_SESSION['user_id'] ?? 0);
+
+// ==== Ambil nama user dari session (default "Karyawan") ====
+$name = $_SESSION['user_name'] ?? 'Karyawan';
+
+// ==== Ambil email user dari session ====
+$email = $_SESSION['user_email'] ?? '';
+
+// ==== Ambil nomor telepon user dari session ====
+$phone = $_SESSION['user_phone'] ?? '';
+
+// ==== Ambil URL avatar user dari session ====
 $avatar = $_SESSION['user_avatar'] ?? '';
 ?>
+
+<!-- Deklarasi tipe dokumen HTML5 -->
 <!DOCTYPE html>
+
+<!-- Bahasa dokumen Indonesia -->
 <html lang="id">
 <head>
+  <!-- Set encoding karakter ke UTF-8 -->
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Pengaturan Karyawan</title>
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
-  <style>
-    :root{
-      --ink:#222;
-      --muted:#6b7280;
-      --gold:#ffd54f;
-      --brown:#4b3f36;
-      --line:#f2f2f2;
-      --bg:#fff;
-    }
-    *{ box-sizing:border-box; }
-    html,body{
-      margin:0;
-      background:var(--bg);
-      color:var(--ink);
-      font:clamp(14px,1.1vw,16px)/1.5 "Poppins",system-ui,sans-serif;
+  <!-- Responsif di semua perangkat -->
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  />
+
+  <!-- Judul halaman yang tampil di tab browser -->
+  <title>Profil</title>
+
+  <!-- Load Bootstrap Icons dari CDN -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    rel="stylesheet"
+  />
+
+  <!-- Load font Poppins dari Google Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>                               /* Gaya CSS untuk halaman profil & sheet */
+    :root{                             /* Root: definisi variabel tema global */
+      --gold:#ffd54f;                  /* Warna emas utama (aksen tombol) */
+      --ink:#222;                      /* Warna teks utama gelap */
+      --brown:#4b3f36;                 /* Warna coklat brand Caffora */
+      --bg:#fafbfc;                    /* Warna latar belakang lembut */
+      --line:#eceff3;                  /* Warna garis pemisah halus */
+    }                                  /* Tutup :root */
+
+    /* global, sama seperti checkout */
+    * {                                /* Selector global untuk semua elemen */
+      font-family: Poppins, system-ui, -apple-system, "Segoe UI",
+                   Roboto, Arial, sans-serif;               /* Font utama + fallback */
+      box-sizing: border-box;         /* Hitung width/height termasuk padding+border */
     }
 
-    /* ====== TOPBAR (sama gaya customer) ====== */
-    .topbar{
-      position:sticky;
-      top:0;
-      z-index:50;
-      background:#fff;
-      border-bottom:1px solid #efefef;
+    body {                             /* Aturan dasar body halaman */
+      background: var(--bg);           /* Gunakan warna latar dari variabel --bg */
+      color: var(--ink);               /* Warna teks utama dari variabel --ink */
+      margin: 0;                       /* Hilangkan margin default browser */
     }
-    .topbar .inner{
-      max-width:1200px;
-      margin:0 auto;
-      padding:12px 24px;
-      display:flex;
-      align-items:center;
-      gap:8px;
-      min-height:52px;
+
+    /* ====== TOPBAR (copy dari checkout) ====== */
+    .topbar{                           /* Bar atas yang menempel di bagian atas */
+      background:#fff;                 /* Latar topbar putih bersih */
+      border-bottom:1px solid rgba(0,0,0,.05);  /* Garis bawah tipis */
+      position:sticky;                 /* Tetap di atas saat di-scroll */
+      top:0;                           /* Menempel persis di tepi atas */
+      z-index:20;                      /* Di atas konten lainnya */
     }
-        
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--brown);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 16px;     
-  line-height: 1.3;
-}
 
+    .topbar-inner{                     /* Isi konten di dalam topbar */
+      max-width:1200px;                /* Batas lebar maksimum konten */
+      margin:0 auto;                   /* Tengah-kan secara horizontal */
+      padding:12px 24px;               /* Ruang dalam atas/bawah & kiri/kanan */
+      min-height:52px;                 /* Tinggi minimum topbar */
+      display:flex;                    /* Gunakan flexbox */
+      align-items:center;              /* Vertikal: rata tengah */
+      gap:10px;                        /* Jarak antar elemen di topbar */
+    }
 
-.back-link .bi {
-  font-size: 18px !important;  
-  width: 18px;
-  height: 18px;
-  line-height: 1;              
-  display: inline-flex;       
-  align-items: center;
-  justify-content: center;
-}
+    .back-link{                        /* Tombol/tautan kembali di topbar */
+      display:inline-flex;             /* Inline-flex agar sejajar dengan teks lain */
+      align-items:center;              /* Pusatkan ikon & teks secara vertikal */
+      gap:10px;                        /* Jarak antara ikon dan teks */
+      color:var(--brown);              /* Warna teks coklat brand */
+      text-decoration:none;            /* Hilangkan garis bawah link */
+      border:0;                        /* Tanpa border (jika berupa button) */
+      background:transparent;          /* Latar transparan */
+      padding:0;                       /* Hilangkan padding default */
+    }
+
+    /* 👉 Paksa teks “Kembali” pakai system-ui (Inter) */
+    .back-link span{                   /* Span teks di dalam tombol kembali */
+      font-family: system-ui, -apple-system, "Segoe UI",
+                   Roboto, Arial, sans-serif !important;    /* Pakai system font */
+      font-size:1rem;                  /* 16px */
+      font-weight:600;                 /* Tebal semi-bold */
+      line-height:1.3;                 /* Tinggi baris 1.3 */
+    }
+
+    /* Ikon panah 18x18 sama seperti checkout */
+    .back-link .bi{                    /* Ikon panah bootstrap di back-link */
+      width:18px;                      /* Lebar area ikon 18px */
+      height:18px;                     /* Tinggi area ikon 18px */
+      display:inline-flex;             /* Inline-flex untuk centering */
+      align-items:center;              /* Vertikal: pusat */
+      justify-content:center;          /* Horizontal: pusat */
+      font-size:18px !important;       /* Ukuran ikon 18px */
+      line-height:18px !important;     /* Tinggi baris 18px */
+    }
 
     /* ====== KONTEN ====== */
-    main{
-      max-width:1200px;
-      margin:0 auto;
-      padding:14px 18px 50px;
+    main {                             /* Kontainer utama isi halaman */
+      max-width: 1200px;               /* Batas lebar maksimum */
+      margin: 0 auto;                  /* Tengah-kan konten */
+      padding: 14px 18px 50px;         /* Padding atas, samping, dan bawah */
     }
 
     /* ====== HEADER PROFIL ====== */
-    .profile-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:18px 26px;
-      margin:4px 0 10px;
-    }
-    .profile-left{
-      display:flex;
-      align-items:center;
-      gap:18px;
-      min-width:0;
-    }
-    .avatar{
-      width:64px;
-      height:64px;
-      border-radius:50%;
-      background:#eee center/cover no-repeat;
-      flex-shrink:0;
-    }
-    .who{min-width:0;}
-    .who .name{
-      font-weight:600;
-      font-size:1.02rem;
-      margin-bottom:2px;
-    }
-    .who .mail{
-      color:var(--muted);
-      font-size: 0.8rem;
-      word-break:break-word;
+    .profile-head {                    /* Header profil (avatar + nama + tombol) */
+      display: flex;                   /* Gunakan flexbox */
+      align-items: center;             /* Vertikal: rata tengah */
+      justify-content: space-between;  /* Kiri dan kanan diberi jarak maksimum */
+      gap: 18px 26px;                  /* Gap baris dan kolom */
+      margin: 4px 0 10px;              /* Jarak atas dan bawah header */
     }
 
-    /* ====== LIST PENGATURAN ====== */
-    .profile-box{
-      background:transparent;
-      border:0;
-      border-radius:0;
-      max-width:100%;
-      margin-top:4px;
-    }
-    .row{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      padding:16px 0;
-      border-bottom:1px solid #f5f5f5;
-    }
-    .row:last-child{ border-bottom:none; }
-
-    .label{
-      font-weight:500;
-      font-size:.95rem;
-    }
-    .value{
-      margin-left:auto;
-      margin-right:4px;
-      color:var(--muted);
-      font-size:.9rem;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-      max-width:55%;
-      text-align:right;
-    }
-    .chev-btn{
-      background:none;
-      border:none;
-      color:#9aa0a6;
-      font-size:18px;
-      line-height:1;
-      cursor:pointer;
-      padding:4px;
-      margin-left:2px;
+    .profile-left {                    /* Bagian kiri: avatar + info user */
+      display: flex;                   /* Susun horizontal */
+      align-items: center;             /* Pusatkan vertikal */
+      gap: 18px;                       /* Jarak avatar dan teks */
+      min-width: 0;                    /* Izinkan menyusut (untuk ellipsis) */
     }
 
-    /* ====== BUTTON ====== */
-    .btn{
-      border:none;
-      padding:10px 14px;
-      border-radius:10px;
-      font-weight:600;
-      cursor:pointer;
-      font-size:.95rem;
+    .avatar {                          /* Lingkaran foto profil */
+      width: 64px;                     /* Lebar avatar 64px */
+      height: 64px;                    /* Tinggi avatar 64px */
+      border-radius: 50%;              /* Bentuk lingkaran penuh */
+      background: #eee center / cover no-repeat;  /* Latar abu + gambar cover */
+      flex-shrink: 0;                  /* Jangan mengecil saat ruang sempit */
     }
-    .btn.primary{
-      background:var(--gold);
-      color:var(--brown);
+
+    .who {                             /* Wrapper nama dan email user */
+      min-width: 0;                    /* Diperlukan untuk teks ellipsis */
     }
-    .btn.secondary{
-      background:#f3f4f6;
-      color:#333;
+
+    .who .name {                       /* Teks nama user */
+      font-weight: 600;                /* Semi-bold */
+      font-size: 1.02rem;              /* Sedikit lebih besar dari 16px */
+      margin-bottom: 2px;              /* Jarak ke teks email */
+    }
+
+    .who .mail {                       /* Teks email user */
+      color: var(--muted);             /* Warna abu (muted) */
+      font-size: 0.7rem;               /* Ukuran kecil */
+      word-break: break-word;          /* Izinkan patah kata jika kepanjangan */
+    }
+
+    /* ====== LIST ====== */
+    .profile-box {                     /* Container daftar item profil */
+      background: transparent;         /* Tanpa card solid */
+      border: 0;                       /* Tanpa border */
+      border-radius: 0;                /* Sudut tidak dibulatkan */
+      max-width: 100%;                 /* Lebar penuh */
+      margin-top: 4px;                 /* Jarak dari header profil */
+    }
+
+    .row {                             /* Satu baris item pengaturan */
+      display: flex;                   /* Susun label, value, ikon secara horizontal */
+      align-items: center;             /* Vertikal: rata tengah */
+      gap: 12px;                       /* Jarak antar elemen */
+      padding: 16px 0;                 /* Padding atas-bawah 16px */
+      border-bottom: 1px solid #f5f5f5;/* Garis pemisah antar baris */
+    }
+
+    .row:last-child {                  /* Baris terakhir list */
+      border-bottom: none;             /* Hilangkan garis pemisah */
+    }
+
+    .label {                           /* Label kiri item */
+      font-weight: 500;                /* Tebal medium */
+      font-size: 0.95rem;              /* Sedikit lebih kecil dari 16px */
+    }
+
+    .value {                           /* Nilai/isi di sisi kanan */
+      margin-left: auto;               /* Dorong ke paling kanan */
+      margin-right: 4px;               /* Jarak dengan ikon chevron */
+      color: var(--muted);             /* Warna teks redup */
+      font-size: 0.9rem;               /* Ukuran font nilai */
+      overflow: hidden;                /* Sembunyikan teks berlebih */
+      text-overflow: ellipsis;         /* Tambah "..." jika kepanjangan */
+      white-space: nowrap;             /* Jangan pindah baris */
+      max-width: 55%;                  /* Batas lebar maksimum */
+      text-align: right;               /* Rata kanan */
+    }
+
+    .chev-btn {                        /* Tombol ikon chevron kanan */
+      background: none;                /* Tanpa background */
+      border: none;                    /* Tanpa border */
+      color: #9aa0a6;                  /* Warna ikon abu kebiruan */
+      font-size: 24px;                 /* Ukuran ikon 18px */
+      line-height: 1;                  /* Line-height rapat */
+      cursor: pointer;                 /* Tunjukkan bisa diklik */
+      padding: 4px;                    /* Area klik sedikit lebih luas */
+      margin-left: 2px;                /* Jarak dengan teks value */
+    }
+
+    /* ====== BUTTON – MATCH CART/CHECKOUT ====== */
+    .btn {                             /* Gaya dasar semua tombol */
+      border: none;                    /* Tanpa border */
+      border-radius: 14px;             /* Sudut membulat 14px */
+      cursor: pointer;                 /* Kursor pointer saat hover */
+
+      padding: 10px 18px;              /* Ruang dalam tombol */
+      min-height: 41px;                /* Tinggi minimal tombol */
+
+      display: inline-flex;            /* Inline-flex untuk align isi */
+      align-items: center;             /* Vertikal: rata tengah */
+      justify-content: center;         /* Horizontal: rata tengah */
+      gap: 8px;                        /* Jarak ikon dan teks */
+
+      font-family: Arial, Helvetica, sans-serif !important;  /* Paksa font Arial */
+      font-size: 14.08px !important;   /* Ukuran font spesifik */
+      font-weight: 600;                /* Semi-bold */
+      line-height: 1.2;                /* Tinggi baris tombol */
+
+      white-space: nowrap;             /* Teks tidak turun baris */
+      box-shadow: none;               /* Tanpa bayangan */
+    }
+
+    /* ekstra jaga-jaga untuk tombol di bottom sheet */
+    .actions .btn {                    /* Tombol di area actions sheet */
+      font-family: Arial, Helvetica, sans-serif !important;  /* Konsisten font */
+      font-size: 14.08px !important;  /* Konsisten ukuran */
+      padding: 10px 18px !important;  /* Konsisten padding */
+      min-height: 41px !important;    /* Konsisten tinggi */
+      border-radius: 14px !important; /* Konsisten radius */
+    }
+
+    .btn.primary {                     /* Tombol utama (primary) */
+      background-color: var(--gold);   /* Latar emas */
+      color: var(--brown) !important;  /* Teks coklat kontras */
+    }
+
+    .btn.secondary {                   /* Tombol sekunder */
+      background-color: #f3f4f6;       /* Latar abu muda */
+      color: #333;                     /* Teks abu gelap */
+    }
+
+    .btn.primary:hover {               /* Hover tombol primary */
+      filter: brightness(1.05);        /* Sedikit lebih cerah */
+    }
+
+    .btn.secondary:hover {             /* Hover tombol secondary */
+      background: #e9eaec;             /* Sedikit lebih gelap */
     }
 
     /* ====== BOTTOM SHEET ====== */
-    .sheet[hidden]{display:none;}
-    .sheet{
-      position:fixed;
-      inset:0;
-      display:flex;
-      align-items:flex-end;
-      background:rgba(0,0,0,.35);
-      z-index:50;
+    .sheet[hidden] {                   /* Sheet saat disembunyikan */
+      display: none;                   /* Jangan tampilkan */
     }
-    .panel{
-      width:100%;
-      background:#fff;
-      border-top-left-radius:16px;
-      border-top-right-radius:16px;
-      padding:18px;
-      max-height:75vh;
-      overflow:auto;
+
+    .sheet {                           /* Overlay bottom sheet */
+      position: fixed;                 /* Posisi relatif ke viewport */
+      inset: 0;                        /* Tutup seluruh layar */
+      display: flex;                   /* Flex untuk penempatan panel */
+      align-items: flex-end;           /* Panel menempel bawah */
+      background: rgba(0, 0, 0, 0.35); /* Overlay gelap transparan */
+      z-index: 50;                     /* Di depan konten lain */
     }
-    .panel h3{
-      margin:0 0 12px;
-      font-size:1.05rem;
-      font-weight:600;
+
+    .panel {                           /* Panel isi bottom sheet */
+      width: 100%;                     /* Lebar penuh di mobile */
+      background: #fff;                /* Latar putih */
+      border-top-left-radius: 16px;    /* Sudut kiri atas membulat */
+      border-top-right-radius: 16px;   /* Sudut kanan atas membulat */
+      padding: 18px;                   /* Ruang dalam panel */
+      max-height: 75vh;                /* Tinggi maksimum 75% viewport */
+      overflow: auto;                  /* Scroll jika konten tinggi */
     }
-    .field{
-      display:flex;
-      flex-direction:column;
-      margin-bottom:12px;
+
+    .panel h3 {                        /* Judul dalam panel */
+      margin: 0 0 12px;                /* Hilangkan margin atas, beri bawah */
+      font-size: 1.05rem;              /* Sedikit lebih besar */
+      font-weight: 600;                /* Semi-bold */
     }
-    label{
-      font-size:.9rem;
-      color:#555;
-      margin-bottom:6px;
+
+    .field {                           /* Satu blok field (label + input) */
+      display: flex;                   /* Flex container */
+      flex-direction: column;          /* Susun vertikal */
+      margin-bottom: 12px;             /* Jarak antar field */
     }
-    input.text{
-      padding:11px;
-      border:1px solid #ddd;
-      border-radius:8px;
-      font:inherit;
-      width:100%;
-      outline:none;
-      box-shadow:none;
+
+    label {                            /* Label input */
+      font-size: 0.9rem;               /* Ukuran kecil */
+      color: #555;                     /* Warna abu gelap */
+      margin-bottom: 6px;              /* Jarak ke input */
     }
+
+    input.text {                       /* Input teks umum */
+      padding: 11px;                   /* Ruang dalam input */
+      border: 1px solid #ddd;          /* Border abu terang */
+      border-radius: 8px;              /* Sudut membulat */
+      font: inherit;                   /* Ikuti font parent */
+      width: 100%;                     /* Lebar penuh */
+      outline: none;                   /* Tanpa outline bawaan */
+      box-shadow: none;                /* Tanpa shadow */
+    }
+
     input.text:focus,
-    input.text:focus-visible{
-      outline:none !important;
-      box-shadow:none !important;
-      border-color:#ddd !important;
-    }
-    .actions{
-      display:flex;
-      justify-content:flex-end;
-      gap:10px;
-      margin-top:12px;
+    input.text:focus-visible {         /* State fokus input */
+      outline: none !important;        /* Hilangkan outline */
+      box-shadow: none !important;     /* Hilangkan shadow */
+      border-color: #ddd !important;   /* Border tetap abu */
     }
 
-    /* desktop sheet */
-    @media (min-width: 992px){
-      .sheet{align-items:center;justify-content:center;}
-      .panel{max-width:520px;border-radius:12px;}
+    .actions {                         /* Container tombol aksi sheet */
+      display: flex;                   /* Flex untuk deret tombol */
+      justify-content: flex-end;       /* Rata kanan */
+      gap: 10px;                       /* Jarak antar tombol */
+      margin-top: 12px;                /* Jarak dari field terakhir */
     }
 
-    /* RESPONSIVE */
-    @media (max-width: 700px){
-      .topbar .inner,
-      main{
-        max-width:100%;
-        padding:10px 14px;
+    /* responsive */
+    @media (max-width: 700px) {        /* Aturan untuk layar kecil */
+      .topbar-inner,
+      main {                           /* Topbar & konten di mobile */
+        max-width: 100%;               /* Lebar penuh */
+        padding: 10px 14px;            /* Padding lebih kecil */
       }
-      .profile-head{
-        flex-wrap:wrap;
-        margin-bottom:6px;
+
+      .profile-head {                  /* Header profil di mobile */
+        flex-wrap: wrap;               /* Izinkan turun baris */
+        margin-bottom: 6px;            /* Margin bawah lebih kecil */
       }
-      .row{
-        padding:14px 0;
+
+      .row {                           /* Baris list di mobile */
+        padding: 14px 0;               /* Padding sedikit lebih kecil */
       }
-      .value{ max-width:50%; }
+
+      .value {                         /* Nilai kanan di mobile */
+        max-width: 50%;                /* Batasi lebar agar tidak overflow */
+      }
+    }                                  /* TUTUP @media */
+
+    /* ====== CUSTOM ALERT CAFFORA ====== */
+    .cf-alert[hidden] {                                  /* State ketika elemen alert diberi atribut hidden */
+      display: none;                                     /* Sembunyikan elemen sepenuhnya */
+    }
+
+    .cf-alert {                                          /* Wrapper overlay untuk popup alert custom */
+      position:       fixed;                             /* Tetap di posisi layar saat scroll */
+      inset:          0;                                 /* Menutupi seluruh viewport (top/right/bottom/left=0) */
+      z-index:        999;                               /* Di atas hampir semua elemen lain */
+      display:        flex;                              /* Flex layout untuk center konten */
+      align-items:    center;                            /* Vertikal center box alert */
+      justify-content:center;                            /* Horizontal center box alert */
+      pointer-events: none;                              /* Default overlay tidak menerima klik */
+    }
+
+    .cf-alert__backdrop {                                /* Latar belakang gelap di belakang box alert */
+      position:   absolute;                              /* Mengisi seluruh area .cf-alert */
+      inset:      0;                                     /* Full layar pada wrapper */
+      background: rgba(0, 0, 0, 0.45);                   /* Warna hitam transparan 45% */
+    }
+
+    .cf-alert__box {                                     /* Box utama alert yang berisi teks dan tombol */
+      position:       relative;                          /* Di atas backdrop */
+      pointer-events: auto;                              /* Box bisa diklik (override pointer-events parent) */
+      max-width:      320px;                             /* Lebar maksimum box 320px */
+      width:          90%;                               /* Lebar responsif 90% dari viewport */
+      background:     #fffdf8;                           /* Background krem lembut */
+      border-radius:  18px;                              /* Sudut box membulat 18px */
+      padding:        16px 18px 14px;                    /* Padding dalam box: atas/kanan/bawah */
+      box-shadow:     0 18px 40px rgba(0,0,0,.18);       /* Bayangan cukup tebal di bawah box */
+      display:        flex;                              /* Flex layout vertikal */
+      flex-direction: column;                            /* Elemen di dalam box disusun vertikal */
+      gap:            10px;                              /* Jarak antar elemen (title, message, button) */
+      font-family:    Poppins, system-ui, -apple-system,
+                      "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    .cf-alert__title {                                   /* Teks judul di dalam alert */
+      font-weight: 600;                                  /* Teks judul cukup tebal */
+      font-size:   0.92rem;                              /* Ukuran teks judul 0.92rem */
+      color:       var(--brown);                         /* Warna teks judul coklat brand */
+      margin-bottom:2px;                                 /* Jarak kecil di bawah judul */
+    }
+
+    .cf-alert__message {                                 /* Teks pesan utama alert */
+      font-size: .9rem;                                  /* Ukuran teks pesan 0.9rem */
+      color:      #413731;                               /* Warna teks coklat gelap */
+    }
+
+    .cf-alert__btn {                                     /* Tombol “Oke” di bagian bawah alert */
+      align-self:    flex-end;                           /* Posisi tombol di sisi kanan bawah box */
+      margin-top:    6px;                                /* Jarak atas tombol dari pesan */
+      border:        0;                                  /* Tanpa border */
+      border-radius: 999px;                              /* Tombol berbentuk pill sangat bulat */
+      padding:       8px 18px;                           /* Padding vertical 8px horizontal 18px */
+      background:    var(--gold);                        /* Background tombol kuning emas */
+      color:         var(--brown);                       /* Warna teks coklat */
+      font-weight:   600;                                /* Teks tombol cukup tebal */
+      font-size:     0.9rem;                             /* Ukuran teks tombol 0.9rem */
+      cursor:        pointer;                            /* Tanda bahwa tombol dapat diklik */
+    }
+
+    @keyframes spin {                                    /* Definisi animasi CSS bernama spin */
+      from {
+        transform: rotate(0);                            /* Frame awal: rotasi 0 derajat */
+      }
+      to {
+        transform: rotate(360deg);                       /* Frame akhir: rotasi penuh 360 derajat */
+      }
     }
   </style>
+
+  <!-- PROJECT_BASE auto-detect untuk JS -->
+  <script>
+    // Fungsi IIFE agar langsung dieksekusi
+    (function () {
+      // Konstanta penanda lokasi folder "/public/"
+      const SPLIT = "/public/";
+
+      // Cari posisi "/public/" dalam pathname URL
+      const i = location.pathname.indexOf(SPLIT);
+
+      // Tentukan PROJECT_BASE:
+      // Jika "/public/" ditemukan → ambil substring sebelum itu
+      // Jika tidak ditemukan → string kosong
+      window.PROJECT_BASE = i > -1
+        ? location.pathname.slice(0, i)
+        : "";
+      // Eksekusi fungsi IIFE selesai
+    })();
+  </script>
 </head>
+
 <body>
+  <!-- ============================
+       TOPBAR (navigasi kembali)
+       ============================ -->
   <div class="topbar">
-    <div class="inner">
+    <div class="topbar-inner">
+      <!-- Tombol kembali -->
       <a class="back-link" id="goBack">
-        <i class="bi bi-arrow-left chev"></i>
+        <i class="bi bi-arrow-left"></i>
         <span>Kembali</span>
       </a>
     </div>
@@ -272,33 +478,74 @@ $avatar = $_SESSION['user_avatar'] ?? '';
 
   <main>
     <?php
-      // kalau avatar disimpan /public/... maka gabungin dengan BASE
       $raw = $avatar ?: '/public/assets/img/avatar-placeholder.png';
-      $avatarUrl = str_starts_with($raw, '/public/') ? $BASE . $raw : $raw;
+      // jika path avatar sudah absolut (http) biarkan,
+      // kalau relatif /public/... tambahkan BASE
+      $avatarUrl = preg_match('~^https?://~i', (string) $raw)
+        ? $raw
+        : ($BASE . $raw);
     ?>
+
+    <!-- Section header profil -->
     <section class="profile-head">
+      <!-- Wrapper kiri: avatar + info -->
       <div class="profile-left">
-        <div id="avatar" class="avatar" style="background-image:url('<?= htmlspecialchars($avatarUrl, ENT_QUOTES) ?>')"></div>
+        <!-- Avatar user -->
+        <div
+          id="avatar"
+          class="avatar"
+          style="background-image:url('<?= htmlspecialchars($avatarUrl, ENT_QUOTES) ?>')"
+        ></div>
+
+        <!-- Wrapper nama + email -->
         <div class="who">
-          <div class="name" id="whoName"><?= htmlspecialchars($name) ?></div>
-          <div class="mail"><?= htmlspecialchars($email) ?></div>
+          <!-- Nama user -->
+          <div class="name" id="whoName">
+            <?= htmlspecialchars($name) ?>
+          </div>
+
+          <!-- Email user -->
+          <div class="mail">
+            <?= htmlspecialchars($email) ?>
+          </div>
         </div>
       </div>
-      <button class="btn primary" id="btnPhoto">Upload</button>
-      <input type="file" id="fileAvatar" accept="image/png,image/jpeg" hidden>
+
+      <!-- Tombol upload foto -->
+      <button class="btn primary" id="btnPhoto">
+        Upload
+      </button>
+
+      <!-- Input file avatar -->
+      <input
+        type="file"
+        id="fileAvatar"
+        accept="image/png,image/jpeg"
+        hidden
+      />
     </section>
 
-    <section class="profile-box" aria-label="Akun karyawan">
+    <!-- Section daftar informasi akun -->
+    <section class="profile-box" aria-label="Akun">
+      <!-- Row: nama -->
       <div class="row">
         <span class="label">Nama</span>
-        <span class="value" id="valName"><?= htmlspecialchars($name) ?></span>
+        <span class="value" id="valName">
+          <?= htmlspecialchars($name) ?>
+        </span>
         <button class="chev-btn" data-open="sheetName">›</button>
       </div>
+
+      <!-- Row: nomor HP -->
       <div class="row">
         <span class="label">No. HP</span>
-        <span class="value" id="valPhone"><?= $phone ? htmlspecialchars($phone) : 'Belum diisi' ?></span>
+        <span class="value" id="valPhone">
+          <?= $phone ? htmlspecialchars($phone) : 'Belum diisi' ?>
+        </span>
         <button class="chev-btn" data-open="sheetPhone">›</button>
       </div>
+
+      <!-- Row: ganti password -->
       <div class="row">
         <span class="label">Ganti Password</span>
         <span class="value">Keamanan akun</span>
@@ -307,175 +554,490 @@ $avatar = $_SESSION['user_avatar'] ?? '';
     </section>
   </main>
 
-  <!-- sheet: nama -->
+  <!-- Sheet ubah nama -->
   <div class="sheet" id="sheetName" hidden>
+    <!-- Panel form -->
     <div class="panel">
       <h3>Ubah Nama</h3>
+
+      <!-- Field input nama -->
       <div class="field">
         <label for="name">Nama lengkap</label>
-        <input id="name" class="text" type="text" value="<?= htmlspecialchars($name) ?>">
+        <input
+          id="name"
+          class="text"
+          type="text"
+          value="<?= htmlspecialchars($name) ?>"
+        />
       </div>
+
+      <!-- Tombol aksi -->
       <div class="actions">
-        <button class="btn secondary" data-close>Batalkan</button>
-        <button class="btn primary" id="saveName">Simpan</button>
+        <button class="btn secondary" data-close>
+          Batalkan
+        </button>
+        <button class="btn primary" id="saveName">
+          Simpan
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- sheet: no hp -->
+  <!-- Sheet ubah nomor HP -->
   <div class="sheet" id="sheetPhone" hidden>
+    <!-- Panel form -->
     <div class="panel">
       <h3>Ubah No. HP</h3>
+
+      <!-- Field input nomor -->
       <div class="field">
         <label for="phone">Nomor HP</label>
-        <input id="phone" class="text" type="tel" placeholder="08xxxxxxxxxx"
-               value="<?= htmlspecialchars($phone) ?>" autocomplete="tel">
+        <input
+          id="phone"
+          class="text"
+          type="tel"
+          placeholder="08xxxxxxxxxx"
+          value="<?= htmlspecialchars($phone) ?>"
+          autocomplete="tel"
+        />
       </div>
+
+      <!-- Tombol aksi -->
       <div class="actions">
-        <button class="btn secondary" data-close>Batalkan</button>
-        <button class="btn primary" id="savePhone">Simpan</button>
+        <button class="btn secondary" data-close>
+          Batalkan
+        </button>
+        <button class="btn primary" id="savePhone">
+          Simpan
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- sheet: password -->
+  <!-- Sheet ganti password -->
   <div class="sheet" id="sheetPassword" hidden>
+    <!-- Panel form -->
     <div class="panel">
       <h3>Ganti Password</h3>
+
+      <!-- Password lama -->
       <div class="field">
         <label for="oldpass">Password Lama</label>
-        <input id="oldpass" class="text" type="password" placeholder="••••••">
+        <input
+          id="oldpass"
+          class="text"
+          type="password"
+          placeholder="••••••"
+        />
       </div>
+
+      <!-- Password baru -->
       <div class="field">
         <label for="newpass">Password Baru</label>
-        <input id="newpass" class="text" type="password" placeholder="Minimal 6 karakter">
+        <input
+          id="newpass"
+          class="text"
+          type="password"
+          placeholder="Minimal 6 karakter"
+        />
       </div>
+
+      <!-- Konfirmasi password -->
       <div class="field">
         <label for="confpass">Konfirmasi Password</label>
-        <input id="confpass" class="text" type="password" placeholder="Ulangi password baru">
+        <input
+          id="confpass"
+          class="text"
+          type="password"
+          placeholder="Ulangi password baru"
+        />
       </div>
+
+      <!-- Tombol aksi -->
       <div class="actions">
-        <button class="btn secondary" data-close>Batalkan</button>
-        <button class="btn primary" id="savePass">Perbarui</button>
+        <button class="btn secondary" data-close>
+          Batalkan
+        </button>
+        <button class="btn primary" id="savePass">
+          Perbarui
+        </button>
       </div>
+    </div>
+  </div>
+
+  <!-- POPUP ALERT CUSTOM CAFFORA -->
+  <div id="cfAlert" class="cf-alert" hidden>
+    <div class="cf-alert__backdrop"></div>
+    <div class="cf-alert__box">
+      <div class="cf-alert__title">Caffora</div>
+      <div class="cf-alert__message" id="cfAlertMessage">
+        Pesan
+      </div>
+      <button
+        type="button"
+        class="cf-alert__btn"
+        id="cfAlertOk"
+      >
+        Oke
+      </button>
     </div>
   </div>
 
   <script>
-    const BASE = '<?= $BASE ?>';
-    // kita pakai endpoint yang sama kayak customer
-    const API  = BASE + '/backend/api/profile_update.php';
+    // ===================================================
+    // POPUP ALERT CUSTOM (PENGGANTI alert() BAWAAN BROWSER)
+    // ===================================================
+    function showCfAlert(message, onClose) {
+      const wrap  = document.getElementById('cfAlert');
+      const msgEl = document.getElementById('cfAlertMessage');
+      const okBtn = document.getElementById('cfAlertOk');
 
-    // back ke dashboard karyawan
-    document.getElementById('goBack').onclick = () => {
-      location.href = BASE + '/public/karyawan/index.php';
-    };
+      // Fallback ke alert biasa kalau komponen tidak ada
+      if (!wrap || !msgEl || !okBtn) {
+        alert(message);
+        if (typeof onClose === 'function') {
+          onClose();
+        }
+        return;
+      }
 
-    // buka / tutup sheet
-    document.querySelectorAll('[data-open]').forEach(btn => {
-      btn.onclick = () => document.getElementById(btn.dataset.open).hidden = false;
-    });
-    document.querySelectorAll('.sheet').forEach(s => {
-      s.addEventListener('click', e => { if (e.target === s) s.hidden = true; });
-      s.querySelectorAll('[data-close]').forEach(c => c.onclick = () => s.hidden = true);
-    });
+      msgEl.textContent = message;
+      wrap.hidden       = false;
 
-    async function safeJson(res) {
-      try {
-        const ct = res.headers.get('content-type') || '';
-        if (!ct.includes('application/json')) return { success:false, message:'Respon tidak valid dari server.' };
-        return await res.json();
-      } catch {
-        return { success:false, message:'Respon tidak valid dari server.' };
+      function close() {
+        wrap.hidden = true;
+        okBtn.removeEventListener('click', handle);
+        if (typeof onClose === 'function') {
+          onClose();
+        }
+      }
+
+      function handle() {
+        close();
+      }
+
+      okBtn.addEventListener('click', handle, { once: true });
+
+      const backdrop = wrap.querySelector('.cf-alert__backdrop');
+      if (backdrop) {
+        backdrop.onclick = close;
       }
     }
 
-    // upload foto
-    const fileInput = document.getElementById('fileAvatar');
-    const btnUpload = document.getElementById('btnPhoto');
-    const avatarEl  = document.getElementById('avatar');
+    // API endpoint dinamis (tanpa hardcode base ke domain)
+    const API =
+      (window.PROJECT_BASE || "") +
+      "/backend/api/profile_update.php";
 
+    // Tombol Kembali: back cerdas + fallback
+    // Ambil elemen dengan id "goBack" lalu pasang event listener klik
+    document
+      .getElementById("goBack")
+      .addEventListener("click", function (e) {
+        // Jangan jalankan perilaku default link (navigasi langsung)
+        e.preventDefault();
+
+        // Coba lakukan logika back cerdas di dalam blok try
+        try {
+          // Ambil document.referrer (halaman sebelumnya) atau string kosong
+          const ref  = document.referrer || "";
+          // Cek apakah referrer masih 1 origin dengan halaman sekarang
+          const same =
+            ref &&
+            new URL(ref, location.href).origin ===
+              location.origin;
+
+          // Jika masih 1 origin dan history punya lebih dari 1 entri
+          if (same && history.length > 1) {
+            // Kembali ke halaman sebelumnya
+            history.back();
+            // Hentikan eksekusi function setelah back
+            return;
+          }
+        // Jika parsing URL atau akses referrer gagal, abaikan error
+        } catch (_) {}
+
+        // Fallback: paksa redirect ke halaman index customer
+        window.location.href =
+          (window.PROJECT_BASE || "") +
+          "/public/customer/index.php";
+      });
+
+    // Open/close sheets
+    // Cari semua elemen yang punya atribut data-open
+    document
+      .querySelectorAll("[data-open]")
+      .forEach((btn) => {
+        // Untuk tiap tombol, saat diklik buka sheet sesuai id di data-open
+        btn.onclick = () => {
+          // Ambil nilai data-open (id sheet)
+          const id = btn.dataset.open;
+          // Cari elemen sheet berdasarkan id
+          const el = document.getElementById(id);
+          // Jika elemen ada, tampilkan dengan menyetel hidden = false
+          if (el) el.hidden = false;
+        };
+      });
+
+    // Cari semua elemen dengan class "sheet"
+    document
+      .querySelectorAll(".sheet")
+      .forEach((s) => {
+        // Klik di area overlay luar sheet untuk menutup sheet
+        s.addEventListener("click", (e) => {
+          // Jika target klik adalah elemen sheet (bukan panel di dalam)
+          if (e.target === s) {
+            // Sembunyikan sheet dengan mengatur hidden = true
+            s.hidden = true;
+          }
+        });
+
+        // Cari semua elemen di dalam sheet yang punya atribut data-close
+        s.querySelectorAll("[data-close]").forEach((c) => {
+          // Saat tombol close diklik, sembunyikan sheet
+          c.onclick = () => {
+            s.hidden = true;
+          };
+        });
+      });
+
+    // Parser JSON aman (hindari "Respon tidak valid dari server.")
+    // Fungsi async untuk parse response fetch menjadi JSON dengan pengecekan content-type
+    async function safeJson(res) {
+      try {
+        // Ambil header Content-Type dan normalisasi ke lowercase
+        const ct =
+          (res.headers.get("content-type") || "")
+            .toLowerCase();
+
+        // Jika bukan JSON, kembalikan objek gagal dengan pesan error
+        if (!ct.includes("application/json")) {
+          return {
+            success: false,
+            message: "Respon tidak valid dari server.",
+          };
+        }
+
+        // Jika content-type benar JSON, parse body sebagai JSON
+        return await res.json();
+      } catch {
+        // Jika parsing gagal (error), kembalikan objek gagal dengan pesan error
+        return {
+          success: false,
+          message: "Respon tidak valid dari server.",
+        };
+      }
+    }
+
+    // === Upload foto ===
+    // Ambil elemen input file untuk avatar
+    const fileInput = document.getElementById("fileAvatar");
+    // Ambil tombol upload foto
+    const btnUpload = document.getElementById("btnPhoto");
+    // Ambil elemen div avatar (untuk update background-image)
+    const avatarEl  = document.getElementById("avatar");
+
+    // Saat tombol upload diklik, trigger klik pada input file
     btnUpload.onclick = () => fileInput.click();
 
+    // Saat ada perubahan pada input file (user pilih file)
     fileInput.onchange = async () => {
+      // Ambil file pertama yang dipilih user
       const file = fileInput.files[0];
+      // Jika tidak ada file (user batal), hentikan
       if (!file) return;
-      if (file.size > 2 * 1024 * 1024) return alert('Ukuran maksimum 2MB');
 
+      // Validasi ukuran file maksimal 2MB
+      if (file.size > 2 * 1024 * 1024) {
+        showCfAlert("Ukuran maksimum 2MB");
+        return;
+      }
+
+      // Buat FormData baru untuk upload ke server
       const fd = new FormData();
-      fd.append('profile_picture', file);
+      // Sisipkan file ke field "profile_picture"
+      fd.append("profile_picture", file);
 
-      const res = await fetch(API, { method: 'POST', body: fd, credentials: 'same-origin' });
-      const js  = await safeJson(res);
+      // Kirim request POST ke endpoint API dengan body FormData
+      const res = await fetch(API, {
+        method: "POST",
+        body: fd,
+        credentials: "same-origin",
+      });
+
+      // Parse respons menggunakan safeJson
+      const js = await safeJson(res);
+
+      // Jika respons success = true
       if (js.success) {
-        const path = js.data?.profile_picture;
+        // Ambil path foto profil dari data respons (jika ada)
+        const path =
+          js.data && js.data.profile_picture
+            ? js.data.profile_picture
+            : "";
+
+        // Jika path tidak kosong
         if (path) {
-          const finalUrl = path.startsWith('http')
-            ? path
-            : (BASE + (path.startsWith('/') ? path : '/' + path));
-          avatarEl.style.backgroundImage = `url('${finalUrl}')`;
+          // Ambil base URL dari PROJECT_BASE atau string kosong
+          const base = window.PROJECT_BASE || "";
+          // Jika path diawali "http", pakai langsung; jika tidak, gabung dengan base
+          const url =
+            path.startsWith("http") ? path : base + path;
+
+          // Update background-image avatar dengan URL baru
+          avatarEl.style.backgroundImage = `url(${url})`;
         }
-        alert(js.message || 'Foto profil berhasil diperbarui');
+
+        // Tampilkan alert sukses (gunakan message dari server atau default)
+        showCfAlert(js.message || "Foto profil berhasil diperbarui");
       } else {
-        alert(js.message || 'Gagal memperbarui foto profil');
+        // Jika gagal, tampilkan alert error (pesan server atau default)
+        showCfAlert(js.message || "Gagal memperbarui foto profil");
       }
     };
 
-    // simpan nama
-    document.getElementById('saveName').onclick = async () => {
-      const name = document.getElementById('name').value.trim();
-      if (!name) return alert('Nama tidak boleh kosong');
+    // === Simpan Nama ===
+    // Saat tombol "Simpan" di sheet nama diklik
+    document.getElementById("saveName").onclick = async () => {
+      // Ambil value dari input nama dan trim spasi
+      const name = document
+        .getElementById("name")
+        .value
+        .trim();
 
+      // Validasi: nama tidak boleh kosong
+      if (!name) {
+        showCfAlert("Nama tidak boleh kosong");
+        return;
+      }
+
+      // Buat FormData baru untuk payload
       const fd = new FormData();
-      fd.append('name', name);
+      // Tambahkan field "name" dengan nilai nama baru
+      fd.append("name", name);
 
-      const res = await fetch(API, { method: 'POST', body: fd, credentials: 'same-origin' });
-      const js  = await safeJson(res);
+      // Kirim request POST ke API untuk update nama
+      const res = await fetch(API, {
+        method: "POST",
+        body: fd,
+        credentials: "same-origin",
+      });
 
+      // Parse respons menggunakan safeJson
+      const js = await safeJson(res);
+
+      // Jika berhasil update
       if (js.success) {
-        document.getElementById('valName').textContent = name;
-        document.getElementById('whoName').textContent = name;
-        document.getElementById('sheetName').hidden = true;
-      } else alert(js.message || 'Gagal memperbarui nama');
+        // Update teks nama di summary profil (baris list)
+        document.getElementById("valName").textContent = name;
+        // Update teks nama di header profil (sebelah avatar)
+        document.getElementById("whoName").textContent = name;
+        // Tutup sheet ubah nama
+        document.getElementById("sheetName").hidden = true;
+        // Tampilkan alert sukses
+        showCfAlert(js.message || "Nama berhasil diperbarui");
+      } else {
+        // Jika gagal, tampilkan pesan error
+        showCfAlert(js.message || "Gagal memperbarui nama");
+      }
     };
 
-    // simpan no hp
-    document.getElementById('savePhone').onclick = async () => {
-      const phone = document.getElementById('phone').value.trim();
+    // === Simpan No HP ===
+    // Saat tombol "Simpan" di sheet nomor HP diklik
+    document.getElementById("savePhone").onclick = async () => {
+      // Ambil nilai input nomor HP lalu trim spasi
+      const phone = document
+        .getElementById("phone")
+        .value
+        .trim();
 
+      // Buat FormData untuk kirim ke server
       const fd = new FormData();
-      fd.append('phone', phone);
+      // Tambahkan field "phone" dengan nilai nomor HP
+      fd.append("phone", phone);
 
-      const res = await fetch(API, { method: 'POST', body: fd, credentials: 'same-origin' });
-      const js  = await safeJson(res);
+      // Kirim request POST ke API untuk update nomor HP
+      const res = await fetch(API, {
+        method: "POST",
+        body: fd,
+        credentials: "same-origin",
+      });
 
+      // Parse respons menggunakan safeJson
+      const js = await safeJson(res);
+
+      // Jika update berhasil
       if (js.success) {
-        document.getElementById('valPhone').textContent = phone || 'Belum diisi';
-        document.getElementById('sheetPhone').hidden = true;
-      } else alert(js.message || 'Gagal memperbarui nomor HP');
+        // Update teks nomor HP di baris list (tampilkan "Belum diisi" jika kosong)
+        document.getElementById("valPhone").textContent =
+          phone || "Belum diisi";
+
+        // Tutup sheet ubah nomor HP
+        document.getElementById("sheetPhone").hidden = true;
+
+        // Tampilkan alert sukses
+        showCfAlert(js.message || "Nomor HP berhasil diperbarui");
+      } else {
+        // Jika gagal, tampilkan pesan error
+        showCfAlert(js.message || "Gagal memperbarui nomor HP");
+      }
     };
 
-    // simpan password
-    document.getElementById('savePass').onclick = async () => {
-      const oldpass  = document.getElementById('oldpass').value;
-      const newpass  = document.getElementById('newpass').value;
-      const confpass = document.getElementById('confpass').value;
+    // === Ganti Password ===
+    // Saat tombol "Perbarui" di sheet password diklik
+    document.getElementById("savePass").onclick = async () => {
+      // Ambil password lama dari input
+      const oldpass  = document.getElementById("oldpass").value;
+      // Ambil password baru dari input
+      const newpass  = document.getElementById("newpass").value;
+      // Ambil konfirmasi password baru
+      const confpass = document.getElementById("confpass").value;
 
-      if (!oldpass || !newpass) return alert('Isi semua kolom password');
-      if (newpass.length < 6) return alert('Password minimal 6 karakter');
-      if (newpass !== confpass) return alert('Konfirmasi tidak cocok');
+      // Validasi: semua kolom password wajib diisi
+      if (!oldpass || !newpass) {
+        showCfAlert("Isi semua kolom password");
+        return;
+      }
 
+      // Validasi: panjang password baru minimal 6 karakter
+      if (newpass.length < 6) {
+        showCfAlert("Password minimal 6 karakter");
+        return;
+      }
+
+      // Validasi: konfirmasi password harus sama dengan password baru
+      if (newpass !== confpass) {
+        showCfAlert("Konfirmasi tidak cocok");
+        return;
+      }
+
+      // Buat FormData baru untuk kirim ke server
       const fd = new FormData();
-      fd.append('old_password', oldpass);
-      fd.append('password', newpass);
+      // Sertakan password lama pada field "old_password"
+      fd.append("old_password", oldpass);
+      // Sertakan password baru pada field "password"
+      fd.append("password", newpass);
 
-      const res = await fetch(API, { method: 'POST', body: fd, credentials: 'same-origin' });
-      const js  = await safeJson(res);
+      // Kirim request POST ke API untuk update password
+      const res = await fetch(API, {
+        method: "POST",
+        body: fd,
+        credentials: "same-origin",
+      });
 
+      // Parse respons menggunakan safeJson
+      const js = await safeJson(res);
+
+      // Jika update password berhasil
       if (js.success) {
-        alert(js.message || 'Password berhasil diperbarui');
-        document.getElementById('sheetPassword').hidden = true;
-      } else alert(js.message || 'Gagal memperbarui password');
+        // Tutup sheet ganti password
+        document.getElementById("sheetPassword").hidden = true;
+        // Tampilkan pesan sukses (dari server atau default)
+        showCfAlert(js.message || "Password berhasil diperbarui");
+      } else {
+        // Jika gagal, tampilkan pesan error
+        showCfAlert(js.message || "Gagal memperbarui password");
+      }
     };
   </script>
 </body>

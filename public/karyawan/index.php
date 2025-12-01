@@ -1,118 +1,120 @@
-<?php 
+<?php
 // public/karyawan/index.php
 declare(strict_types=1);
 session_start();
 
-require_once __DIR__ . '/../../backend/config.php';
+require_once __DIR__.'/../../backend/config.php';
 
 // ===== Guard: hanya karyawan =====
-if (!isset($_SESSION['user_id']) || (($_SESSION['user_role'] ?? '') !== 'karyawan')) {
-  header('Location: ' . BASE_URL . '/public/login.html');
-  exit;
+if (! isset($_SESSION['user_id']) || (($_SESSION['user_role'] ?? '') !== 'karyawan')) {
+    header('Location: '.BASE_URL.'/public/login.html');
+    exit;
 }
 
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($conn->connect_error) {
-  http_response_code(500);
-  echo "DB error";
-  exit;
+    http_response_code(500);
+    echo 'DB error';
+    exit;
 }
 $conn->set_charset('utf8mb4');
 
 /** ===== User info ===== */
 $user = [
-  'id'    => (int)($_SESSION['user_id'] ?? 0),
-  'name'  => (string)($_SESSION['user_name'] ?? ''),
-  'email' => (string)($_SESSION['user_email'] ?? ''),
-  'role'  => (string)($_SESSION['user_role'] ?? ''),
+    'id' => (int) ($_SESSION['user_id'] ?? 0),
+    'name' => (string) ($_SESSION['user_name'] ?? ''),
+    'email' => (string) ($_SESSION['user_email'] ?? ''),
+    'role' => (string) ($_SESSION['user_role'] ?? ''),
 ];
-$initials  = strtoupper(substr($user['name'] ?: 'U', 0, 2));
-$userName  = htmlspecialchars($user['name'],  ENT_QUOTES, 'UTF-8');
+$initials = strtoupper(substr($user['name'] ?: 'U', 0, 2));
+$userName = htmlspecialchars($user['name'], ENT_QUOTES, 'UTF-8');
 $userEmail = htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8');
 
 /** ===== KPI singkat ===== */
-$kpi = ['total_orders'=>0,'orders_today'=>0,'menu_count'=>0,'active_customers'=>0];
+$kpi = ['total_orders' => 0, 'orders_today' => 0, 'menu_count' => 0, 'active_customers' => 0];
 
 // total pesanan
-$res = $conn->query("SELECT COUNT(*) AS c FROM orders");
-$kpi['total_orders'] = (int)($res?->fetch_assoc()['c'] ?? 0);
+$res = $conn->query('SELECT COUNT(*) AS c FROM orders');
+$kpi['total_orders'] = (int) ($res?->fetch_assoc()['c'] ?? 0);
 
 // pesanan hari ini
 $today = (new DateTime('today'))->format('Y-m-d');
-$stmt  = $conn->prepare("SELECT COUNT(*) AS c FROM orders WHERE DATE(created_at)=?");
+$stmt = $conn->prepare('SELECT COUNT(*) AS c FROM orders WHERE DATE(created_at)=?');
 $stmt->bind_param('s', $today);
 $stmt->execute();
-$kpi['orders_today'] = (int)($stmt->get_result()->fetch_assoc()['c'] ?? 0);
+$kpi['orders_today'] = (int) ($stmt->get_result()->fetch_assoc()['c'] ?? 0);
 $stmt->close();
 
 // menu tersedia
-$res = $conn->query("SELECT COUNT(*) AS c FROM menu");
-$kpi['menu_count'] = (int)($res?->fetch_assoc()['c'] ?? 0);
+$res = $conn->query('SELECT COUNT(*) AS c FROM menu');
+$kpi['menu_count'] = (int) ($res?->fetch_assoc()['c'] ?? 0);
 
 // pelanggan aktif
 $res = $conn->query("SELECT COUNT(*) AS c FROM users WHERE status='active' AND role='customer'");
-$kpi['active_customers'] = (int)($res?->fetch_assoc()['c'] ?? 0);
+$kpi['active_customers'] = (int) ($res?->fetch_assoc()['c'] ?? 0);
 
 /** ===== Data chart: revenue 7 hari ===== */
-$labels  = [];
+$labels = [];
 $revenue = [];
-$map     = [];
-for ($i=6; $i>=0; $i--) {
-  $d = (new DateTime("today -$i day"))->format('Y-m-d');
-  $labels[] = $d;
-  $map[$d]  = 0.0;
+$map = [];
+for ($i = 6; $i >= 0; $i--) {
+    $d = (new DateTime("today -$i day"))->format('Y-m-d');
+    $labels[] = $d;
+    $map[$d] = 0.0;
 }
-$sql = "
+$sql = '
   SELECT DATE(created_at) AS d, SUM(total) AS s
   FROM orders
   WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
   GROUP BY DATE(created_at)
   ORDER BY d ASC
-";
+';
 $res = $conn->query($sql);
 while ($row = $res?->fetch_assoc()) {
-  $map[$row['d']] = (float)$row['s'];
+    $map[$row['d']] = (float) $row['s'];
 }
-foreach ($labels as $d) $revenue[] = $map[$d];
+foreach ($labels as $d) {
+    $revenue[] = $map[$d];
+}
 
 /** ===== Distribusi status (HARI INI) ===== */
 $statusBuckets = [
-  'new'        => 0,
-  'processing' => 0,
-  'ready'      => 0,
-  'completed'  => 0,
-  'cancelled'  => 0,
+    'new' => 0,
+    'processing' => 0,
+    'ready' => 0,
+    'completed' => 0,
+    'cancelled' => 0,
 ];
 
-$stmt = $conn->prepare("
+$stmt = $conn->prepare('
   SELECT LOWER(order_status) AS s, COUNT(*) AS c
   FROM orders
   WHERE DATE(created_at) = ?
   GROUP BY LOWER(order_status)
-");
+');
 $stmt->bind_param('s', $today);
 $stmt->execute();
 $rst = $stmt->get_result();
 while ($row = $rst?->fetch_assoc()) {
-  $s = (string)$row['s'];
-  $c = (int)$row['c'];
+    $s = (string) $row['s'];
+    $c = (int) $row['c'];
 
-  if (isset($statusBuckets[$s])) {
-    $statusBuckets[$s] += $c;
-  } else {
-    if (in_array($s, ['canceled','cancel','cancelled','failed','void','refunded'], true)) {
-      $statusBuckets['cancelled'] += $c;
+    if (isset($statusBuckets[$s])) {
+        $statusBuckets[$s] += $c;
+    } else {
+        if (in_array($s, ['canceled', 'cancel', 'cancelled', 'failed', 'void', 'refunded'], true)) {
+            $statusBuckets['cancelled'] += $c;
+        }
     }
-  }
 }
 $stmt->close();
 
 $distToday = [
-  $statusBuckets['new'],
-  $statusBuckets['processing'],
-  $statusBuckets['ready'],
-  $statusBuckets['completed'],
-  $statusBuckets['cancelled'],
+    $statusBuckets['new'],
+    $statusBuckets['processing'],
+    $statusBuckets['ready'],
+    $statusBuckets['completed'],
+    $statusBuckets['cancelled'],
 ];
 ?>
 <!doctype html>
@@ -412,7 +414,7 @@ $distToday = [
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-const BASE = "<?= rtrim(BASE_URL,'/') ?>";
+const BASE = "<?= rtrim(BASE_URL, '/') ?>";
 
 /* ===== BADGE NOTIF (karyawan) ===== */
 async function refreshNotifBadge(){

@@ -10,7 +10,9 @@ declare(strict_types=1);
 require_once __DIR__.'/config.php';
 // Import konfigurasi (BASE_URL, session settings, helper)
 
-if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
 // Mulai session bila belum aktif
 
 /* --- bersihkan session --- */
@@ -18,21 +20,21 @@ $_SESSION = [];
 // Kosongkan semua data session
 
 if (ini_get('session.use_cookies')) {
-  // Jika session menggunakan cookie
+    // Jika session menggunakan cookie
 
-  $p = session_get_cookie_params();
-  // Ambil parameter cookie session
+    $p = session_get_cookie_params();
+    // Ambil parameter cookie session
 
-  setcookie(
-    session_name(),
-    '',
-    time() - 42000,
-    $p['path'],
-    $p['domain'],
-    $p['secure'],
-    $p['httponly']
-  );
-  // Hapus cookie session dengan waktu kedaluwarsa lampau
+    setcookie(
+        session_name(),
+        '',
+        time() - 42000,
+        $p['path'],
+        $p['domain'],
+        $p['secure'],
+        $p['httponly']
+    );
+    // Hapus cookie session dengan waktu kedaluwarsa lampau
 }
 
 session_destroy();
@@ -40,16 +42,16 @@ session_destroy();
 
 /* --- hapus cookies app --- */
 $https =
-  (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')
+  (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')
   || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
 // Deteksi apakah koneksi HTTPS (termasuk via proxy/CDN)
 
 $cookieOpts = [
-  'expires'  => time() - 3600,
-  'path'     => '/',
-  'secure'   => $https,
-  'httponly' => false,
-  'samesite' => 'Lax'
+    'expires' => time() - 3600,
+    'path' => '/',
+    'secure' => $https,
+    'httponly' => false,
+    'samesite' => 'Lax',
 ];
 // Opsi cookie untuk menghapus cookie aplikasi
 
@@ -70,7 +72,7 @@ header('Pragma: no-cache');
 // Tambahan header anti-cache
 
 /* --- fallback JS: bersihkan storage lalu redirect ke /login --- */
-$to = rtrim((string)BASE_URL, '/') . '/login';
+$to = rtrim((string) BASE_URL, '/').'/login';
 // Target redirect akhir setelah logout
 ?>
 <!doctype html>

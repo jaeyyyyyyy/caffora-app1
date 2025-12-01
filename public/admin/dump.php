@@ -1,69 +1,74 @@
 backup finance
 
-<?php 
+<?php
 // public/admin/finance.php
 declare(strict_types=1);
 session_start();
 
-require_once __DIR__ . '/../../backend/config.php';
+require_once __DIR__.'/../../backend/config.php';
 
 /* ===== Guard role: admin ===== */
-if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'admin') {
-  header('Location: ' . BASE_URL . '/public/login.html');
-  exit;
+if (! isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'admin') {
+    header('Location: '.BASE_URL.'/public/login.html');
+    exit;
 }
 
-$userName  = htmlspecialchars($_SESSION['user_name']  ?? '', ENT_QUOTES, 'UTF-8');
+$userName = htmlspecialchars($_SESSION['user_name'] ?? '', ENT_QUOTES, 'UTF-8');
 $userEmail = htmlspecialchars($_SESSION['user_email'] ?? '', ENT_QUOTES, 'UTF-8');
 
 /* ============================================================
    RENTANG TANGGAL
    ============================================================ */
-$range     = $_GET['range'] ?? '7d';
-$today     = new DateTime('today');
-$endDate   = clone $today;
+$range = $_GET['range'] ?? '7d';
+$today = new DateTime('today');
+$endDate = clone $today;
 $startDate = clone $today;
 
 if ($range === 'today') {
-  // today 00:00:00 - 23:59:59
+    // today 00:00:00 - 23:59:59
 } elseif ($range === '7d') {
-  $startDate->modify('-6 day');
+    $startDate->modify('-6 day');
 } elseif ($range === '30d') {
-  $startDate->modify('-29 day');
+    $startDate->modify('-29 day');
 } elseif ($range === 'custom') {
-  $from = $_GET['from'] ?? '';
-  $to   = $_GET['to']   ?? '';
-  $tmpStart = $from ? DateTime::createFromFormat('Y-m-d', $from) : null;
-  $tmpEnd   = $to   ? DateTime::createFromFormat('Y-m-d', $to)   : null;
-  if ($tmpStart && $tmpEnd) { $startDate = $tmpStart; $endDate = $tmpEnd; }
-  else { $range = '7d'; $startDate = (clone $today)->modify('-6 day'); }
+    $from = $_GET['from'] ?? '';
+    $to = $_GET['to'] ?? '';
+    $tmpStart = $from ? DateTime::createFromFormat('Y-m-d', $from) : null;
+    $tmpEnd = $to ? DateTime::createFromFormat('Y-m-d', $to) : null;
+    if ($tmpStart && $tmpEnd) {
+        $startDate = $tmpStart;
+        $endDate = $tmpEnd;
+    } else {
+        $range = '7d';
+        $startDate = (clone $today)->modify('-6 day');
+    }
 } else {
-  $range = '7d';
-  $startDate->modify('-6 day');
+    $range = '7d';
+    $startDate->modify('-6 day');
 }
 
 $startStr = $startDate->format('Y-m-d 00:00:00');
-$endStr   = $endDate->format('Y-m-d 23:59:59');
+$endStr = $endDate->format('Y-m-d 23:59:59');
 
 /* ============================================================
    EXPORT CSV (ikut periode aktif) — LENGKAP
    ============================================================ */
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
-  $file = sprintf('finance_%s-%s.csv', $startDate->format('Ymd'), $endDate->format('Ymd'));
-  header('Content-Type: text/csv; charset=utf-8');
-  header('Content-Disposition: attachment; filename="'.$file.'"');
+    $file = sprintf('finance_%s-%s.csv', $startDate->format('Ymd'), $endDate->format('Ymd'));
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="'.$file.'"');
 
-  $out = fopen('php://output', 'w');
-  // BOM UTF-8 agar Excel aman
-  fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+    $out = fopen('php://output', 'w');
+    // BOM UTF-8 agar Excel aman
+    fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
 
-  fputcsv($out, [
-    'Order ID','Invoice','Waktu','Customer',
-    'Order Items (nama x qty)','Total (IDR)',
-    'Payment Method','Service Type','Order Status','Payment Status'
-  ]);
+    fputcsv($out, [
+        'Order ID', 'Invoice', 'Waktu', 'Customer',
+        'Order Items (nama x qty)', 'Total (IDR)',
+        'Payment Method', 'Service Type', 'Order Status', 'Payment Status',
+    ]);
 
-  $sqlCsv = "
+    $sqlCsv = "
     SELECT
       o.id AS order_id,
       o.invoice_no,
@@ -85,38 +90,40 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
              o.order_status, o.payment_status
     ORDER BY o.created_at DESC
   ";
-  $stmtCsv = $conn->prepare($sqlCsv);
-  $stmtCsv->bind_param('ss', $startStr, $endStr);
-  $stmtCsv->execute();
-  $resCsv = $stmtCsv->get_result();
+    $stmtCsv = $conn->prepare($sqlCsv);
+    $stmtCsv->bind_param('ss', $startStr, $endStr);
+    $stmtCsv->execute();
+    $resCsv = $stmtCsv->get_result();
 
-  while ($r = $resCsv->fetch_assoc()) {
-    fputcsv($out, [
-      $r['order_id'],
-      $r['invoice_no'],
-      $r['waktu'],
-      $r['customer'],
-      $r['items'] ?? '',
-      (int)$r['total_idr'],
-      $r['payment_method'],
-      $r['service_type'],
-      $r['order_status'],
-      $r['payment_status']
-    ]);
-  }
-  $stmtCsv->close();
-  fclose($out);
-  exit;
+    while ($r = $resCsv->fetch_assoc()) {
+        fputcsv($out, [
+            $r['order_id'],
+            $r['invoice_no'],
+            $r['waktu'],
+            $r['customer'],
+            $r['items'] ?? '',
+            (int) $r['total_idr'],
+            $r['payment_method'],
+            $r['service_type'],
+            $r['order_status'],
+            $r['payment_status'],
+        ]);
+    }
+    $stmtCsv->close();
+    fclose($out);
+    exit;
 }
 
 /* ============================================================
    REVENUE HARIAN (paid) — ikut periode
    ============================================================ */
 $labels = [];
-$map    = [];
+$map = [];
 $period = new DatePeriod($startDate, new DateInterval('P1D'), (clone $endDate)->modify('+1 day'));
 foreach ($period as $d) {
-  $key = $d->format('Y-m-d'); $labels[] = $key; $map[$key] = 0.0;
+    $key = $d->format('Y-m-d');
+    $labels[] = $key;
+    $map[$key] = 0.0;
 }
 $stmt = $conn->prepare("
   SELECT DATE(created_at) AS d, SUM(total) AS s
@@ -129,11 +136,15 @@ $stmt = $conn->prepare("
 $stmt->bind_param('ss', $startStr, $endStr);
 $stmt->execute();
 $res = $stmt->get_result();
-while ($row = $res->fetch_assoc()) { $map[$row['d']] = (float)$row['s']; }
+while ($row = $res->fetch_assoc()) {
+    $map[$row['d']] = (float) $row['s'];
+}
 $stmt->close();
 
 $revenue = [];
-foreach ($labels as $d) $revenue[] = $map[$d] ?? 0;
+foreach ($labels as $d) {
+    $revenue[] = $map[$d] ?? 0;
+}
 $totalRevenue = array_sum($revenue);
 
 /* count paid & avg */
@@ -147,13 +158,13 @@ $stmt2->bind_param('ss', $startStr, $endStr);
 $stmt2->execute();
 $row2 = $stmt2->get_result()->fetch_assoc();
 $stmt2->close();
-$ordersPaidCount = (int)($row2['c'] ?? 0);
+$ordersPaidCount = (int) ($row2['c'] ?? 0);
 $avgOrder = $ordersPaidCount ? ($totalRevenue / $ordersPaidCount) : 0;
 
 /* ============================================================
    RINGKASAN 4 KARTU (ikut periode)
    ============================================================ */
-$statusSummary = ['paid'=>0,'pending'=>0,'cancel'=>0,'done'=>0];
+$statusSummary = ['paid' => 0, 'pending' => 0, 'cancel' => 0, 'done' => 0];
 $qs = $conn->prepare("
   SELECT 
     SUM(CASE WHEN payment_status='paid'    THEN 1 ELSE 0 END) AS cnt_paid,
@@ -170,10 +181,10 @@ $qs->bind_param('ss', $startStr, $endStr);
 $qs->execute();
 $qr = $qs->get_result()->fetch_assoc();
 $qs->close();
-$statusSummary['paid']    = (int)($qr['cnt_paid']    ?? 0);
-$statusSummary['pending'] = (int)($qr['cnt_pending'] ?? 0);
-$statusSummary['cancel']  = (int)($qr['cnt_cancel']  ?? 0);
-$statusSummary['done']    = (int)($qr['cnt_done']    ?? 0);
+$statusSummary['paid'] = (int) ($qr['cnt_paid'] ?? 0);
+$statusSummary['pending'] = (int) ($qr['cnt_pending'] ?? 0);
+$statusSummary['cancel'] = (int) ($qr['cnt_cancel'] ?? 0);
+$statusSummary['done'] = (int) ($qr['cnt_done'] ?? 0);
 
 /* ============================================================
    TOP MENU TERLARIS — ikut periode
@@ -198,9 +209,9 @@ $stmt3->bind_param('ss', $startStr, $endStr);
 $stmt3->execute();
 $resTop = $stmt3->get_result();
 while ($row = $resTop->fetch_assoc()) {
-  $imgRaw = (string)($row['image'] ?? '');
-  $row['img_url'] = $imgRaw ? BASE_URL . '/public/' . ltrim($imgRaw, '/') : BASE_URL . '/public/assets/img/menu-placeholder.png';
-  $topMenus[] = $row;
+    $imgRaw = (string) ($row['image'] ?? '');
+    $row['img_url'] = $imgRaw ? BASE_URL.'/public/'.ltrim($imgRaw, '/') : BASE_URL.'/public/assets/img/menu-placeholder.png';
+    $topMenus[] = $row;
 }
 $stmt3->close();
 
@@ -208,11 +219,11 @@ $stmt3->close();
    DISTRIBUSI STATUS
    ============================================================ */
 $dist = [
-  'new'        => ['orders'=>0,'qty'=>0],
-  'processing' => ['orders'=>0,'qty'=>0],
-  'ready'      => ['orders'=>0,'qty'=>0],
-  'completed'  => ['orders'=>0,'qty'=>0],
-  'cancelled'  => ['orders'=>0,'qty'=>0],
+    'new' => ['orders' => 0, 'qty' => 0],
+    'processing' => ['orders' => 0, 'qty' => 0],
+    'ready' => ['orders' => 0, 'qty' => 0],
+    'completed' => ['orders' => 0, 'qty' => 0],
+    'cancelled' => ['orders' => 0, 'qty' => 0],
 ];
 $stmtDist = $conn->prepare("
   SELECT 
@@ -236,15 +247,15 @@ $stmtDist->bind_param('ss', $startStr, $endStr);
 $stmtDist->execute();
 $resDist = $stmtDist->get_result();
 while ($r = $resDist->fetch_assoc()) {
-  $k = $r['st'];
-  if (isset($dist[$k])) {
-    $dist[$k]['orders'] = (int)($r['orders_cnt'] ?? 0);
-    $dist[$k]['qty']    = (int)($r['items_qty']  ?? 0);
-  }
+    $k = $r['st'];
+    if (isset($dist[$k])) {
+        $dist[$k]['orders'] = (int) ($r['orders_cnt'] ?? 0);
+        $dist[$k]['qty'] = (int) ($r['items_qty'] ?? 0);
+    }
 }
 $stmtDist->close();
-$distLabels = ['New','Processing','Ready','Completed','Cancelled'];
-$distOrders = [$dist['new']['orders'],$dist['processing']['orders'],$dist['ready']['orders'],$dist['completed']['orders'],$dist['cancelled']['orders']];
+$distLabels = ['New', 'Processing', 'Ready', 'Completed', 'Cancelled'];
+$distOrders = [$dist['new']['orders'], $dist['processing']['orders'], $dist['ready']['orders'], $dist['completed']['orders'], $dist['cancelled']['orders']];
 
 /* ============================================================
    TRANSAKSI TERBARU — pakai orders.customer_name
@@ -266,7 +277,9 @@ $stmt4 = $conn->prepare("
 $stmt4->bind_param('ss', $startStr, $endStr);
 $stmt4->execute();
 $res4 = $stmt4->get_result();
-while ($row = $res4->fetch_assoc()) $latestTx[] = $row;
+while ($row = $res4->fetch_assoc()) {
+    $latestTx[] = $row;
+}
 $stmt4->close();
 ?>
 <!doctype html>
@@ -471,24 +484,24 @@ $stmt4->close();
       <!-- Custom Dropdown Periode + Export -->
       <div class="range-wrap">
         <select id="rangeSelect" class="select-ghost" tabindex="-1" aria-hidden="true" hidden>
-          <option value="today"  <?= $range==='today'?'selected':''; ?>>Hari ini</option>
-          <option value="7d"     <?= $range==='7d'?'selected':''; ?>>7 hari</option>
-          <option value="30d"    <?= $range==='30d'?'selected':''; ?>>30 hari</option>
-          <option value="custom" <?= $range==='custom'?'selected':''; ?>>Custom…</option>
+          <option value="today"  <?= $range === 'today' ? 'selected' : ''; ?>>Hari ini</option>
+          <option value="7d"     <?= $range === '7d' ? 'selected' : ''; ?>>7 hari</option>
+          <option value="30d"    <?= $range === '30d' ? 'selected' : ''; ?>>30 hari</option>
+          <option value="custom" <?= $range === 'custom' ? 'selected' : ''; ?>>Custom…</option>
         </select>
 
         <div class="select-custom" id="rangeCustom">
           <button type="button" class="select-toggle" id="rangeBtn" aria-haspopup="listbox" aria-expanded="false" tabindex="0">
             <span id="rangeText">
-              <?= $range==='today' ? 'Hari ini' : ($range==='7d' ? '7 hari' : ($range==='30d' ? '30 hari' : 'Custom…')) ?>
+              <?= $range === 'today' ? 'Hari ini' : ($range === '7d' ? '7 hari' : ($range === '30d' ? '30 hari' : 'Custom…')) ?>
             </span>
             <i class="bi bi-chevron-down select-caret"></i>
           </button>
           <div class="select-menu" id="rangeMenu" role="listbox" aria-labelledby="rangeBtn">
-            <div class="select-item<?= $range==='today'?' active':''; ?>" data-value="today">Hari ini</div>
-            <div class="select-item<?= $range==='7d'?' active':''; ?>" data-value="7d">7 hari</div>
-            <div class="select-item<?= $range==='30d'?' active':''; ?>" data-value="30d">30 hari</div>
-            <div class="select-item<?= $range==='custom'?' active':''; ?>" data-value="custom">Custom…</div>
+            <div class="select-item<?= $range === 'today' ? ' active' : ''; ?>" data-value="today">Hari ini</div>
+            <div class="select-item<?= $range === '7d' ? ' active' : ''; ?>" data-value="7d">7 hari</div>
+            <div class="select-item<?= $range === '30d' ? ' active' : ''; ?>" data-value="30d">30 hari</div>
+            <div class="select-item<?= $range === 'custom' ? ' active' : ''; ?>" data-value="custom">Custom…</div>
           </div>
         </div>
 
@@ -501,19 +514,19 @@ $stmt4->close();
       <div class="col-12 col-md-4">
         <div class="cardx">
           <div class="text-muted small">Total Revenue</div>
-          <div class="value">Rp <?= number_format($totalRevenue,0,',','.') ?></div>
+          <div class="value">Rp <?= number_format($totalRevenue, 0, ',', '.') ?></div>
         </div>
       </div>
       <div class="col-12 col-md-4">
         <div class="cardx">
           <div class="text-muted small">Order Lunas</div>
-          <div class="value"><?= number_format($ordersPaidCount,0,',','.') ?></div>
+          <div class="value"><?= number_format($ordersPaidCount, 0, ',', '.') ?></div>
         </div>
       </div>
       <div class="col-12 col-md-4">
         <div class="cardx">
           <div class="text-muted small">Rata-rata / Order</div>
-          <div class="value">Rp <?= number_format($avgOrder,0,',','.') ?></div>
+          <div class="value">Rp <?= number_format($avgOrder, 0, ',', '.') ?></div>
         </div>
       </div>
     </div>
@@ -531,7 +544,8 @@ $stmt4->close();
       <div class="col-12 col-lg-4 d-flex">
         <div class="cardx flex-fill">
           <h6 class="fw-bold mb-2">Top Menu Terlaris</h6>
-          <?php if ($topMenus): foreach ($topMenus as $m): ?>
+          <?php if ($topMenus) {
+              foreach ($topMenus as $m) { ?>
             <div class="top-menu-item">
               <div class="top-menu-thumb">
                 <img src="<?= htmlspecialchars($m['img_url'], ENT_QUOTES, 'UTF-8') ?>"
@@ -540,13 +554,14 @@ $stmt4->close();
               </div>
               <div class="flex-grow-1">
                 <div class="top-menu-name"><?= htmlspecialchars($m['name'], ENT_QUOTES, 'UTF-8') ?></div>
-                <div class="top-menu-sub">Rp <?= number_format((float)$m['sold_amount'],0,',','.') ?></div>
+                <div class="top-menu-sub">Rp <?= number_format((float) $m['sold_amount'], 0, ',', '.') ?></div>
               </div>
-              <div class="fw-semibold">x<?= (int)$m['sold_qty'] ?></div>
+              <div class="fw-semibold">x<?= (int) $m['sold_qty'] ?></div>
             </div>
-          <?php endforeach; else: ?>
+          <?php }
+              } else { ?>
             <div class="text-muted small">Belum ada data penjualan di periode ini.</div>
-          <?php endif; ?>
+          <?php } ?>
         </div>
       </div>
     </div>
@@ -576,22 +591,24 @@ $stmt4->close();
     <!-- Transaksi terbaru -->
     <div class="cardx mb-4">
       <h6 class="fw-bold mb-2">Transaksi Terbaru</h6>
-      <?php if ($latestTx): foreach ($latestTx as $tx): ?>
+      <?php if ($latestTx) {
+          foreach ($latestTx as $tx) { ?>
         <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-light-subtle">
           <div>
-            <div class="fw-semibold">#<?= (int)$tx['id'] ?> — <?= htmlspecialchars($tx['customer_name'] ?? 'Guest', ENT_QUOTES, 'UTF-8') ?></div>
+            <div class="fw-semibold">#<?= (int) $tx['id'] ?> — <?= htmlspecialchars($tx['customer_name'] ?? 'Guest', ENT_QUOTES, 'UTF-8') ?></div>
             <div class="text-muted small"><?= date('d M Y H:i', strtotime($tx['created_at'])) ?></div>
           </div>
           <div class="text-end">
-            <div class="fw-semibold">Rp <?= number_format((float)$tx['total'],0,',','.') ?></div>
-            <span class="badge rounded-pill <?= $tx['payment_status']==='paid' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning' ?>">
+            <div class="fw-semibold">Rp <?= number_format((float) $tx['total'], 0, ',', '.') ?></div>
+            <span class="badge rounded-pill <?= $tx['payment_status'] === 'paid' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning' ?>">
               <?= htmlspecialchars($tx['payment_status'], ENT_QUOTES, 'UTF-8') ?>
             </span>
           </div>
         </div>
-      <?php endforeach; else: ?>
+      <?php }
+          } else { ?>
         <div class="text-muted small">Belum ada transaksi di periode ini.</div>
-      <?php endif; ?>
+      <?php } ?>
     </div>
   </div>
 </main>

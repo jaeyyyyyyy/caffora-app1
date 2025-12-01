@@ -3,79 +3,82 @@
 declare(strict_types=1);
 session_start();
 
-require_once __DIR__ . '/../../backend/auth_guard.php';
-require_login(['karyawan','admin']);
-require_once __DIR__ . '/../../backend/config.php'; // BASE_URL, $conn, h()
+require_once __DIR__.'/../../backend/auth_guard.php';
+require_login(['karyawan', 'admin']);
+require_once __DIR__.'/../../backend/config.php'; // BASE_URL, $conn, h()
 
 // ===== data user utk topbar =====
-$userId     = (int)($_SESSION['user_id'] ?? 0);
-$userName   = $_SESSION['user_name']  ?? 'Staff';
-$userEmail  = $_SESSION['user_email'] ?? '';
+$userId = (int) ($_SESSION['user_id'] ?? 0);
+$userName = $_SESSION['user_name'] ?? 'Staff';
+$userEmail = $_SESSION['user_email'] ?? '';
 $userAvatar = $_SESSION['user_avatar'] ?? '';
-$initials   = strtoupper(substr($userName ?: 'U', 0, 2));
+$initials = strtoupper(substr($userName ?: 'U', 0, 2));
 
 $avatarUrl = '';
 $hasAvatar = false;
 if ($userAvatar) {
-  if (str_starts_with($userAvatar, 'http')) {
-    $avatarUrl = $userAvatar;
-  } else {
-    $avatarUrl = rtrim(BASE_URL, '/') . (str_starts_with($userAvatar, '/') ? $userAvatar : '/' . $userAvatar);
-  }
-  $hasAvatar = true;
+    if (str_starts_with($userAvatar, 'http')) {
+        $avatarUrl = $userAvatar;
+    } else {
+        $avatarUrl = rtrim(BASE_URL, '/').(str_starts_with($userAvatar, '/') ? $userAvatar : '/'.$userAvatar);
+    }
+    $hasAvatar = true;
 }
 
 // ===== helper =====
-function rupiah($n): string { return 'Rp ' . number_format((float)$n, 0, ',', '.'); }
+function rupiah($n): string
+{
+    return 'Rp '.number_format((float) $n, 0, ',', '.');
+}
 
 // ====== Actions: update status stok ======
 $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $id   = (int)($_POST['id'] ?? 0);
-  $stat = ($_POST['stock_status'] ?? '') === 'Sold Out' ? 'Sold Out' : 'Ready';
+    $id = (int) ($_POST['id'] ?? 0);
+    $stat = ($_POST['stock_status'] ?? '') === 'Sold Out' ? 'Sold Out' : 'Ready';
 
-  if ($id > 0) {
-    $stmt = $conn->prepare("UPDATE menu SET stock_status=? WHERE id=?");
-    $stmt->bind_param('si', $stat, $id);
-    $ok = $stmt->execute();
-    $stmt->close();
-    $msg = $ok ? 'Status stok diperbarui.' : 'Gagal memperbarui status.';
-  } else {
-    $msg = 'Data tidak valid.';
-  }
+    if ($id > 0) {
+        $stmt = $conn->prepare('UPDATE menu SET stock_status=? WHERE id=?');
+        $stmt->bind_param('si', $stat, $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        $msg = $ok ? 'Status stok diperbarui.' : 'Gagal memperbarui status.';
+    } else {
+        $msg = 'Data tidak valid.';
+    }
 }
 
 // ====== Filter (GET) ======
-$q   = trim((string)($_GET['q'] ?? ''));
+$q = trim((string) ($_GET['q'] ?? ''));
 
 $where = [];
 $types = '';
 $params = [];
 
 if ($q !== '') {
-  $where[] = '(name LIKE ? OR category LIKE ?)';
-  $like = '%' . $q . '%';
-  $params[] = $like;
-  $params[] = $like;
-  $types .= 'ss';
+    $where[] = '(name LIKE ? OR category LIKE ?)';
+    $like = '%'.$q.'%';
+    $params[] = $like;
+    $params[] = $like;
+    $types .= 'ss';
 }
 
 $sql = 'SELECT * FROM menu';
 if ($where) {
-  $sql .= ' WHERE ' . implode(' AND ', $where);
+    $sql .= ' WHERE '.implode(' AND ', $where);
 }
 $sql .= ' ORDER BY created_at DESC';
 
 $menus = [];
 $stmt = $conn->prepare($sql);
 if ($stmt) {
-  if ($params) {
-    $stmt->bind_param($types, ...$params);
-  }
-  $stmt->execute();
-  $res = $stmt->get_result();
-  $menus = $res?->fetch_all(MYSQLI_ASSOC) ?? [];
-  $stmt->close();
+    if ($params) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $menus = $res?->fetch_all(MYSQLI_ASSOC) ?? [];
+    $stmt->close();
 }
 ?>
 <!doctype html>
@@ -438,9 +441,9 @@ if ($stmt) {
 
   <h2 class="fw-bold mb-3">Stok Menu</h2>
 
-  <?php if ($msg): ?>
+  <?php if ($msg) { ?>
     <div class="alert alert-warning py-2"><?= h($msg) ?></div>
-  <?php endif; ?>
+  <?php } ?>
 
   <!-- TABEL -->
   <div class="cardx">
@@ -458,40 +461,42 @@ if ($stmt) {
           </tr>
         </thead>
         <tbody>
-        <?php if (!$menus): ?>
+        <?php if (! $menus) { ?>
           <tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data.</td></tr>
-        <?php else: foreach ($menus as $m): ?>
+        <?php } else {
+            foreach ($menus as $m) { ?>
           <tr>
-            <td><?= (int)$m['id'] ?></td>
+            <td><?= (int) $m['id'] ?></td>
             <td>
-              <?php if (!empty($m['image'])): ?>
-                <img class="thumb" src="<?= h(BASE_URL . '/public/' . ltrim($m['image'],'/')) ?>" alt="">
-              <?php endif; ?>
+              <?php if (! empty($m['image'])) { ?>
+                <img class="thumb" src="<?= h(BASE_URL.'/public/'.ltrim($m['image'], '/')) ?>" alt="">
+              <?php } ?>
             </td>
             <td><?= h($m['name']) ?></td>
             <td><?= h($m['category']) ?></td>
             <td><?= rupiah($m['price']) ?></td>
             <td>
               <?= ($m['stock_status'] === 'Ready')
-                ? '<span class="badge text-bg-success">Ready</span>'
-                : '<span class="badge text-bg-danger">Sold Out</span>' ?>
+                    ? '<span class="badge text-bg-success">Ready</span>'
+                    : '<span class="badge text-bg-danger">Sold Out</span>' ?>
             </td>
             <td>
               <form class="d-inline" method="post">
-                <input type="hidden" name="id" value="<?= (int)$m['id'] ?>">
-                <input type="hidden" name="stock_status" value="<?= $m['stock_status']==='Ready' ? 'Sold Out' : 'Ready' ?>">
-                <?php if ($m['stock_status']==='Ready'): ?>
+                <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
+                <input type="hidden" name="stock_status" value="<?= $m['stock_status'] === 'Ready' ? 'Sold Out' : 'Ready' ?>">
+                <?php if ($m['stock_status'] === 'Ready') { ?>
                   <button class="btn btn-sm btn-outline-danger" type="submit">
                     <i class="bi bi-x-circle me-1"></i>
                   </button>
-                <?php else: ?>
+                <?php } else { ?>
                   <button class="btn btn-sm btn-outline-success" type="submit">
                     <i class="bi bi-check2-circle me-1"></i> 
-                <?php endif; ?>
+                <?php } ?>
               </form>
             </td>
           </tr>
-        <?php endforeach; endif; ?>
+        <?php }
+            } ?>
         </tbody>
       </table>
     </div>

@@ -382,28 +382,7 @@ $role = $_SESSION['user_role'] ?? 'customer';
         }
       }
 
-      /* ========================= HERO DESKTOP ========================= */
-
-      .hero .container {
-        padding: 56px 0;                        /* padding vertikal hero desktop */
-      }
-
-      .hero h1 {
-        font-family: "Playfair Display", serif; /* font judul hero */
-        font-weight: 700;                       /* tebal untuk heading */
-      }
-
-      /* Desktop & tablet (tidak diubah) */
-
-      section.hero,
-      #hero {
-        background-image: url("/public/assets/img/hero.jpg"); /* gambar hero */
-        background-size: cover;                               /* penuh menutup area */
-        background-position: center;                          /* posisi di tengah */
-        background-repeat: no-repeat;                         /* tidak diulang */
-      }
-
-      /* ===== HERO DESKTOP (biarkan seperti sebelumnya) ===== */
+      /* ===== HERO DESKTOP  ===== */
 
       .hero .container {
         padding: 56px 0;                        /* sama seperti definisi sebelumnya */
@@ -2467,83 +2446,52 @@ $role = $_SESSION['user_role'] ?? 'customer';
         });
       })();
     </script>
-
-    <!-- SAFE LOGOUT REDIRECT (FIX 404) -->
+      <!-- SAFE LOGOUT REDIRECT (FIX 404) -->
     <script>
-      // IIFE untuk memastikan logout mengarah ke URL yang benar
+      // IIFE untuk memastikan semua link dengan atribut data-logout
+      // melakukan logout ke backend lalu redirect ke halaman login yang benar
       (function () {
-        // String untuk pemisah path /public/
+        // String penanda lokasi "/public/" di dalam path URL
         const PUBLIC_SPLIT = "/public/";
 
-        // Cari posisi "/public/" di pathname saat ini
-        const idx =
-          location.pathname.indexOf(
-            PUBLIC_SPLIT
-          );
+        // Cari posisi substring "/public/" di pathname saat ini
+        const idx = location.pathname.indexOf(PUBLIC_SPLIT);
 
-        // Hitung PROJECT_BASE berdasarkan posisi /public/
+        // Hitung PROJECT_BASE, yaitu bagian path sebelum "/public/"
+        // Contoh: "/caffora-app1/public/customer/index.php" -> "/caffora-app1"
         const PROJECT_BASE =
-          idx > -1
-            ? location.pathname.slice(
-                0,
-                idx
-              )
-            : "";
+          idx > -1 ? location.pathname.slice(0, idx) : "";
 
-        // Tentukan URL login berdasarkan PROJECT_BASE
-        const LOGIN_URL =
-          PROJECT_BASE +
-          "/public/login.html";
+        // Tentukan URL halaman login berdasarkan PROJECT_BASE
+        // Contoh: "/caffora-app1/public/login.html"
+        const LOGIN_URL = PROJECT_BASE + "/public/login.html";
 
-        // Tentukan URL logout ke backend
-        const LOGOUT_URL =
-          PROJECT_BASE +
-          "/backend/logout.php";
+        // Tentukan URL endpoint logout di backend
+        // Contoh: "/caffora-app1/backend/logout.php"
+        const LOGOUT_URL = PROJECT_BASE + "/backend/logout.php";
 
-        // Ambil semua element yang punya atribut data-logout
-        document
-          .querySelectorAll("[data-logout]")
-          .forEach((a) => {
-            // Set href agar mengarah ke LOGIN_URL
-            a.setAttribute(
-              "href",
-              LOGIN_URL
-            );
+        // Ambil semua elemen yang memiliki atribut data-logout
+        document.querySelectorAll("[data-logout]").forEach((a) => {
+          // Pastikan href-nya mengarah ke LOGIN_URL (untuk fallback jika JS mati)
+          a.setAttribute("href", LOGIN_URL);
 
-            // Tambahkan event click untuk handle logout via fetch
-            a.addEventListener(
-              "click",
-              function (e) {
-                // Cegah behavior default anchor
-                e.preventDefault();
+          // Tambahkan event listener saat link diklik
+          a.addEventListener("click", function (e) {
+            // Cegah perilaku default (navigasi langsung ke href)
+            e.preventDefault();
 
-               // Panggil backend logout dengan fetch
-fetch(LOGOUT_URL, {                 // panggil endpoint logout
+            // Panggil endpoint logout di backend menggunakan fetch
+            fetch(LOGOUT_URL, {
+              credentials: "same-origin", // kirim cookie session
+              cache: "no-store" // jangan cache respons
+            }).finally(() => {
+              // Setelah logout (baik sukses maupun gagal), redirect ke login
+              window.location.replace(LOGIN_URL);
+            });
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>
 
-  credentials: "same-origin",       // kirim cookies session ke server
-
-  cache: "no-store"                 // cegah browser menyimpan cache
-})
-.finally(() => {                    // setelah fetch selesai (berhasil/gagal)
-
-  // Setelah selesai, redirect ke halaman login
-  window.location.replace(
-    LOGIN_URL                       // arahkan ke halaman login
-  );
-
-});                                 // akhir dari finally()
-
-// Penutup kurung function listener
-}                                   // tutup block function
-
-);                                  // tutup event listener
-
-});                                 // tutup DOMContentLoaded
-
-})();                               // immediate-invoked function expression (IIFE)
-
-</script>                           // tutup tag script
-
-</body>                             // tutup body HTML
-
-</html>                             // tutup dokumen HTML

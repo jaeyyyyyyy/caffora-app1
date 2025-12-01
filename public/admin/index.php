@@ -3,72 +3,72 @@
 declare(strict_types=1);
 session_start();
 
-require_once __DIR__ . '/../../backend/config.php';
+require_once __DIR__.'/../../backend/config.php';
 
 /* ===== Guard role: hanya admin ===== */
-if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'admin') {
-  header('Location: ' . BASE_URL . '/public/login.html');
-  exit;
+if (! isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'admin') {
+    header('Location: '.BASE_URL.'/public/login.html');
+    exit;
 }
 
 /* ===== User info ===== */
 $user = [
-  'id'    => (int)($_SESSION['user_id'] ?? 0),
-  'name'  => (string)($_SESSION['user_name'] ?? ''),
-  'email' => (string)($_SESSION['user_email'] ?? ''),
-  'role'  => (string)($_SESSION['user_role'] ?? ''),
+    'id' => (int) ($_SESSION['user_id'] ?? 0),
+    'name' => (string) ($_SESSION['user_name'] ?? ''),
+    'email' => (string) ($_SESSION['user_email'] ?? ''),
+    'role' => (string) ($_SESSION['user_role'] ?? ''),
 ];
-$userName  = htmlspecialchars($user['name'],  ENT_QUOTES, 'UTF-8');
+$userName = htmlspecialchars($user['name'], ENT_QUOTES, 'UTF-8');
 $userEmail = htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8');
 
 /* ===== KPI ===== */
 $kpi = [
-  'total_orders'     => 0,
-  'orders_today'     => 0,
-  'menu_count'       => 0,
-  'active_customers' => 0,
+    'total_orders' => 0,
+    'orders_today' => 0,
+    'menu_count' => 0,
+    'active_customers' => 0,
 ];
 
-$res = $conn->query("SELECT COUNT(*) AS c FROM orders");
-$kpi['total_orders'] = (int)($res?->fetch_assoc()['c'] ?? 0);
+$res = $conn->query('SELECT COUNT(*) AS c FROM orders');
+$kpi['total_orders'] = (int) ($res?->fetch_assoc()['c'] ?? 0);
 
 $today = (new DateTime('today'))->format('Y-m-d');
-$stmt  = $conn->prepare("SELECT COUNT(*) AS c FROM orders WHERE DATE(created_at)=?");
+$stmt = $conn->prepare('SELECT COUNT(*) AS c FROM orders WHERE DATE(created_at)=?');
 $stmt->bind_param('s', $today);
 $stmt->execute();
-$kpi['orders_today'] = (int)($stmt->get_result()->fetch_assoc()['c'] ?? 0);
+$kpi['orders_today'] = (int) ($stmt->get_result()->fetch_assoc()['c'] ?? 0);
 $stmt->close();
 
-$res = $conn->query("SELECT COUNT(*) AS c FROM menu");
-$kpi['menu_count'] = (int)($res?->fetch_assoc()['c'] ?? 0);
+$res = $conn->query('SELECT COUNT(*) AS c FROM menu');
+$kpi['menu_count'] = (int) ($res?->fetch_assoc()['c'] ?? 0);
 
 $res = $conn->query("SELECT COUNT(*) AS c FROM users WHERE status='active' AND role='customer'");
-$kpi['active_customers'] = (int)($res?->fetch_assoc()['c'] ?? 0);
+$kpi['active_customers'] = (int) ($res?->fetch_assoc()['c'] ?? 0);
 
 /* ===== Chart data: Revenue 7 hari terakhir ===== */
-$labels  = [];
+$labels = [];
 $revenue = [];
-$map     = [];
+$map = [];
 
 for ($i = 6; $i >= 0; $i--) {
-  $d = (new DateTime("today -$i day"))->format('Y-m-d');
-  $labels[] = $d;
-  $map[$d]  = 0.0;
+    $d = (new DateTime("today -$i day"))->format('Y-m-d');
+    $labels[] = $d;
+    $map[$d] = 0.0;
 }
 
-$sql = "
+$sql = '
   SELECT DATE(created_at) AS d, SUM(total) AS s
   FROM orders
   WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
   GROUP BY DATE(created_at)
   ORDER BY d ASC
-";
+';
 $res = $conn->query($sql);
 while ($row = $res?->fetch_assoc()) {
-  $map[$row['d']] = (float)$row['s'];
+    $map[$row['d']] = (float) $row['s'];
 }
 foreach ($labels as $d) {
-  $revenue[] = $map[$d];
+    $revenue[] = $map[$d];
 }
 
 /* ===== Distribusi status (Today) =====
@@ -76,45 +76,45 @@ foreach ($labels as $d) {
    Bucket final: new, processing, ready, completed, cancelled
 ============================================================= */
 $statusBuckets = [
-  'new'        => 0,
-  'processing' => 0,
-  'ready'      => 0,
-  'completed'  => 0,
-  'cancelled'  => 0,  // akan menampung cancelled/canceled/failed
+    'new' => 0,
+    'processing' => 0,
+    'ready' => 0,
+    'completed' => 0,
+    'cancelled' => 0,  // akan menampung cancelled/canceled/failed
 ];
 
-$stmt = $conn->prepare("
+$stmt = $conn->prepare('
   SELECT LOWER(order_status) AS s, COUNT(*) AS c
   FROM orders
   WHERE DATE(created_at) = ?
   GROUP BY LOWER(order_status)
-");
+');
 $stmt->bind_param('s', $today);
 $stmt->execute();
 $rst = $stmt->get_result();
 while ($row = $rst?->fetch_assoc()) {
-  $s = (string)$row['s'];
-  $c = (int)$row['c'];
+    $s = (string) $row['s'];
+    $c = (int) $row['c'];
 
-  if (isset($statusBuckets[$s])) {
-    $statusBuckets[$s] += $c;
-  } else {
-    // Normalisasi status lain yang bermakna "cancel"
-    if (in_array($s, ['canceled','cancel','cancelled','failed','void','refunded'], true)) {
-      $statusBuckets['cancelled'] += $c;
+    if (isset($statusBuckets[$s])) {
+        $statusBuckets[$s] += $c;
+    } else {
+        // Normalisasi status lain yang bermakna "cancel"
+        if (in_array($s, ['canceled', 'cancel', 'cancelled', 'failed', 'void', 'refunded'], true)) {
+            $statusBuckets['cancelled'] += $c;
+        }
+        // status lain diabaikan agar tidak mengubah layout/legenda
     }
-    // status lain diabaikan agar tidak mengubah layout/legenda
-  }
 }
 $stmt->close();
 
 // urutan data untuk chart donut
 $distToday = [
-  $statusBuckets['new'],
-  $statusBuckets['processing'],
-  $statusBuckets['ready'],
-  $statusBuckets['completed'],
-  $statusBuckets['cancelled'],
+    $statusBuckets['new'],
+    $statusBuckets['processing'],
+    $statusBuckets['ready'],
+    $statusBuckets['completed'],
+    $statusBuckets['cancelled'],
 ];
 ?>
 <!doctype html>

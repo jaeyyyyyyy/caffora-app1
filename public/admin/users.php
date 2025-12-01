@@ -1,120 +1,132 @@
-<?php  
+<?php
 // public/admin/users.php
 declare(strict_types=1);
 session_start();
 
-require_once __DIR__ . '/../../backend/config.php';
-require_once __DIR__ . '/../../backend/auth_guard.php';
-require_once __DIR__ . '/../../backend/helpers.php';
+require_once __DIR__.'/../../backend/config.php';
+require_once __DIR__.'/../../backend/auth_guard.php';
+require_once __DIR__.'/../../backend/helpers.php';
 require_login(['admin']);
 
 // fallback helper
-if (!function_exists('h')) {
-  function h(string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
+if (! function_exists('h')) {
+    function h(string $s): string
+    {
+        return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+    }
 }
 
 /* ================== UTIL ================== */
-function emailUsedByOther(mysqli $conn, string $email, int $exceptId = 0): bool {
-  $sql = $exceptId > 0
-    ? "SELECT id FROM users WHERE email=? AND id<>? LIMIT 1"
-    : "SELECT id FROM users WHERE email=? LIMIT 1";
-  $stmt = $conn->prepare($sql);
-  if ($exceptId > 0) { $stmt->bind_param('si', $email, $exceptId); }
-  else { $stmt->bind_param('s', $email); }
-  $stmt->execute();
-  $stmt->store_result();
-  $exists = $stmt->num_rows > 0;
-  $stmt->close();
-  return $exists;
+function emailUsedByOther(mysqli $conn, string $email, int $exceptId = 0): bool
+{
+    $sql = $exceptId > 0
+      ? 'SELECT id FROM users WHERE email=? AND id<>? LIMIT 1'
+      : 'SELECT id FROM users WHERE email=? LIMIT 1';
+    $stmt = $conn->prepare($sql);
+    if ($exceptId > 0) {
+        $stmt->bind_param('si', $email, $exceptId);
+    } else {
+        $stmt->bind_param('s', $email);
+    }
+    $stmt->execute();
+    $stmt->store_result();
+    $exists = $stmt->num_rows > 0;
+    $stmt->close();
+
+    return $exists;
 }
 
 $msg = $_GET['msg'] ?? '';
 
 /* ================== ACTIONS ================== */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $act    = $_POST['action'] ?? '';
-  $id     = (int)($_POST['id'] ?? 0);
-  $name   = trim((string)($_POST['name'] ?? ''));
-  $email  = trim((string)($_POST['email'] ?? ''));
-  $role   = trim((string)($_POST['role'] ?? 'customer'));
-  $status = trim((string)($_POST['status'] ?? 'active'));
-  $pass   = (string)($_POST['password'] ?? '');
+    $act = $_POST['action'] ?? '';
+    $id = (int) ($_POST['id'] ?? 0);
+    $name = trim((string) ($_POST['name'] ?? ''));
+    $email = trim((string) ($_POST['email'] ?? ''));
+    $role = trim((string) ($_POST['role'] ?? 'customer'));
+    $status = trim((string) ($_POST['status'] ?? 'active'));
+    $pass = (string) ($_POST['password'] ?? '');
 
-  if (!in_array($role, ['admin','karyawan','customer'], true)) $role = 'customer';
-  if (!in_array($status, ['pending','active'], true)) $status = 'active';
-
-  // ADD
-  if ($act === 'add') {
-    if ($name === '' || $email === '' || $pass === '') {
-      header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode('Nama, email, dan password wajib diisi.'));
-      exit;
+    if (! in_array($role, ['admin', 'karyawan', 'customer'], true)) {
+        $role = 'customer';
     }
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-      header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode('Format email tidak valid.'));
-      exit;
-    }
-    if (emailUsedByOther($conn, $email, 0)) {
-      header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode('Email sudah digunakan.'));
-      exit;
-    }
-    $hash = password_hash($pass, PASSWORD_DEFAULT);
-    $stmt = $conn->prepare("INSERT INTO users(name,email,password,role,status) VALUES (?,?,?,?,?)");
-    $stmt->bind_param('sssss', $name, $email, $hash, $role, $status);
-    $ok = $stmt->execute();
-    $stmt->close();
-    header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode($ok ? 'User ditambahkan.' : 'Gagal menambah user.'));
-    exit;
-  }
-
-  // EDIT
-  if ($act === 'edit' && $id > 0) {
-    if ($name === '' || $email === '') {
-      header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode('Nama dan email wajib.'));
-      exit;
-    }
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-      header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode('Format email tidak valid.'));
-      exit;
-    }
-    if (emailUsedByOther($conn, $email, $id)) {
-      header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode('Email sudah dipakai user lain.'));
-      exit;
+    if (! in_array($status, ['pending', 'active'], true)) {
+        $status = 'active';
     }
 
-    if ($pass !== '') {
-      $hash = password_hash($pass, PASSWORD_DEFAULT);
-      $stmt = $conn->prepare("UPDATE users SET name=?, email=?, password=?, role=?, status=? WHERE id=?");
-      $stmt->bind_param('sssssi', $name, $email, $hash, $role, $status, $id);
-    } else {
-      $stmt = $conn->prepare("UPDATE users SET name=?, email=?, role=?, status=? WHERE id=?");
-      $stmt->bind_param('ssssi', $name, $email, $role, $status, $id);
+    // ADD
+    if ($act === 'add') {
+        if ($name === '' || $email === '' || $pass === '') {
+            header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode('Nama, email, dan password wajib diisi.'));
+            exit;
+        }
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode('Format email tidak valid.'));
+            exit;
+        }
+        if (emailUsedByOther($conn, $email, 0)) {
+            header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode('Email sudah digunakan.'));
+            exit;
+        }
+        $hash = password_hash($pass, PASSWORD_DEFAULT);
+        $stmt = $conn->prepare('INSERT INTO users(name,email,password,role,status) VALUES (?,?,?,?,?)');
+        $stmt->bind_param('sssss', $name, $email, $hash, $role, $status);
+        $ok = $stmt->execute();
+        $stmt->close();
+        header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode($ok ? 'User ditambahkan.' : 'Gagal menambah user.'));
+        exit;
     }
-    $ok = $stmt->execute();
-    $stmt->close();
-    header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode($ok ? 'User diperbarui.' : 'Gagal mengedit user.'));
-    exit;
-  }
+
+    // EDIT
+    if ($act === 'edit' && $id > 0) {
+        if ($name === '' || $email === '') {
+            header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode('Nama dan email wajib.'));
+            exit;
+        }
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode('Format email tidak valid.'));
+            exit;
+        }
+        if (emailUsedByOther($conn, $email, $id)) {
+            header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode('Email sudah dipakai user lain.'));
+            exit;
+        }
+
+        if ($pass !== '') {
+            $hash = password_hash($pass, PASSWORD_DEFAULT);
+            $stmt = $conn->prepare('UPDATE users SET name=?, email=?, password=?, role=?, status=? WHERE id=?');
+            $stmt->bind_param('sssssi', $name, $email, $hash, $role, $status, $id);
+        } else {
+            $stmt = $conn->prepare('UPDATE users SET name=?, email=?, role=?, status=? WHERE id=?');
+            $stmt->bind_param('ssssi', $name, $email, $role, $status, $id);
+        }
+        $ok = $stmt->execute();
+        $stmt->close();
+        header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode($ok ? 'User diperbarui.' : 'Gagal mengedit user.'));
+        exit;
+    }
 }
 
 // DELETE
 if (isset($_GET['delete'])) {
-  $id = (int)$_GET['delete'];
-  if ($id > 0) {
-    $stmt = $conn->prepare("DELETE FROM users WHERE id=?");
-    $stmt->bind_param('i', $id);
-    $stmt->execute();
-    $stmt->close();
-    header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode('User dihapus.'));
-    exit;
-  }
+    $id = (int) $_GET['delete'];
+    if ($id > 0) {
+        $stmt = $conn->prepare('DELETE FROM users WHERE id=?');
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->close();
+        header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode('User dihapus.'));
+        exit;
+    }
 }
 
 /* ================== DATA ================== */
 $rows = [];
-$res = $conn->query("SELECT id,name,email,role,status,created_at FROM users ORDER BY created_at DESC");
+$res = $conn->query('SELECT id,name,email,role,status,created_at FROM users ORDER BY created_at DESC');
 if ($res) {
-  $rows = $res->fetch_all(MYSQLI_ASSOC);
-  $res->close();
+    $rows = $res->fetch_all(MYSQLI_ASSOC);
+    $res->close();
 }
 ?>
 <!doctype html>
@@ -346,9 +358,9 @@ if ($res) {
     </button>
   </div>
 
-  <?php if ($msg): ?>
+  <?php if ($msg) { ?>
     <div class="alert alert-warning py-2"><?= h($msg) ?></div>
-  <?php endif; ?>
+  <?php } ?>
 
   <div class="cardx">
     <div class="table-responsive">
@@ -365,37 +377,39 @@ if ($res) {
           </tr>
         </thead>
         <tbody>
-        <?php if (!$rows): ?>
+        <?php if (! $rows) { ?>
           <tr><td colspan="7" class="text-center text-muted py-4">Belum ada data.</td></tr>
-        <?php else: foreach ($rows as $u): ?>
+        <?php } else {
+            foreach ($rows as $u) { ?>
           <tr>
-            <td><?= (int)$u['id'] ?></td>
+            <td><?= (int) $u['id'] ?></td>
             <td><?= h($u['name']) ?></td>
             <td><?= h($u['email']) ?></td>
             <td><span class="badge text-bg-secondary text-capitalize"><?= h($u['role']) ?></span></td>
             <td>
-              <?php if ($u['status'] === 'active'): ?>
+              <?php if ($u['status'] === 'active') { ?>
                 <span class="badge text-bg-success">Aktif</span>
-              <?php else: ?>
+              <?php } else { ?>
                 <span class="badge text-bg-warning text-dark">Pending</span>
-              <?php endif; ?>
+              <?php } ?>
             </td>
             <td><small class="text-muted"><?= h($u['created_at']) ?></small></td>
             <td class="d-print-none text-nowrap">
               <button class="btn btn-sm btn-outline-primary me-1"
                 title="Edit"
-                onclick='openEdit(<?= (int)$u["id"] ?>, <?= json_encode($u, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT) ?>)'>
+                onclick='openEdit(<?= (int) $u['id'] ?>, <?= json_encode($u, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>)'>
                 <i class="bi bi-pencil-square"></i>
               </button>
               <a class="btn btn-sm btn-outline-danger"
-                href="?delete=<?= (int)$u['id'] ?>"
+                href="?delete=<?= (int) $u['id'] ?>"
                 title="Hapus"
                 onclick="return confirm('Hapus user ini?')">
                 <i class="bi bi-trash"></i>
               </a>
             </td>
           </tr>
-        <?php endforeach; endif; ?>
+        <?php }
+            } ?>
         </tbody>
       </table>
     </div>

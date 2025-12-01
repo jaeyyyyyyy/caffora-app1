@@ -3,82 +3,90 @@
 declare(strict_types=1);
 session_start();
 
-require_once __DIR__ . '/../../backend/config.php';
-require_once __DIR__ . '/../../backend/auth_guard.php';
-require_once __DIR__ . '/../../backend/helpers.php';
+require_once __DIR__.'/../../backend/config.php';
+require_once __DIR__.'/../../backend/auth_guard.php';
+require_once __DIR__.'/../../backend/helpers.php';
 require_login(['admin']);
 
 // fallback helper
-if (!function_exists('h')) {
-  function h(string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
+if (! function_exists('h')) {
+    function h(string $s): string
+    {
+        return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+    }
 }
-if (!function_exists('rupiah')) {
-  function rupiah($n): string { return 'Rp ' . number_format((float)$n, 0, ',', '.'); }
+if (! function_exists('rupiah')) {
+    function rupiah($n): string
+    {
+        return 'Rp '.number_format((float) $n, 0, ',', '.');
+    }
 }
 
 $msg = $_GET['msg'] ?? '';
 
 /* ===== ACTIONS (CRUD) ===== */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $act   = $_POST['action'] ?? '';
-  $id    = (int)($_POST['id'] ?? 0);
-  $name  = trim((string)($_POST['name'] ?? ''));
-  $cat   = strtolower(trim((string)($_POST['category'] ?? '')));
-  $cat   = in_array($cat, ['food','pastry','drink'], true) ? $cat : 'food';
-  $price = (float)($_POST['price'] ?? 0);
-  $stat  = ($_POST['stock_status'] ?? 'Ready') === 'Sold Out' ? 'Sold Out' : 'Ready';
+    $act = $_POST['action'] ?? '';
+    $id = (int) ($_POST['id'] ?? 0);
+    $name = trim((string) ($_POST['name'] ?? ''));
+    $cat = strtolower(trim((string) ($_POST['category'] ?? '')));
+    $cat = in_array($cat, ['food', 'pastry', 'drink'], true) ? $cat : 'food';
+    $price = (float) ($_POST['price'] ?? 0);
+    $stat = ($_POST['stock_status'] ?? 'Ready') === 'Sold Out' ? 'Sold Out' : 'Ready';
 
-  // upload gambar (opsional)
-  $imagePath = null;
-  if (!empty($_FILES['image']['name']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
-    $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
-    if (in_array($ext, ['jpg','jpeg','png','webp'], true)) {
-      $updir = __DIR__ . '/../../public/uploads/menu';
-      if (!is_dir($updir)) @mkdir($updir, 0777, true);
-      $new = 'm_' . time() . '_' . mt_rand(1000,9999) . '.' . $ext;
-      if (move_uploaded_file($_FILES['image']['tmp_name'], $updir . '/' . $new)) {
-        $imagePath = 'uploads/menu/' . $new;
-      }
+    // upload gambar (opsional)
+    $imagePath = null;
+    if (! empty($_FILES['image']['name']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
+        $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+            $updir = __DIR__.'/../../public/uploads/menu';
+            if (! is_dir($updir)) {
+                @mkdir($updir, 0777, true);
+            }
+            $new = 'm_'.time().'_'.mt_rand(1000, 9999).'.'.$ext;
+            if (move_uploaded_file($_FILES['image']['tmp_name'], $updir.'/'.$new)) {
+                $imagePath = 'uploads/menu/'.$new;
+            }
+        }
     }
-  }
 
-  if ($act === 'add') {
-    $stmt = $conn->prepare("INSERT INTO menu(name,category,image,price,stock_status) VALUES (?,?,?,?,?)");
-    $stmt->bind_param('sssds', $name, $cat, $imagePath, $price, $stat);
-    $ok = $stmt->execute();
-    $stmt->close();
-    header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode($ok ? 'Menu ditambahkan.' : 'Gagal menambah menu.'));
-    exit;
-  }
-
-  if ($act === 'edit' && $id > 0) {
-    if ($imagePath) {
-      $stmt = $conn->prepare("UPDATE menu SET name=?, category=?, image=?, price=?, stock_status=? WHERE id=?");
-      $stmt->bind_param('sssdsi', $name, $cat, $imagePath, $price, $stat, $id);
-    } else {
-      $stmt = $conn->prepare("UPDATE menu SET name=?, category=?, price=?, stock_status=? WHERE id=?");
-      $stmt->bind_param('ssdsi', $name, $cat, $price, $stat, $id);
+    if ($act === 'add') {
+        $stmt = $conn->prepare('INSERT INTO menu(name,category,image,price,stock_status) VALUES (?,?,?,?,?)');
+        $stmt->bind_param('sssds', $name, $cat, $imagePath, $price, $stat);
+        $ok = $stmt->execute();
+        $stmt->close();
+        header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode($ok ? 'Menu ditambahkan.' : 'Gagal menambah menu.'));
+        exit;
     }
-    $ok = $stmt->execute();
-    $stmt->close();
-    header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode($ok ? 'Menu diperbarui.' : 'Gagal mengedit menu.'));
-    exit;
-  }
+
+    if ($act === 'edit' && $id > 0) {
+        if ($imagePath) {
+            $stmt = $conn->prepare('UPDATE menu SET name=?, category=?, image=?, price=?, stock_status=? WHERE id=?');
+            $stmt->bind_param('sssdsi', $name, $cat, $imagePath, $price, $stat, $id);
+        } else {
+            $stmt = $conn->prepare('UPDATE menu SET name=?, category=?, price=?, stock_status=? WHERE id=?');
+            $stmt->bind_param('ssdsi', $name, $cat, $price, $stat, $id);
+        }
+        $ok = $stmt->execute();
+        $stmt->close();
+        header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode($ok ? 'Menu diperbarui.' : 'Gagal mengedit menu.'));
+        exit;
+    }
 }
 
 // DELETE
 if (isset($_GET['delete'])) {
-  $id = (int)$_GET['delete'];
-  $stmt = $conn->prepare("DELETE FROM menu WHERE id=?");
-  $stmt->bind_param('i', $id);
-  $stmt->execute();
-  $stmt->close();
-  header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode('Menu dihapus.'));
-  exit;
+    $id = (int) $_GET['delete'];
+    $stmt = $conn->prepare('DELETE FROM menu WHERE id=?');
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $stmt->close();
+    header('Location: '.$_SERVER['PHP_SELF'].'?msg='.urlencode('Menu dihapus.'));
+    exit;
 }
 
 /* ===== DATA ===== */
-$res   = $conn->query("SELECT * FROM menu ORDER BY created_at DESC");
+$res = $conn->query('SELECT * FROM menu ORDER BY created_at DESC');
 $menus = $res?->fetch_all(MYSQLI_ASSOC) ?? [];
 ?>
 <!doctype html>
@@ -295,9 +303,9 @@ $menus = $res?->fetch_all(MYSQLI_ASSOC) ?? [];
     </button>
   </div>
 
-  <?php if ($msg): ?>
+  <?php if ($msg) { ?>
     <div class="alert alert-warning py-2"><?= h($msg) ?></div>
-  <?php endif; ?>
+  <?php } ?>
 
   <div class="cardx">
     <div class="table-responsive">
@@ -314,17 +322,18 @@ $menus = $res?->fetch_all(MYSQLI_ASSOC) ?? [];
           </tr>
         </thead>
         <tbody>
-        <?php if (!$menus): ?>
+        <?php if (! $menus) { ?>
           <tr><td colspan="7" class="text-center text-muted py-4">Belum ada data.</td></tr>
-        <?php else: foreach ($menus as $m): ?>
+        <?php } else {
+            foreach ($menus as $m) { ?>
           <tr>
-            <td><?= (int)$m['id'] ?></td>
+            <td><?= (int) $m['id'] ?></td>
             <td>
               <?php
-              $src = !empty($m['image'])
-                ? (str_starts_with($m['image'], 'http') ? $m['image'] : BASE_URL.'/public/'.$m['image'])
-                : 'https://picsum.photos/seed/caffora/96';
-              ?>
+                  $src = ! empty($m['image'])
+                    ? (str_starts_with($m['image'], 'http') ? $m['image'] : BASE_URL.'/public/'.$m['image'])
+                    : 'https://picsum.photos/seed/caffora/96';
+                ?>
               <img src="<?= h($src) ?>" alt="" class="thumb">
             </td>
             <td><?= h($m['name']) ?></td>
@@ -332,24 +341,25 @@ $menus = $res?->fetch_all(MYSQLI_ASSOC) ?? [];
             <td><?= rupiah($m['price']) ?></td>
             <td>
               <?= $m['stock_status'] === 'Ready'
-                ? '<span class="badge text-bg-success">Ready</span>'
-                : '<span class="badge text-bg-danger">Sold Out</span>' ?>
+                  ? '<span class="badge text-bg-success">Ready</span>'
+                  : '<span class="badge text-bg-danger">Sold Out</span>' ?>
             </td>
             <td class="text-nowrap">
               <button class="btn btn-sm btn-outline-primary me-1"
                 title="Edit"
-                onclick='openEdit(<?= (int)$m["id"] ?>, <?= json_encode($m, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT) ?>)'>
+                onclick='openEdit(<?= (int) $m['id'] ?>, <?= json_encode($m, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>)'>
                 <i class="bi bi-pencil-square"></i>
               </button>
               <a class="btn btn-sm btn-outline-danger"
-                 href="?delete=<?= (int)$m['id'] ?>"
+                 href="?delete=<?= (int) $m['id'] ?>"
                  title="Hapus"
                  onclick="return confirm('Hapus menu ini?')">
                 <i class="bi bi-trash"></i>
               </a>
             </td>
           </tr>
-        <?php endforeach; endif; ?>
+        <?php }
+            } ?>
         </tbody>
       </table>
     </div>

@@ -1,69 +1,74 @@
-<?php 
+<?php
 // public/karyawan/receipt.php
 declare(strict_types=1);
-if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
 
-require_once __DIR__ . '/../../backend/auth_guard.php';
+require_once __DIR__.'/../../backend/auth_guard.php';
 // ⬇⬇⬇ REVISI: karyawan saja
 require_login(['karyawan']);
-require_once __DIR__ . '/../../backend/config.php'; // $conn, BASE_URL, h()
+require_once __DIR__.'/../../backend/config.php'; // $conn, BASE_URL, h()
 
-function rp(float $n): string { return 'Rp ' . number_format($n, 0, ',', '.'); }
+function rp(float $n): string
+{
+    return 'Rp '.number_format($n, 0, ',', '.');
+}
 
-$orderId = (int)($_GET['order'] ?? 0);
+$orderId = (int) ($_GET['order'] ?? 0);
 
 /* --- ambil data pesanan + item + invoice --- */
-$ord   = null;
+$ord = null;
 $items = [];
-$inv   = null;
+$inv = null;
 
 if ($orderId) {
-  // karyawan boleh lihat semua order
-  $stmt = $conn->prepare("SELECT * FROM orders WHERE id=? LIMIT 1");
-  $stmt->bind_param('i', $orderId);
-  $stmt->execute();
-  $ord = $stmt->get_result()?->fetch_assoc();
-  $stmt->close();
+    // karyawan boleh lihat semua order
+    $stmt = $conn->prepare('SELECT * FROM orders WHERE id=? LIMIT 1');
+    $stmt->bind_param('i', $orderId);
+    $stmt->execute();
+    $ord = $stmt->get_result()?->fetch_assoc();
+    $stmt->close();
 
-  if ($ord) {
-    // item
-    $stmt = $conn->prepare("
+    if ($ord) {
+        // item
+        $stmt = $conn->prepare('
       SELECT oi.qty, oi.price, m.name AS menu_name
       FROM order_items oi
       LEFT JOIN menu m ON m.id=oi.menu_id
       WHERE oi.order_id=? ORDER BY oi.id
-    ");
-    $stmt->bind_param('i', $orderId);
-    $stmt->execute();
-    $items = $stmt->get_result()?->fetch_all(MYSQLI_ASSOC) ?? [];
-    $stmt->close();
+    ');
+        $stmt->bind_param('i', $orderId);
+        $stmt->execute();
+        $items = $stmt->get_result()?->fetch_all(MYSQLI_ASSOC) ?? [];
+        $stmt->close();
 
-    // invoice
-    $stmt = $conn->prepare("SELECT amount, issued_at FROM invoices WHERE order_id=? LIMIT 1");
-    $stmt->bind_param('i', $orderId);
-    $stmt->execute();
-    $inv = $stmt->get_result()?->fetch_assoc();
-    $stmt->close();
-  }
+        // invoice
+        $stmt = $conn->prepare('SELECT amount, issued_at FROM invoices WHERE order_id=? LIMIT 1');
+        $stmt->bind_param('i', $orderId);
+        $stmt->execute();
+        $inv = $stmt->get_result()?->fetch_assoc();
+        $stmt->close();
+    }
 }
 
 /* --- guard akses --- */
-if (!$ord) {
-  http_response_code(404);
-  echo 'Order tidak ditemukan';
-  exit;
+if (! $ord) {
+    http_response_code(404);
+    echo 'Order tidak ditemukan';
+    exit;
 }
 
 /* siapkan angka supaya aman kalau backend lama belum punya kolom pajak */
-$subtotal    = isset($ord['subtotal'])     ? (float)$ord['subtotal']     : (float)($ord['total'] ?? 0);
-$taxAmount   = isset($ord['tax_amount'])   ? (float)$ord['tax_amount']   : 0.0;
-$grandTotal  = isset($ord['grand_total'])  ? (float)$ord['grand_total']  : ($subtotal + $taxAmount);
+$subtotal = isset($ord['subtotal']) ? (float) $ord['subtotal'] : (float) ($ord['total'] ?? 0);
+$taxAmount = isset($ord['tax_amount']) ? (float) $ord['tax_amount'] : 0.0;
+$grandTotal = isset($ord['grand_total']) ? (float) $ord['grand_total'] : ($subtotal + $taxAmount);
 
 /* =========================================================
    CASE 1: BELUM LUNAS
    ========================================================= */
 if ($ord['payment_status'] !== 'paid') {
-  ?>
+    ?>
   <!doctype html>
   <html lang="id">
   <head>
@@ -157,7 +162,7 @@ if ($ord['payment_status'] !== 'paid') {
   </body>
   </html>
   <?php
-  exit;
+    exit;
 }
 
 /* =========================================================
@@ -405,7 +410,7 @@ if ($ord['payment_status'] !== 'paid') {
           <div style="color:#9ca3af">Customer:</div>
           <div style="font-weight:500"><?= h($ord['customer_name']) ?></div>
           <div>
-            <?= h($ord['service_type']==='dine_in' ? 'Dine In' : 'Take Away') ?>
+            <?= h($ord['service_type'] === 'dine_in' ? 'Dine In' : 'Take Away') ?>
             <?= $ord['table_no'] ? ', Meja '.h($ord['table_no']) : '' ?>
           </div>
         </div>
@@ -419,18 +424,18 @@ if ($ord['payment_status'] !== 'paid') {
       </div>
 
       <div class="items">
-        <?php foreach($items as $it):
-          $sub = (float)$it['qty'] * (float)$it['price']; ?>
+        <?php foreach ($items as $it) {
+            $sub = (float) $it['qty'] * (float) $it['price']; ?>
           <div class="item">
             <div>
               <div class="item-name"><?= h($it['menu_name'] ?? 'Menu') ?></div>
               <div class="item-sub">
-                Qty: <?= (int)$it['qty'] ?> × <?= rp((float)$it['price']) ?>
+                Qty: <?= (int) $it['qty'] ?> × <?= rp((float) $it['price']) ?>
               </div>
             </div>
             <div class="item-subtotal"><?= rp($sub) ?></div>
           </div>
-        <?php endforeach; ?>
+        <?php } ?>
       </div>
 
       <!-- pakai subtotal & pajak baru -->
@@ -451,17 +456,17 @@ if ($ord['payment_status'] !== 'paid') {
         <div class="pill">L U N A S</div>
         <div>
           Metode Pembayaran:
-          <b><?= h(strtoupper(str_replace('_',' ',$ord['payment_method'] ?? '-'))) ?></b>
+          <b><?= h(strtoupper(str_replace('_', ' ', $ord['payment_method'] ?? '-'))) ?></b>
         </div>
       </div>
 
       <div class="rule"></div>
 
       <div class="footer-note">
-        <?php if ($inv): ?>
-          Tagihan: <b><?= rp((float)$inv['amount']) ?></b><br>
+        <?php if ($inv) { ?>
+          Tagihan: <b><?= rp((float) $inv['amount']) ?></b><br>
           Diterbitkan: <?= h(date('d M Y H:i', strtotime($inv['issued_at']))) ?><br>
-        <?php endif; ?>
+        <?php } ?>
         * Harga sudah termasuk PPN 11%. Terima kasih sudah belanja di <b>Caffora</b>.
       </div>
     </main>

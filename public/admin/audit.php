@@ -2,11 +2,11 @@
 // public/admin/audit.php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../backend/auth_guard.php';
+require_once __DIR__.'/../../backend/auth_guard.php';
 require_login(['admin']);
-require_once __DIR__ . '/../../backend/config.php';
+require_once __DIR__.'/../../backend/config.php';
 
-$BASE      = BASE_URL;
+$BASE = BASE_URL;
 $adminName = htmlspecialchars($_SESSION['user_name'] ?? 'Admin', ENT_QUOTES, 'UTF-8');
 ?>
 <!doctype html>

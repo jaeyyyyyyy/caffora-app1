@@ -1,150 +1,133 @@
 <?php 
-// public/customer/history.php
-// =======================================
-// Halaman Riwayat Pesanan Customer
-// - Hanya bisa diakses role "customer"
-// - Menampilkan daftar order + item + invoice
-// =======================================
+// Lokasi file: public/customer/history.php
 
-declare(strict_types=1); // Aktifkan strict types di PHP
+// Aktifkan strict typing untuk keamanan tipe data
+declare(strict_types=1);
 
-// Pastikan session aktif
-if (session_status() !== PHP_SESSION_ACTIVE) {
-  session_start(); // Mulai / lanjutkan sesi untuk akses $_SESSION
-}
+// Mulai session jika belum aktif
+if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 
-// Guard otentikasi & otorisasi
+// Import guard otentikasi untuk memastikan user adalah customer
 require_once __DIR__ . '/../../backend/auth_guard.php';
-// Wajib login sebagai customer
-require_login(['customer']); // wajib login customer
 
-// Config berisi: koneksi $conn, BASE_URL, function h(), dll.
+// Wajib login sebagai customer sebelum mengakses halaman ini
+require_login(['customer']);
+
+// Import konfigurasi backend (koneksi database, BASE_URL, fungsi h())
 require_once __DIR__ . '/../../backend/config.php'; // $conn, BASE_URL, h()
 
-// Ambil user_id dari sesi, cast ke integer
+// Ambil user_id dari session
 $userId = (int)($_SESSION['user_id'] ?? 0);
 
-// ---------------------------------------
-// Helper format ke Rupiah
-// ---------------------------------------
-function rupiah(float $n): string
-{
-  // Format angka jadi: Rp 10.000
+// Fungsi helper untuk format Rupiah
+function rupiah(float $n): string {
   return 'Rp ' . number_format($n, 0, ',', '.');
 }
 
-/* ======================================
-   Ambil daftar orders milik user
-   ====================================== */
+// ============================================
+// Ambil daftar orders milik user
+// ============================================
 
-// Siapkan array untuk menampung semua order user
+// Siapkan array default untuk order
 $orders = [];
 
+// Jika user sah (punya ID)
 if ($userId > 0) {
-  // Query order milik user ini saja (WHERE user_id = ?)
-  $sql = "
-    SELECT
-      id,
-      invoice_no,
-      customer_name,
-      service_type,
-      table_no,
-      total,
-      order_status,
-      payment_status,
-      payment_method,
-      created_at
-    FROM orders
-    WHERE user_id = ?
-    ORDER BY created_at DESC, id DESC
-  ";
 
-  // Siapkan prepared statement
+  // Query: ambil semua order berdasarkan user_id
+  $sql  = "SELECT id, invoice_no, customer_name, service_type, table_no,
+                  total, order_status, payment_status, payment_method, created_at
+           FROM orders WHERE user_id = ? ORDER BY created_at DESC, id DESC";
+
+  // Siapkan statement
   $stmt = $conn->prepare($sql);
-  // Binding parameter user_id (tipe 'i' = integer)
+
+  // Bind parameter user_id
   $stmt->bind_param('i', $userId);
+
   // Eksekusi query
   $stmt->execute();
 
-  // Fetch semua order sebagai array asosiatif
-  // get_result() bisa null, maka dipakai nullsafe operator ?->
+  // Ambil hasil dalam bentuk associative array
   $orders = $stmt->get_result()?->fetch_all(MYSQLI_ASSOC) ?? [];
 
   // Tutup statement
   $stmt->close();
 }
 
-/* ======================================
-   Ambil items + invoices dalam 1 kali query
-   (bulk by order_ids)
-   ====================================== */
+// ============================================
+// Ambil item & invoice untuk semua order (bulk)
+// ============================================
 
-// Ambil semua id order dari array $orders
+// Kumpulkan semua order_id dari list orders
 $orderIds     = array_column($orders, 'id');
-// itemsByOrder: key = order_id, value = array item per order
-$itemsByOrder = []; // [order_id => [items...]]
-// invByOrder: key = order_id, value = row invoice
-$invByOrder   = []; // [order_id => invoice row]
 
+// Siapkan array penampung
+$itemsByOrder = [];
+$invByOrder   = [];
+
+// Jika terdapat order ID
 if ($orderIds) {
-  // Buat placeholder "?, ?, ?" sesuai jumlah order_id
+
+  // Buat placeholder untuk query IN (?, ?, ?, ...)
   $place = implode(',', array_fill(0, count($orderIds), '?'));
-  // String tipe parameter, misal "iii" jika ada 3 id (semua integer)
+
+  // Buat tipe binding, misal 'iii' dll.
   $types = str_repeat('i', count($orderIds));
 
-  /* ---------- Items per order ---------- */
-  $sqlI = "
-    SELECT
-      oi.order_id,
-      oi.menu_id,
-      oi.qty,
-      oi.price,
-      m.name  AS menu_name,
-      m.image AS menu_image
-    FROM order_items oi
-    LEFT JOIN menu m ON m.id = oi.menu_id
-    WHERE oi.order_id IN ($place)
-    ORDER BY oi.order_id, oi.id
-  ";
+  // --------------------------------------------
+  // Ambil semua item per order
+  // --------------------------------------------
 
-  // Siapkan statement untuk ambil items
+  $sqlI  = "SELECT oi.order_id, oi.menu_id, oi.qty, oi.price,
+                   m.name AS menu_name, m.image AS menu_image
+            FROM order_items oi
+            LEFT JOIN menu m ON m.id=oi.menu_id
+            WHERE oi.order_id IN ($place)
+            ORDER BY oi.order_id, oi.id";
+
+  // Siapkan statement pengambilan item
   $stmtI = $conn->prepare($sqlI);
-  // Binding semua order_id
+
+  // Bind semua order_id
   $stmtI->bind_param($types, ...$orderIds);
-  // Eksekusi
+
+  // Eksekusi query
   $stmtI->execute();
 
-  // Hasil query items
+  // Ambil hasil
   $resI = $stmtI->get_result();
+
+  // Loop setiap item dan masukkan ke array berdasarkan order_id
   while ($row = $resI->fetch_assoc()) {
-    // Kelompokkan item berdasarkan order_id
     $itemsByOrder[(int)$row['order_id']][] = $row;
   }
 
-  // Tutup statement items
+  // Tutup statement item
   $stmtI->close();
 
-  /* ---------- Invoice per order ---------- */
-  $sqlV = "
-    SELECT
-      order_id,
-      amount,
-      issued_at
-    FROM invoices
-    WHERE order_id IN ($place)
-  ";
+  // --------------------------------------------
+  // Ambil semua invoice per order
+  // --------------------------------------------
 
-  // Siapkan statement untuk invoice
+  $sqlV  = "SELECT order_id, amount, issued_at
+            FROM invoices
+            WHERE order_id IN ($place)";
+
+  // Siapkan statement invoice
   $stmtV = $conn->prepare($sqlV);
-  // Binding semua order_id
+
+  // Bind semua order_id
   $stmtV->bind_param($types, ...$orderIds);
-  // Eksekusi
+
+  // Eksekusi query
   $stmtV->execute();
 
-  // Hasil query invoice
+  // Ambil hasil invoice
   $resV = $stmtV->get_result();
+
+  // Loop setiap invoice dan masukkan berdasarkan order_id
   while ($row = $resV->fetch_assoc()) {
-    // Simpan invoice per order_id (hanya 1 invoice per order)
     $invByOrder[(int)$row['order_id']] = $row;
   }
 
@@ -152,412 +135,444 @@ if ($orderIds) {
   $stmtV->close();
 }
 ?>
+
+<!-- Deklarasi dokumen HTML5 -->
 <!doctype html>
+
+<!-- Set bahasa dokumen ke Bahasa Indonesia -->
 <html lang="id">
+
+<!-- Awal elemen head -->
 <head>
+
+  <!-- Set encoding karakter ke UTF-8 -->
   <meta charset="utf-8">
+
+  <!-- Judul halaman yang tampil di tab browser -->
   <title>Riwayat Pesanan — Caffora</title>
+
+  <!-- Responsif di semua perangkat, lebar mengikuti viewport -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Bootstrap & Icons -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  >
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-    rel="stylesheet"
-  >
+  <!-- Import CSS Bootstrap v5.3.3 dari CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
+  <!-- Import Bootstrap Icons untuk ikon-ikon bawaan -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Awal blok CSS internal untuk styling halaman history -->
   <style>
-    :root {
-      /* Warna dan radius untuk halaman riwayat */
-      --ink:#2b2b2b;           /* Warna teks utama */
-      --muted:#6b7280;         /* Warna teks sekunder */
-      --line:#e5e7eb;          /* Warna garis/border */
-      --bg:#ffffff;            /* Background halaman putih */
-      --chip-bg:#f9fafb;       /* Background chip status */
-      --radius-card:16px;      /* Radius kartu order */
-      --radius-chip:10px;      /* Radius chip status */
-    }
+  :root {
+    --ink: #2b2b2b;           /* warna teks utama */
+    --muted: #6b7280;         /* warna teks sekunder */
+    --line: #e5e7eb;          /* warna garis border */
+    --bg: #ffffff;            /* warna background */
+    --chip-bg: #f9fafb;       /* background chip default */
+    --radius-card: 16px;      /* sudut kartu order */
+    --radius-chip: 10px;      /* sudut chip status */
+  }
 
-    *{
-      box-sizing:border-box;   /* Border-box agar layout lebih mudah dikontrol */
-      font-family:Poppins,
-                 system-ui,
-                 -apple-system,
-                 "Segoe UI",
-                 Roboto,
-                 Arial,
-                 sans-serif;   /* Font utama Poppins dengan fallback system font */
-    }
+  /* ===================================================== */
+  /* GLOBAL                                                 */
+  /* ===================================================== */
+  * {
+    font-family: Poppins, system-ui, -apple-system, "Segoe UI",
+                 Roboto, Arial, sans-serif;                 /* font stack */
+    box-sizing: border-box;                                  /* box model */
+  }
 
-    body{
-      background:var(--bg);    /* Latar belakang putih */
-      color:var(--ink);        /* Teks warna gelap */
-      -webkit-font-smoothing:antialiased; /* Haluskan rendering font */
-    }
+  body {
+    background: var(--bg);                                   /* bg putih */
+    color: var(--ink);                                       /* teks utama */
+    -webkit-font-smoothing: antialiased;                     /* smooth font */
+  }
 
-    /* ============================
-       TOP BAR
-       ============================ */
-    .topbar{
-      background:#fff;                 /* Topbar putih */
-      border-bottom:1px solid var(--line); /* Garis bawah tipis */
-    }
+  /* ===================================================== */
+  /* TOPBAR                                                 */
+  /* ===================================================== */
+  .topbar {
+    background: #fff;                                        /* bg putih */
+    border-bottom: 1px solid rgba(0,0,0,.05);               /* garis tipis */
+    position: sticky;                                        /* menempel saat scroll */
+    top: 0;                                                  /* posisi atas */
+    z-index: 20;                                             /* layer atas */
+  }
 
-    .topbar-inner{
-      max-width:1200px;  /* Lebar maksimal sebaris dengan halaman lain */
-      margin:0 auto;     /* Center di tengah */
-      padding:12px 24px; /* Ruang dalam kiri-kanan dan atas-bawah */
-      display:flex;      /* Flex untuk isi topbar */
-      align-items:center;/* Vertikal center */
-      min-height:48px;   /* Tinggi minimum topbar */
-    }
+  .topbar-inner {
+    max-width: 1200px;                                       /* lebar maksimum */
+    margin: 0 auto;                                          /* center */
+    padding: 12px 24px;                                      /* padding dalam */
+    min-height: 52px;                                        /* tinggi minimum */
+    display: flex;                                           /* flex layout */
+    align-items: center;                                     /* center vertikal */
+    gap: 10px;                                               /* jarak antar item */
+  }
 
-    .back-link{
-      display:inline-flex;    /* Link tampil sebagai inline-flex */
-      align-items:center;     /* Center ikon + teks */
-      gap:10px;               /* Jarak antara ikon dan teks */
-      color:var(--brown);     /* Warna teks link (coklat brand) */
-      text-decoration:none;   /* Hilangkan garis bawah */
-      font-weight:600;        /* Teks lebih tebal */
-      font-size:16px;         /* Ukuran font 16px */
-      line-height:1.3;        /* Jarak antar baris */
-    }
+  .back-link {
+    display: inline-flex;                                    /* flex inline */
+    align-items: center;                                     /* center vertikal */
+    gap: 10px;                                               /* jarak ikon-teks */
+    color: var(--ink);                                       /* warna teks */
+    text-decoration: none;                                   /* tanpa underline */
+    border: 0;                                               /* tanpa border */
+    background: transparent;                                 /* bg transparan */
+    padding: 0;                                              /* nol padding */
+  }
 
-    .back-link .bi{
-      font-size:18px !important;              /* Ukuran ikon panah */
-      width:18px;
-      height:18px;
-      line-height:1;
-      display:inline-flex;
-      align-items:center;                     /* Center isi ikon */
-      justify-content:center;
-    }
+  .back-link span {
+    font-family: system-ui, -apple-system, "Segoe UI",
+                 Roboto, Arial, sans-serif !important;        /* paksa system font */
+    font-size: 1rem;                                          /* 16px */
+    font-weight: 600;                                         /* semi-bold */
+    line-height: 1.3;                                         /* tinggi baris */
+  }
 
-    /* ============================
-       PAGE WRAPPER
-       ============================ */
-    .page{
-      max-width:1200px;        /* Lebar maksimal konten */
-      margin:20px auto 32px;   /* Margin atas + bawah */
-      padding:0 24px;          /* Padding kiri-kanan */
-    }
+  .back-link .bi {
+    width: 18px;                                              /* ikon 18px */
+    height: 18px;                                             /* ikon 18px */
+    display: inline-flex;                                     /* inline flex */
+    align-items: center;                                      /* center */
+    justify-content: center;                                  /* center */
+    font-size: 18px !important;                               /* paksa size */
+    line-height: 18px !important;                             /* tinggi baris */
+  }
 
-    /* ============================
-       ORDER CARD
-       ============================ */
-    .order-card{
-      border:1px solid var(--line);            /* Border tipis abu */
-      border-radius:var(--radius-card);        /* Sudut melengkung */
-      background:#fff;                         /* Background card putih */
-      overflow:hidden;                         /* Konten di luar radius disembunyikan */
-      box-shadow:0 8px 20px rgba(0,0,0,.03);   /* Shadow lembut */
-    }
+  /* ===================================================== */
+  /* PAGE WRAPPER                                           */
+  /* ===================================================== */
+  .page {
+    max-width: 1200px;                                       /* batas lebar */
+    margin: 20px auto 32px;                                  /* margin kiri-kanan auto */
+    padding: 0 24px;                                         /* padding horizontal */
+  }
 
-    .order-card + .order-card{
-      margin-top:16px;                         /* Jarak antar card order */
-    }
+  /* ===================================================== */
+  /* ORDER CARD                                             */
+  /* ===================================================== */
+  .order-card {
+    border: 1px solid var(--line);                           /* border tipis */
+    border-radius: var(--radius-card);                       /* sudut kartu */
+    background: #fff;                                        /* bg putih */
+    overflow: hidden;                                        /* hilangkan overflow */
+    box-shadow: 0 8px 20px rgba(0,0,0,.03);                  /* shadow lembut */
+  }
 
-    /* HEADER DI DALAM CARD */
-    .order-head{
-      display:flex;                            /* Flex untuk invoice + waktu */
-      flex-wrap:wrap;                          /* Boleh turun baris jika sempit */
-      justify-content:space-between;           /* Invoice di kiri, waktu di kanan */
-      align-items:flex-start;
-      row-gap:6px;                             /* Jarak antar baris flex */
-      padding:16px 16px 12px;                  /* Ruang dalam header */
-    }
+  .order-card + .order-card {
+    margin-top: 16px;                                        /* jarak antar card */
+  }
 
-    .head-left{
-      font-size:.95rem;                        /* Ukuran teks invoice_no */
-      line-height:1.3;
-      font-weight:600;
-      color:var(--ink);
-    }
+  /* ===================================================== */
+  /* HEADER CARD                                            */
+  /* ===================================================== */
+  .order-head {
+    display: flex;                                           /* layout flex */
+    flex-wrap: wrap;                                         /* bisa pindah baris */
+    justify-content: space-between;                          /* kiri & kanan */
+    align-items: flex-start;                                 /* posisi awal */
+    row-gap: 6px;                                            /* jarak antar baris */
+    padding: 16px 16px 12px;                                 /* padding */
+  }
 
-    .head-right{
-      display:flex;
-      align-items:center;
-      gap:6px;                                 /* Ikon jam + teks waktu */
-      font-size:.8rem;
-      line-height:1.2;
-      color:var(--muted);                      /* Warna abu lembut */
-      font-weight:500;
-    }
+  .head-left {
+    font-size: .95rem;                                       /* ukuran teks */
+    line-height: 1.3;                                        /* tinggi baris */
+    font-weight: 600;                                        /* bold */
+    color: var(--ink);                                       /* warna teks */
+  }
 
-    /* ============================
-       CHIPS STATUS
-       ============================ */
-    .chips{
-      display:flex;
-      flex-wrap:wrap;                          /* Chip bisa turun baris */
-      gap:8px;                                 /* Jarak antar chip */
-      padding:12px 16px;
-      background:#fafafa;                      /* BG khusus baris chip */
-    }
+  .head-right {
+    display: flex;                                           /* flex */
+    align-items: center;                                     /* center vertikal */
+    gap: 6px;                                                /* jarak */
+    font-size: .8rem;                                        /* teks kecil */
+    line-height: 1.2;                                        /* rapat */
+    color: var(--muted);                                     /* abu-abu */
+    font-weight: 500;                                        /* medium */
+  }
 
-    .chip{
-      background:var(--chip-bg);               /* BG chip default */
-      border:1px solid var(--line);            /* Border chip default */
-      border-radius:var(--radius-chip);        /* Sudut chip */
-      padding:6px 10px;                        /* Ruang dalam chip */
-      font-size:.75rem;                        /* Ukuran font kecil */
-      font-weight:600;
-      display:inline-flex;
-      align-items:center;
-      gap:6px;                                 /* Jarak ikon + teks chip */
-      white-space:nowrap;                      /* Jangan pindah baris */
-    }
+  /* ===================================================== */
+  /* CHIPS (STATUS)                                         */
+  /* ===================================================== */
+  .chips {
+    display: flex;                                           /* flex */
+    flex-wrap: wrap;                                         /* wrap */
+    gap: 8px;                                                /* jarak antar chip */
+    padding: 12px 16px;                                      /* padding */
+    background: #fafafa;                                     /* abu muda */
+  }
 
-    /* warna khusus chip status order/pembayaran */
-    .chip--order.pending,
-    .chip--pay.pending{
-      background:#fff7ed;                      /* Oranye lembut */
-      border-color:#fde68a;                    /* Border kuning lembut */
-      color:#92400e;                           /* Teks coklat oranye */
-    }
+  .chip {
+    background: var(--chip-bg);                              /* chip bg */
+    border: 1px solid var(--line);                           /* border tipis */
+    border-radius: var(--radius-chip);                       /* sudut bulat */
+    padding: 6px 10px;                                       /* padding */
+    font-size: .75rem;                                       /* teks kecil */
+    font-weight: 600;                                        /* bold */
+    display: inline-flex;                                    /* inline flex */
+    align-items: center;                                     /* center */
+    gap: 6px;                                                /* jarak ikon-teks */
+    white-space: nowrap;                                     /* single line */
+  }
 
-    .chip--order.completed,
-    .chip--pay.paid{
-      background:#ecfdf5;                      /* Hijau lembut */
-      border-color:#bbf7d0;                    /* Border hijau terang */
-      color:#065f46;                           /* Teks hijau tua */
-    }
+  .chip--order.pending,
+  .chip--pay.pending {
+    background: #fff7ed;                                     /* kuning soft */
+    border-color: #fde68a;                                   /* kuning border */
+    color: #92400e;                                          /* teks coklat */
+  }
 
-    .chip--order.cancelled,
-    .chip--pay.failed{
-      background:#fee2e2;                      /* Merah lembut */
-      border-color:#fecaca;                    /* Border merah muda */
-      color:#991b1b;                           /* Teks merah tua */
-    }
+  .chip--order.completed,
+  .chip--pay.paid {
+    background: #ecfdf5;                                     /* hijau soft */
+    border-color: #bbf7d0;                                   /* hijau border */
+    color: #065f46;                                          /* hijau teks */
+  }
 
-    /* ============================
-       ITEMS DI DALAM ORDER
-       ============================ */
-    .items-block{
-      padding:12px 16px 0;                     /* Ruang dalam blok items */
-    }
+  .chip--order.cancelled,
+  .chip--pay.failed {
+    background: #fee2e2;                                     /* merah soft */
+    border-color: #fecaca;                                   /* merah border */
+    color: #991b1b;                                          /* merah teks */
+  }
 
-    .item-row{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:12px;
-      padding:12px 0;
-      border-bottom:1px dashed var(--line);    /* Garis putus-putus antar item */
-    }
+  /* ===================================================== */
+  /* ITEMS LIST                                             */
+  /* ===================================================== */
+  .items-block {
+    padding: 12px 16px 0;                                    /* padding */
+  }
 
-    .item-left{
-      display:flex;
-      gap:12px;                                /* Thumb + teks */
-      flex:1;
-      min-width:0;                             /* Supaya teks bisa ter-ellipsis */
-    }
+  .item-row {
+    display: flex;                                           /* flex row */
+    align-items: flex-start;                                 /* align top */
+    justify-content: space-between;                          /* kiri-kanan */
+    gap: 12px;                                               /* jarak */
+    padding: 12px 0;                                         /* padding baris */
+    border-bottom: 1px dashed var(--line);                   /* garis putus-putus */
+  }
 
-    .thumb{
-      width:52px;
-      height:52px;
-      border-radius:10px;                      /* Sudut thumbnail */
-      background:#fff;
-      border:1px solid var(--line);
-      object-fit:cover;                        /* Gambar menyesuaikan tanpa distorsi */
-      flex-shrink:0;                           /* Jangan mengecil ketika sempit */
-    }
+  .item-left {
+    display: flex;                                           /* flex */
+    gap: 12px;                                               /* jarak */
+    flex: 1;                                                 /* isi sisa ruang */
+    min-width: 0;                                            /* teks bisa wrap */
+  }
 
-    .item-meta{
-      min-width:0;                             /* Teks boleh mengecil/ellipsis */
-    }
+  .thumb {
+    width: 52px;                                             /* width thumb */
+    height: 52px;                                            /* height thumb */
+    border-radius: 10px;                                     /* sudut bulat */
+    background: #fff;                                        /* bg putih */
+    border: 1px solid var(--line);                           /* border tipis */
+    object-fit: cover;                                       /* crop gambar */
+    flex-shrink: 0;                                          /* jangan mengecil */
+  }
 
-    .item-name{
-      font-weight:600;
-      font-size:.9rem;                         /* Nama menu */
-      color:var(--ink);
-      word-break:break-word;                   /* Jika nama panjang, boleh pecah */
-    }
+  .item-meta {
+    min-width: 0;                                            /* support ellipsis */
+  }
 
-    .item-sub{
-      font-size:.8rem;                         /* Qty x harga */
-      color:var(--muted);
-    }
+  .item-name {
+    font-weight: 600;                                        /* tebal */
+    font-size: .9rem;                                        /* ukuran teks */
+    color: var(--ink);                                       /* warna teks */
+    word-break: break-word;                                  /* pecah kata */
+  }
 
-    .item-line-total{
-      font-weight:600;                         /* Total per item (qty x price) */
-      font-size:.9rem;
-      color:var(--ink);
-      text-align:right;
-      min-width:70px;
-      white-space:nowrap;                      /* Jangan wrap */
-    }
+  .item-sub {
+    font-size: .8rem;                                        /* kecil */
+    color: var(--muted);                                     /* abu */
+  }
 
-    /* ============================
-       TOGGLE "ITEM LAINNYA"
-       ============================ */
-    .toggle-wrap{
-      padding:12px 0;                          /* Ruang sekitar tombol toggle */
-    }
+  .item-line-total {
+    font-weight: 600;                                        /* tebal */
+    font-size: .9rem;                                        /* ukuran teks */
+    color: var(--ink);                                       /* warna teks */
+    text-align: right;                                       /* rata kanan */
+    min-width: 70px;                                         /* batas minimal */
+    white-space: nowrap;                                     /* 1 baris */
+  }
 
-    .toggle-btn{
-      width:100%;                              /* Tombol selebar card */
-      border:1px solid var(--line);
-      background:#fff;
-      border-radius:999px;                     /* Bentuk pill */
-      padding:8px 12px;
-      font-weight:600;
-      font-size:.8rem;
-      display:flex;
-      align-items:center;
-      justify-content:center;                  /* Teks & ikon di tengah */
-      gap:6px;
-    }
+  /* ===================================================== */
+  /* TOGGLE (SHOW/HIDE ITEMS)                              */
+  /* ===================================================== */
+  .toggle-wrap {
+    padding: 12px 0;                                         /* padding vertikal */
+  }
 
-    .toggle-btn:hover{
-      background:#f9fafb;                      /* BG sedikit lebih gelap saat hover */
-    }
+  .toggle-btn {
+    width: 100%;                                             /* full width */
+    border: 1px solid var(--line);                           /* border tipis */
+    background: #fff;                                        /* bg putih */
+    border-radius: 999px;                                    /* pill button */
+    padding: 8px 12px;                                       /* padding */
+    font-weight: 600;                                        /* tebal */
+    font-size: .8rem;                                        /* kecil */
+    display: flex;                                           /* flex */
+    align-items: center;                                     /* tengah */
+    justify-content: center;                                 /* center */
+    gap: 6px;                                                /* jarak */
+  }
 
-    /* ============================
-       FOOTER CARD
-       ============================ */
-    .order-foot{
-      padding:14px 16px 16px;
-      background:#fff;
-    }
+  .toggle-btn:hover {
+    background: #f9fafb;                                     /* hover abu */
+  }
 
-    .inv-summary{
-      font-size:.8rem;                         /* Teks ringkasan invoice */
-      color:var(--muted);
-      margin-bottom:12px;
-    }
+  /* ===================================================== */
+  /* FOOTER ORDER CARD                                      */
+  /* ===================================================== */
+  .order-foot {
+    padding: 14px 16px 16px;                                 /* padding */
+    background: #fff;                                        /* bg putih */
+  }
 
-    .inv-summary strong{
-      color:var(--ink);                        /* Nominal dibuat lebih gelap */
-    }
+  .inv-summary {
+    font-size: .8rem;                                        /* kecil */
+    color: var(--muted);                                     /* abu */
+    margin-bottom: 12px;                                     /* jarak bawah */
+  }
 
-    .foot-bottom{
-      display:flex;
-      flex-wrap:wrap;
-      align-items:center;
-      justify-content:space-between;
-      row-gap:10px;                            /* Jarak vertikal jika wrap */
-    }
+  .inv-summary strong {
+    color: var(--ink);                                       /* warna teks utama */
+  }
 
-    .btn-receipt{
-      border:1px solid var(--line);
-      background:#fff;
-      border-radius:999px;
-      padding:7px 12px;
-      font-weight:600;
-      font-size:.8rem;
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      text-decoration:none;
-      color:var(--ink);
-    }
+  .foot-bottom {
+    display: flex;                                           /* flex */
+    flex-wrap: wrap;                                         /* cekatan */
+    align-items: center;                                     /* tengah */
+    justify-content: space-between;                          /* kiri-kanan */
+    row-gap: 10px;                                           /* jarak baris */
+  }
 
-    .btn-receipt:hover{
-      background:#f9fafb;                      /* Hover efek */
-    }
+  .btn-receipt {
+    border: 1px solid var(--line);                           /* border */
+    background: #fff;                                        /* bg putih */
+    border-radius: 999px;                                    /* pill */
+    padding: 7px 12px;                                       /* padding */
+    font-weight: 600;                                        /* tebal */
+    font-size: .8rem;                                        /* kecil */
+    display: inline-flex;                                    /* flex */
+    align-items: center;                                     /* tengah */
+    gap: 6px;                                                /* jarak */
+    text-decoration: none;                                   /* hilang underline */
+    color: var(--ink);                                       /* warna teks */
+  }
 
-    .total-amount{
-      font-weight:600;
-      font-size:1rem;                          /* Total order (besar di sisi kanan) */
-      white-space:nowrap;
-    }
+  .btn-receipt:hover {
+    background: #f9fafb;                                     /* hover abu */
+  }
 
-    /* ============================
-       MOBILE
-       ============================ */
-    @media(max-width:600px){
-      .topbar-inner,
-      .page{
-        padding:0 16px;                        /* Kurangi padding di layar kecil */
-      }
+  .total-amount {
+    font-weight: 600;                                        /* tebal */
+    font-size: 1rem;                                         /* ukuran normal */
+    white-space: nowrap;                                     /* satu baris */
+  }
+
+  /* ===================================================== */
+  /* MOBILE RESPONSIVE                                      */
+  /* ===================================================== */
+  @media (max-width: 600px) {
+    .topbar-inner,
+    .page {
+      padding: 0 16px;                                       /* padding lebih sempit */
     }
-  </style>
+  }
+</style>
+
 </head>
+
 <body>
 
-  <!-- TOP BAR -->
+  <!-- Topbar -->
+  <!-- Wrapper top bar navigasi untuk kembali ke halaman utama customer -->
   <div class="topbar">
+    
+    <!-- Kontainer dalam topbar dengan padding dan layout fleksibel -->
     <div class="topbar-inner">
-      <!-- Link kembali ke halaman index customer -->
-      <a
-        class="back-link"
-        href="<?= h(BASE_URL) ?>/public/customer/index.php"
-      >
-        <i class="bi bi-arrow-left"></i> <!-- Ikon panah kiri -->
-        <span>Kembali</span>             <!-- Teks tombol -->
+
+      <!-- Tombol kembali, mengarah ke halaman index customer -->
+      <a class="back-link" href="<?= h(BASE_URL) ?>/public/customer/index.php">
+        
+        <!-- Ikon panah kiri -->
+        <i class="bi bi-arrow-left"></i>
+        
+        <!-- Teks Kembali -->
+        <span>Kembali</span>
       </a>
+
     </div>
   </div>
 
-  <!-- MAIN CONTENT -->
+  <!-- Konten utama halaman -->
   <main class="page">
-    <?php if (!$orders): ?>
 
-      <!-- Jika tidak ada order sama sekali -->
-      <div
-        class="alert alert-light border"
-        role="alert"
-        style="font-size:.9rem; line-height:1.4; color:var(--ink);"
-      >
+    <!-- Jika tidak ada pesanan, tampilkan alert -->
+    <?php if (!$orders): ?>
+      
+      <!-- Pesan belum ada pesanan -->
+      <div class="alert alert-light border" role="alert" style="font-size:.9rem; line-height:1.4; color:var(--ink);">
         Belum ada pesanan.
       </div>
 
     <?php else: ?>
 
-      <?php foreach ($orders as $ord): 
-        // id order (integer)
+      <!-- Loop seluruh order -->
+      <?php foreach ($orders as $ord):
+
+        // ID order
         $oid   = (int)$ord['id'];
-        // Ambil semua item untuk order ini, atau array kosong jika tidak ada
+
+        // Ambil list item berdasarkan ID order
         $items = $itemsByOrder[$oid] ?? [];
-        // Ambil invoice untuk order ini, atau null jika tidak ada
+
+        // Ambil invoice berdasarkan ID order
         $inv   = $invByOrder[$oid]   ?? null;
 
-        // Mapping ikon status pesanan berdasarkan nilai order_status
+        // Ikon status pesanan berdasarkan status order
         $orderIcon = [
           'new'        => 'bi-plus-lg',
           'processing' => 'bi-hourglass-split',
           'ready'      => 'bi-clipboard-check',
           'completed'  => 'bi-check-circle',
           'cancelled'  => 'bi-x-circle',
-          'pending'    => 'bi-hourglass-split',
+          'pending'    => 'bi-hourglass-split'
         ][$ord['order_status']] ?? 'bi-receipt';
 
-        // Mapping ikon status pembayaran berdasarkan payment_status
+        // Ikon status pembayaran
         $payIcon = [
           'pending'  => 'bi-hourglass-split',
           'paid'     => 'bi-check-circle',
           'failed'   => 'bi-x-circle',
           'refunded' => 'bi-arrow-counterclockwise',
-          'overdue'  => 'bi-exclamation-triangle',
+          'overdue'  => 'bi-exclamation-triangle'
         ][$ord['payment_status']] ?? 'bi-cash-coin';
 
-        // Item pertama (ditampilkan default di card)
-        $first     = $items[0] ?? null;
-        // Jumlah item lainnya (selain item pertama)
+        // Item pertama
+        $first = $items[0] ?? null;
+
+        // Hitung jumlah item lainnya
         $restCount = max(0, count($items) - 1);
 
-        // Format tanggal dibuat ke format d M Y H:i (contoh: 12 Jan 2025 14:35)
-        $createdStr = date(
-          'd M Y H:i',
-          strtotime($ord['created_at'])
-        );
+        // Format waktu dibuat
+        $createdStr = date('d M Y H:i', strtotime($ord['created_at']));
 
-        // Nominal invoice:
-        // - kalau ada invoice: pakai $inv['amount']
-        // - kalau tidak ada: fallback ke $ord['total']
+        // Jumlah tagihan invoice
         $invoiceAmount = $inv['amount'] ?? $ord['total'];
       ?>
 
+      <!-- Satu kartu order -->
       <section class="order-card">
-        <!-- HEADER CARD: invoice no + waktu -->
+
+        <!-- HEADER -->
+        <!-- Bagian header menampilkan invoice dan waktu dibuat -->
         <div class="order-head">
+
+          <!-- Nomor invoice -->
           <div class="head-left">
             <?= h($ord['invoice_no']) ?>
           </div>
+
+          <!-- Waktu pembuatan -->
           <div class="head-right">
             <i class="bi bi-clock"></i>
             <span><?= h($createdStr) ?></span>
@@ -565,154 +580,125 @@ if ($orderIds) {
         </div>
 
         <!-- STATUS / META -->
+        <!-- Bagian chip status pesanan dan pembayaran -->
         <div class="chips">
-          <!-- status pesanan -->
-          <span
-            class="chip chip--order <?= h($ord['order_status']) ?>"
-          >
+
+          <!-- Status pesanan -->
+          <span class="chip chip--order <?= h($ord['order_status']) ?>">
             <i class="bi <?= $orderIcon ?>"></i>
             <span><?= h($ord['order_status']) ?></span>
           </span>
 
-          <!-- status pembayaran -->
-          <span
-            class="chip chip--pay <?= h($ord['payment_status']) ?>"
-          >
+          <!-- Status pembayaran -->
+          <span class="chip chip--pay <?= h($ord['payment_status']) ?>">
             <i class="bi <?= $payIcon ?>"></i>
             <span><?= h($ord['payment_status']) ?></span>
           </span>
 
-          <!-- metode pembayaran (jika ada) -->
+          <!-- Metode pembayaran -->
           <?php if (!empty($ord['payment_method'])): ?>
             <span class="chip">
               <i class="bi bi-wallet2"></i>
-              <span>
-                <!-- Ubah payment_method dari snake_case ke uppercase + spasi -->
-                <?= h(strtoupper(str_replace('_', ' ', $ord['payment_method']))) ?>
-              </span>
+              <span><?= h(strtoupper(str_replace('_',' ',$ord['payment_method']))) ?></span>
             </span>
           <?php endif; ?>
 
-          <!-- tipe layanan (dine in / take away) -->
+          <!-- Jenis layanan (Dine in / Take Away) -->
           <span class="chip">
             <i class="bi bi-shop"></i>
-            <span>
-              <?= h(
-                $ord['service_type'] === 'dine_in'
-                  ? 'Dine In'
-                  : 'Take Away'
-              ) ?>
-            </span>
+            <span><?= h($ord['service_type']==='dine_in'?'Dine In':'Take Away') ?></span>
           </span>
 
-          <!-- nomor meja (jika dine in dan table_no ada) -->
+          <!-- Nomor meja (jika dine-in dan punya nomor meja) -->
           <?php if (!empty($ord['table_no'])): ?>
             <span class="chip">
               <i class="bi bi-upc-scan"></i>
               <span>Meja <?= h($ord['table_no']) ?></span>
             </span>
           <?php endif; ?>
+
         </div>
 
         <!-- ITEMS -->
+        <!-- Daftar item dalam pesanan -->
         <div class="items-block">
-          <?php if ($first): ?>
-            <!-- Item pertama (selalu ditampilkan) -->
-            <div class="item-row">
-              <div class="item-left">
-                <?php if (!empty($first['menu_image'])): ?>
-                  <!-- Thumbnail menu jika ada gambar -->
-                  <img
-                    class="thumb"
-                    src="<?= h(
-                      BASE_URL .
-                      '/public/' .
-                      ltrim($first['menu_image'], '/')
-                    ) ?>"
-                    alt=""
-                  >
-                <?php else: ?>
-                  <!-- Placeholder jika tidak ada gambar menu -->
-                  <div
-                    class="thumb d-flex align-items-center justify-content-center text-muted"
-                  >
-                    —
-                  </div>
-                <?php endif; ?>
 
-                <div class="item-meta">
-                  <div class="item-name">
-                    <?= h($first['menu_name'] ?? 'Menu') ?>
-                  </div>
-                  <div class="item-sub">
-                    Qty: <?= (int)$first['qty'] ?>
-                    ×
-                    <?= rupiah((float)$first['price']) ?>
-                  </div>
+          <!-- Item pertama -->
+          <?php if ($first): ?>
+          <div class="item-row">
+
+            <!-- Bagian kiri item -->
+            <div class="item-left">
+
+              <!-- Thumbnail gambar item -->
+              <?php if (!empty($first['menu_image'])): ?>
+                <img class="thumb" src="<?= h(BASE_URL . '/public/' . ltrim($first['menu_image'],'/')) ?>" alt="">
+              <?php else: ?>
+                <div class="thumb d-flex align-items-center justify-content-center text-muted">—</div>
+              <?php endif; ?>
+
+              <!-- Info item -->
+              <div class="item-meta">
+                <div class="item-name">
+                  <?= h($first['menu_name'] ?? 'Menu') ?>
+                </div>
+                <div class="item-sub">
+                  Qty: <?= (int)$first['qty'] ?> × <?= rupiah((float)$first['price']) ?>
                 </div>
               </div>
-
-              <!-- Total baris = qty x price untuk item pertama -->
-              <div class="item-line-total">
-                <?= rupiah(
-                  (float)$first['qty'] * (float)$first['price']
-                ) ?>
-              </div>
             </div>
+
+            <!-- Total harga item -->
+            <div class="item-line-total">
+              <?= rupiah((float)$first['qty'] * (float)$first['price']) ?>
+            </div>
+
+          </div>
           <?php endif; ?>
 
-          <!-- Item lainnya dalam collapse (hidden/default) -->
+          <!-- Item lainnya -->
           <?php if ($restCount > 0): ?>
-            <!-- Elemen collapse dengan id unik per order -->
+
+            <!-- Collapse berisi item sisanya -->
             <div class="collapse" id="items-<?= $oid ?>">
-              <?php for ($i = 1; $i < count($items); $i++): 
-                $it = $items[$i]; // Item ke-2 dst.
-              ?>
+
+              <!-- Loop item ke-2 dan seterusnya -->
+              <?php for ($i=1; $i<count($items); $i++): $it = $items[$i]; ?>
+
+                <!-- Baris item -->
                 <div class="item-row">
+
+                  <!-- Kiri: gambar + info -->
                   <div class="item-left">
+
+                    <!-- Thumbnail -->
                     <?php if (!empty($it['menu_image'])): ?>
-                      <!-- Thumbnail untuk item lain -->
-                      <img
-                        class="thumb"
-                        src="<?= h(
-                          BASE_URL .
-                          '/public/' .
-                          ltrim($it['menu_image'], '/')
-                        ) ?>"
-                        alt=""
-                      >
+                      <img class="thumb" src="<?= h(BASE_URL . '/public/' . ltrim($it['menu_image'],'/')) ?>" alt="">
                     <?php else: ?>
-                      <!-- Placeholder jika tidak ada gambar -->
-                      <div
-                        class="thumb d-flex align-items-center justify-content-center text-muted"
-                      >
-                        —
-                      </div>
+                      <div class="thumb d-flex align-items-center justify-content-center text-muted">—</div>
                     <?php endif; ?>
 
+                    <!-- Info item -->
                     <div class="item-meta">
-                      <div class="item-name">
-                        <?= h($it['menu_name'] ?? 'Menu') ?>
-                      </div>
+                      <div class="item-name"><?= h($it['menu_name'] ?? 'Menu') ?></div>
                       <div class="item-sub">
-                        Qty: <?= (int)$it['qty'] ?>
-                        ×
-                        <?= rupiah((float)$it['price']) ?>
+                        Qty: <?= (int)$it['qty'] ?> × <?= rupiah((float)$it['price']) ?>
                       </div>
                     </div>
+
                   </div>
 
-                  <!-- Total baris untuk item ini -->
+                  <!-- Total baris -->
                   <div class="item-line-total">
-                    <?= rupiah(
-                      (float)$it['qty'] * (float)$it['price']
-                    ) ?>
+                    <?= rupiah((float)$it['qty'] * (float)$it['price']) ?>
                   </div>
+
                 </div>
               <?php endfor; ?>
+
             </div>
 
-            <!-- Tombol toggle show/hide item lainnya -->
+            <!-- Tombol toggle show/hide item -->
             <div class="toggle-wrap">
               <button
                 class="toggle-btn"
@@ -720,95 +706,122 @@ if ($orderIds) {
                 data-bs-toggle="collapse"
                 data-bs-target="#items-<?= $oid ?>"
                 aria-expanded="false"
-                aria-controls="items-<?= $oid ?>"
-              >
+                aria-controls="items-<?= $oid ?>">
+                
                 <i class="bi bi-chevron-down"></i>
+
                 <span class="toggle-text-<?= $oid ?>">
                   Tampilkan <?= $restCount ?> item lainnya
                 </span>
               </button>
             </div>
+
           <?php endif; ?>
+
         </div>
 
-        <!-- FOOTER ORDER -->
+        <!-- FOOTER -->
+        
+        <!-- Footer menampilkan total dan tombol struk -->
         <div class="order-foot">
-          <div class="inv-summary">
-            Tagihan
-            <strong>
-              <!-- Nominal invoice (amount), diformat rupiah -->
-              <?= rupiah((float)$invoiceAmount) ?>
-            </strong>
 
+          <!-- Ringkasan invoice -->
+          <div class="inv-summary">
+            Tagihan <strong><?= rupiah((float)$invoiceAmount) ?></strong>
             <?php if ($ord['payment_status'] === 'paid'): ?>
-              <!-- Tambahan label jika sudah lunas -->
               • <strong>Lunas</strong>
             <?php endif; ?>
           </div>
 
+          <!-- Bagian bawah footer -->
           <div class="foot-bottom">
-            <!-- Tombol menuju halaman struk (receipt.php) untuk order ini -->
+
+            <!-- Tombol untuk membuka struk -->
             <a
               class="btn-receipt"
-              href="<?= h(BASE_URL) ?>/public/customer/receipt.php?order=<?= $oid ?>"
-            >
+              href="<?= h(BASE_URL) ?>/public/customer/receipt.php?order=<?= $oid ?>">
               <i class="bi bi-receipt"></i>
               <span>Struk</span>
             </a>
 
-            <!-- Total order (bisa beda dari invoiceAmount jika perlu) -->
+            <!-- Total keseluruhan -->
             <div class="total-amount">
               <?= rupiah((float)$ord['total']) ?>
             </div>
-          </div>
-        </div>
+       
+          <!-- Penutup bagian .foot-bottom -->
+             </div> 
+          
+        <!-- Penutup bagian .order-foot -->
+            </div>
+            
+          <!-- Penutup satu kartu order (satu pesanan) -->    
       </section>
-
+      
+      <!-- Penutup perulangan foreach untuk seluruh daftar pesanan -->
       <?php endforeach; ?>
+      
+       <!-- Penutup kondisi if: jika tidak ada order vs ada order -->
     <?php endif; ?>
+    <!-- Penutup kondisi if: jika tidak ada order vs ada order -->
+
   </main>
+  <!-- Penutup elemen utama halaman -->
 
-  <!-- Bootstrap bundle (untuk fitur collapse di tombol item lainnya) -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Import Bootstrap JS (dibutuhkan untuk fitur collapse) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <script>
-    // =====================================================
-    // Update label tombol "Tampilkan ... item lainnya"
-    // saat collapse dibuka / ditutup
-    // =====================================================
-    document
-      .querySelectorAll('[data-bs-toggle="collapse"]') // Cari semua tombol yang punya data-bs-toggle="collapse"
-      .forEach((btn) => {
-        // Ambil elemen collapse target dari data-bs-target
-        const target = document.querySelector(btn.dataset.bsTarget);
-        if (!target) return; // Jika tidak ketemu, skip
+<script>
 
-        // Ambil order id dari id collapse (misal: #items-12 → 12)
-        const oid    = btn.dataset.bsTarget.replace('#items-', '');
-        // Elemen span yang berisi teks toggle (Tampilkan/Sembunyikan...)
-        const textEl = document.querySelector('.toggle-text-' + oid);
-        // Ikon chevron di dalam tombol
-        const iconEl = btn.querySelector('i');
+  // Ambil semua tombol yang memiliki atribut data-bs-toggle="collapse"
+  document.querySelectorAll('[data-bs-toggle="collapse"]').forEach((btn) => {
 
-        if (!textEl || !iconEl) return; // Kalau salah satu tidak ada, skip
+    // Cari elemen target collapse berdasarkan data-bs-target
+    const target = document.querySelector(btn.dataset.bsTarget);
 
-        // Saat collapse dibuka
-        target.addEventListener('show.bs.collapse', () => {
-          textEl.textContent = 'Sembunyikan rincian'; // Ubah teks tombol
-          iconEl.className   = 'bi bi-chevron-up';    // Ubah ikon jadi chevron-up
-        });
+    // Jika target tidak ditemukan, hentikan untuk tombol ini
+    if (!target) return;
 
-        // Saat collapse ditutup
-        target.addEventListener('hide.bs.collapse', () => {
-          // Hitung jumlah .item-row di dalam collapse (item lainnya)
-          const count = target.querySelectorAll('.item-row').length;
-          // Ubah teks ke "Tampilkan X item lainnya"
-          textEl.textContent =
-            'Tampilkan ' + count + ' item lainnya';
-          // Ikon kembali ke chevron-down
-          iconEl.className = 'bi bi-chevron-down';
-        });
-      });
-  </script>
-</body>
+    // Ambil order ID dari nama target (contoh: #items-5 → 5)
+    const oid = btn.dataset.bsTarget.replace('#items-', '');
+
+    // Ambil elemen teks toggle (label yang berubah)
+    const textEl = document.querySelector('.toggle-text-' + oid);
+
+    // Ambil ikon chevron pada tombol
+    const iconEl = btn.querySelector('i');
+
+    // Jika elemen teks atau ikon tidak ada, hentikan
+    if (!textEl || !iconEl) return;
+
+    // Event saat collapse terbuka
+    target.addEventListener('show.bs.collapse', () => {
+      // Ubah label menjadi "Sembunyikan rincian"
+      textEl.textContent = 'Sembunyikan rincian';
+      // Ganti ikon ke chevron-up
+      iconEl.className   = 'bi bi-chevron-up';
+    });
+
+    // Event saat collapse tertutup
+    target.addEventListener('hide.bs.collapse', () => {
+      // Hitung jumlah item yang tampil di collapse
+      const count = target.querySelectorAll('.item-row').length;
+
+      // Ubah label kembali menjadi "Tampilkan X item lainnya"
+      textEl.textContent = 'Tampilkan ' + count + ' item lainnya';
+
+      // Ganti ikon ke chevron-down
+      iconEl.className   = 'bi bi-chevron-down';
+    });
+
+  });
+
+  // Penutup blok script custom
+       </script>
+ 
+      <!-- Penutup elemen body -->
+     </body>
+
+   <!-- Penutup dokumen HTML -->
 </html>
+

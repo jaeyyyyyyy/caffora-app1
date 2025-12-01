@@ -1,4 +1,5 @@
 <?php
+
 // Pembuka file PHP
 
 // backend/auth_reset.php
@@ -17,7 +18,7 @@ ini_set('display_errors', '0');
 error_reporting(E_ALL);
 // Tetap log semua error
 
-require_once __DIR__ . '/db.php';
+require_once __DIR__.'/db.php';
 // Import koneksi database (fungsi db())
 
 function json_response(bool $ok, string $message, array $extra = []): void
@@ -28,7 +29,7 @@ function json_response(bool $ok, string $message, array $extra = []): void
 
     echo json_encode(
         array_merge([
-            'status'  => $ok ? 'success' : 'error',
+            'status' => $ok ? 'success' : 'error',
             'message' => $message,
         ], $extra),
         JSON_UNESCAPED_UNICODE
@@ -46,7 +47,7 @@ $raw = file_get_contents('php://input');
 $data = json_decode($raw, true);
 // Decode JSON ke array
 
-if (!is_array($data)) {
+if (! is_array($data)) {
     json_response(false, 'Payload tidak valid.');
     // Jika payload bukan array → error
 }
@@ -54,18 +55,18 @@ if (!is_array($data)) {
 $action = $data['action'] ?? '';
 // Ambil action (verify/reset)
 
-$email  = trim((string)($data['email'] ?? ''));
+$email = trim((string) ($data['email'] ?? ''));
 // Ambil email
 
-$otp    = trim((string)($data['otp'] ?? ''));
+$otp = trim((string) ($data['otp'] ?? ''));
 // Ambil kode OTP dari input
 
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
     json_response(false, 'Email tidak valid.');
     // Validasi email
 }
 
-if ($otp === '' || !ctype_digit($otp)) {
+if ($otp === '' || ! ctype_digit($otp)) {
     json_response(false, 'Kode OTP tidak valid.');
     // Validasi OTP hanya angka
 }
@@ -88,15 +89,15 @@ $stmt->execute([':email' => $email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 // Ambil hasil
 
-if (!$user) {
+if (! $user) {
     json_response(false, 'Email tidak terdaftar.');
     // Jika user tidak ditemukan → error
 }
 
-$userId = (int)$user['id'];
+$userId = (int) $user['id'];
 // Ambil ID user
 
-$now    = (new DateTimeImmutable('now'))->format('Y-m-d H:i:s');
+$now = (new DateTimeImmutable('now'))->format('Y-m-d H:i:s');
 // Timestamp saat ini
 
 // ====== fungsi cek OTP (password_resets atau users.otp) ======
@@ -120,9 +121,9 @@ try {
     // Query cek OTP di tabel password_resets
 
     $stmt->execute([
-        ':uid'      => $userId,
+        ':uid' => $userId,
         ':selector' => $otp,
-        ':now'      => $now,
+        ':now' => $now,
     ]);
     // Eksekusi dengan parameter
 
@@ -138,7 +139,7 @@ try {
 }
 
 // 2) cek di kolom users.otp kalau belum ketemu
-if (!$validOtp) {
+if (! $validOtp) {
     try {
         $stmt = $pdo->prepare(
             'SELECT otp, otp_expires_at 
@@ -167,7 +168,7 @@ if (!$validOtp) {
     }
 }
 
-if (!$validOtp) {
+if (! $validOtp) {
     json_response(false, 'Kode OTP salah atau sudah kedaluwarsa.');
     // Jika OTP tidak valid → error
 }
@@ -181,10 +182,10 @@ if ($action === 'verify_otp') {
 // ====== aksi reset password ======
 if ($action === 'reset_password') {
 
-    $password         = (string)($data['password'] ?? '');
+    $password = (string) ($data['password'] ?? '');
     // Password baru
 
-    $passwordConfirm  = (string)($data['password_confirm'] ?? '');
+    $passwordConfirm = (string) ($data['password_confirm'] ?? '');
     // Konfirmasi password baru
 
     if (mb_strlen($password) < 8) {

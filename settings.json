@@ -1,0 +1,25 @@
+{
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "modifications",
+  "files.autoSave": "off",
+
+  "[php]": {
+    "editor.defaultFormatter": "open-southeners.laravel-pint"
+  },
+
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  "files.associations": {
+    "*.php": "html"
+  }
+}

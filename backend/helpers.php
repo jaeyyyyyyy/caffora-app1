@@ -1,15 +1,18 @@
 <?php
+
 // Pembuka file PHP
 
 // Helper untuk escape output HTML
-function h($string) {
+function h($string)
+{
     // Fungsi h() digunakan untuk mencegah XSS dengan meng-escape karakter HTML
     return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
     // Convert karakter spesial menjadi entitas HTML (kutip single/double di-escape)
 }
 
 // Helper untuk generate OTP random 6 digit
-function generateOtp($length = 6) {
+function generateOtp($length = 6)
+{
     // Fungsi untuk membuat kode OTP numeric dengan panjang tertentu
 
     $digits = '0123456789';
@@ -30,7 +33,8 @@ function generateOtp($length = 6) {
 }
 
 // Helper untuk cek expired OTP
-function isOtpExpired($expiredAt) {
+function isOtpExpired($expiredAt)
+{
     // Fungsi cek apakah OTP sudah kedaluwarsa berdasarkan timestamp
 
     return strtotime($expiredAt) < time();

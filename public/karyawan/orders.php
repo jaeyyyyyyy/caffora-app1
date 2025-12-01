@@ -1,11 +1,11 @@
-<?php 
+<?php
 // public/karyawan/orders.php
 declare(strict_types=1);
 session_start();
 
-require_once __DIR__ . '/../../backend/auth_guard.php';
-require_login(['karyawan','admin']);
-require_once __DIR__ . '/../../backend/config.php';
+require_once __DIR__.'/../../backend/auth_guard.php';
+require_login(['karyawan', 'admin']);
+require_once __DIR__.'/../../backend/config.php';
 
 $userName = $_SESSION['user_name'] ?? 'Staff';
 $userRole = $_SESSION['user_role'] ?? 'karyawan'; // kirim ke JS

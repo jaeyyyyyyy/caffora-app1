@@ -2,9 +2,9 @@
 // public/admin/help.php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../backend/auth_guard.php';
+require_once __DIR__.'/../../backend/auth_guard.php';
 require_login(['admin']); // hanya admin
-require_once __DIR__ . '/../../backend/config.php';
+require_once __DIR__.'/../../backend/config.php';
 
 $userName = $_SESSION['user_name'] ?? 'Admin';
 ?>

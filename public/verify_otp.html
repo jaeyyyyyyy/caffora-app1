@@ -1,487 +1,884 @@
+<!-- HTML: Deklarasi dokumen sebagai HTML5 -->
 <!DOCTYPE html>
+
+<!-- HTML: Tag root, bahasa dokumen Indonesia -->
 <html lang="id">
-  <head>
-    <meta charset="utf-8" />
-    <title>Verifikasi OTP</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- Fonts & Bootstrap -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-      rel="stylesheet"
-    />
+<head>
+  <!-- HTML: Encoding karakter UTF-8 -->
+  <meta charset="utf-8" />
 
-    <style>
-      :root {
-        --gold: #ffd54f;
-        --gold-200: #ffe883;
-        --brown: #4b3f36;
-        --muted: #8b8179;
-        --link: #0d6efd;
-      }
+  <!-- HTML: Judul halaman (tab browser) -->
+  <title>Verifikasi OTP</title>
 
-      body {
-        margin: 0;
-        min-height: 100vh;
-        background: #ffffff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: "Poppins", system-ui, -apple-system, Segoe UI, Roboto,
-          Arial, sans-serif;
-        color: var(--brown);
-        padding: 40px 20px;
-      }
+  <!-- HTML: Responsif untuk semua perangkat -->
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  />
 
-      .verify-card {
-        width: 100%;
-        max-width: 420px;
-        text-align: center;
-      }
+  <!-- HTML: Kebijakan keamanan konten, paksa HTTPS -->
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="upgrade-insecure-requests;
+             default-src 'self' https: data:
+             'unsafe-inline' 'unsafe-eval'"
+  />
 
-      .lead-text {
-        color: var(--muted);
-        margin-bottom: 28px;
-        font-size: 1.05rem;
-        line-height: 1.6;
-      }
+  <!-- HTML: Aktifkan HSTS (paksa semua akses via HTTPS 1 tahun) -->
+  <meta
+    http-equiv="Strict-Transport-Security"
+    content="max-age=31536000; includeSubDomains"
+  />
 
-      /* ===== OTP BOX ===== */
-      .otp-row {
-        display: flex;
-        justify-content: center;
-        gap: 14px;
-        margin-bottom: 28px;
-        flex-wrap: wrap;
-      }
+  <!-- HTML: Kebijakan referer untuk privasi -->
+  <meta
+    http-equiv="Referrer-Policy"
+    content="strict-origin-when-cross-origin"
+  />
 
-      .otp-cell {
-        width: 54px;
-        height: 54px;
-        border-radius: 12px;
-        border: 2px solid var(--gold);
-        text-align: center;
-        font-size: 24px;
-        color: var(--brown);
-        background: #fff;
-        outline: none;
-        caret-color: transparent;
-        transition: all 0.2s ease;
-      }
+  <!-- HTML: Cegah MIME sniffing -->
+  <meta
+    http-equiv="X-Content-Type-Options"
+    content="nosniff"
+  />
 
-      .otp-cell:focus {
-        box-shadow: 0 0 0 0.2rem rgba(255, 213, 79, 0.3);
-      }
+  <!-- HTML: Cegah clickjacking, hanya izinkan iframe same origin -->
+  <meta
+    http-equiv="X-Frame-Options"
+    content="SAMEORIGIN"
+  />
 
-      /* ===== BUTTON VERIFY ===== */
-      .btn-verify {
-        display: inline-block;
-        padding: 10px 24px;
-        border-radius: 12px;
-        border: 0;
-        background: var(--gold);
-        color: var(--brown);
-        font-weight: 600;
-        font-size: 0.95rem;
-        line-height: 1.2;
-        text-align: center;
-        cursor: pointer;
-        box-shadow: none;
-      }
+  <!-- HTML: Aktifkan proteksi XSS tingkat dasar -->
+  <meta
+    http-equiv="X-XSS-Protection"
+    content="1; mode=block"
+  />
 
-      .resend {
-        margin-top: 16px;
-        display: inline-block;
-        text-decoration: none;
-        color: var(--link);
-        font-weight: 500;
-      }
+  <!-- HTML: Nonaktifkan izin akses perangkat (kamera, mic, location) -->
+  <meta
+    http-equiv="Permissions-Policy"
+    content="geolocation=(), microphone=(), camera=()"
+  />
 
-      .resend.disabled {
-        pointer-events: none;
-        opacity: 0.5;
-      }
+  <!-- HTML: Import Google Fonts (Playfair & Poppins) -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&
+         family=Poppins:wght@400;500;600&
+         display=swap"
+  />
 
-      .notice-wrap {
-        margin-top: 6px;
-      }
+  <!-- HTML: Import Bootstrap CSS 5.3.3 -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+  />
 
-      .notice {
-        margin: 4px 0 0;
-        color: var(--muted);
-        font-size: 14px;
-      }
+  <!-- HTML: Import Bootstrap Icons -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+  />
+</head>
 
-      .notice.hide {
-        display: none;
-      }
+  
+  <style> 
+  :root {                                /* CSS: Root scope untuk mendefinisikan variabel global */
+  --gold:  #ffd54f;                    /* CSS: Warna emas utama (aksen tombol/border) */
+  --brown: #4b3f36;                    /* CSS: Warna coklat utama untuk teks */
+  --muted: #8b8179;                    /* CSS: Warna coklat keabu-abuan (teks sekunder) */
+  --link:  #0d6efd;                    /* CSS: Warna biru untuk link (kirim ulang OTP) */
+}
 
-      /* ====== RESPONSIVE ====== */
-      @media (max-width: 768px) {
-        body {
-          padding: 24px 16px;
-        }
+body {                                 /* CSS: Styling global untuk elemen body */
+  margin: 0;                           /* CSS: Hilangkan margin default browser */
+  min-height: 100vh;                   /* CSS: Tinggi minimal sama dengan tinggi viewport */
+  background: #fff;                    /* CSS: Warna latar belakang putih */
+  display: flex;                       /* CSS: Gunakan flexbox untuk center content */
+  align-items: center;                 /* CSS: Vertical center konten di tengah */
+  justify-content: center;             /* CSS: Horizontal center konten di tengah */
+  font-family: "Poppins", system-ui,   /* CSS: Font utama Poppins lalu fallback sistem */
+               -apple-system, Segoe UI,
+               Roboto, Arial, sans-serif;
+  color: var(--brown);                 /* CSS: Warna teks default coklat utama */
+  padding: 40px 20px;                  /* CSS: Padding atas-bawah 40px, kiri-kanan 20px */
+}
 
-        .verify-card {
-          max-width: 360px;
-        }
+.verify-card {                         /* CSS: Kartu container utama verifikasi OTP */
+  width: 100%;                         /* CSS: Lebar penuh relatif terhadap parent */
+  max-width: 420px;                    /* CSS: Batasi lebar maksimal agar tetap kompak */
+  text-align: center;                  /* CSS: Teks di dalam kartu dirata tengah */
+}
 
-        .lead-text {
-          font-size: 0.95rem;
-          margin-bottom: 22px;
-        }
+.lead-text {                           /* CSS: Teks instruksi di bagian atas kartu */
+  color: var(--muted);                 /* CSS: Warna teks abu-coklat (lebih soft) */
+  margin-bottom: 28px;                 /* CSS: Jarak bawah 28px dari elemen berikutnya */
+  font-size: 1.05rem;                  /* CSS: Sedikit lebih besar dari font default */
+  line-height: 1.6;                    /* CSS: Jarak antar baris agak renggang untuk keterbacaan */
+}
 
-        .otp-row {
-          gap: 10px;
-          margin-bottom: 24px;
-        }
+.otp-row {                             /* CSS: Wrapper baris untuk kotak-kotak OTP */
+  display: flex;                       /* CSS: Gunakan flexbox untuk susun kotak dalam satu baris */
+  justify-content: center;             /* CSS: Posisikan kotak OTP di tengah secara horizontal */
+  gap: 14px;                           /* CSS: Jarak antar kotak OTP 14px */
+  margin-bottom: 28px;                 /* CSS: Jarak bawah 28px dari elemen setelahnya */
+  flex-wrap: wrap;                     /* CSS: Izinkan kotak turun ke baris baru pada layar sempit */
+}
 
-        .otp-cell {
-          width: 46px;
-          height: 46px;
-          font-size: 20px;
-          border-radius: 10px;
-        }
-        .resend {
-          font-size: 0.9rem;
-        }
-      }
+.otp-cell {                            /* CSS: Input tekstual masing-masing digit OTP */
+  width: 54px;                         /* CSS: Lebar kotak OTP 54px di desktop */
+  height: 54px;                        /* CSS: Tinggi kotak OTP 54px di desktop */
+  border-radius: 12px;                 /* CSS: Sudut kotak agak membulat 12px */
+  border: 2px solid var(--gold);       /* CSS: Border tebal 2px dengan warna emas */
+  text-align: center;                  /* CSS: Teks (angka) dirata tengah secara horizontal */
+  font-size: 24px;                     /* CSS: Ukuran font angka cukup besar (24px) */
+  color: var(--brown);                 /* CSS: Warna angka coklat utama */
+  background: #fff;                    /* CSS: Latar belakang kotak putih */
+  outline: none;                       /* CSS: Hilangkan outline default saat fokus */
+  caret-color: transparent;            /* CSS: Sembunyikan caret (kursor teks) di input */
+  transition: all 0.2s ease;           /* CSS: Transisi halus saat fokus/hover */
+}
 
-      @media (max-width: 480px) {
-        .verify-card {
-          max-width: 320px;
-        }
+.otp-cell:focus {                      /* CSS: State saat kotak OTP dalam kondisi fokus */
+  box-shadow: 0 0 0 0.2rem
+              rgba(255, 213, 79, .3);  /* CSS: Glow kuning lembut di sekeliling kotak */
+}
 
-        .lead-text {
-          font-size: 0.88rem;
-          margin-bottom: 20px;
-        }
+.btn-verify {                          /* CSS: Tombol “Verifikasi” OTP */
+  display: inline-block;               /* CSS: Perlakukan sebagai inline-block untuk padding rapi */
+  padding: 10px 24px;                  /* CSS: Padding vertikal 10px, horizontal 24px */
+  border-radius: 12px;                 /* CSS: Sudut tombol membulat 12px */
+  border: 0;                           /* CSS: Hilangkan border default */
+  background: var(--gold);             /* CSS: Warna latar tombol emas */
+  color: var(--brown);                 /* CSS: Warna teks tombol coklat */
+  font-weight: 600;                    /* CSS: Teks tombol tebal (semibold) */
+  font-size: 0.95rem;                  /* CSS: Ukuran font tombol sedikit lebih kecil dari body */
+  line-height: 1.2;                    /* CSS: Line height rapat agar tombol padat */
+  cursor: pointer;                     /* CSS: Tampilkan cursor pointer saat hover tombol */
+}
 
-        .otp-row {
-          gap: 8px;
-          margin-bottom: 20px;
-        }
+.resend {                              /* CSS: Link “Kirim ulang OTP” */
+  margin-top: 16px;                    /* CSS: Jarak atas 16px dari elemen sebelumnya */
+  display: inline-block;               /* CSS: Inline-block agar bisa diberi margin */
+  text-decoration: none;               /* CSS: Hilangkan underline default link */
+  color: var(--link);                  /* CSS: Warna teks biru sesuai variabel link */
+  font-weight: 500;                    /* CSS: Tebal teks medium */
+}
 
-        .otp-cell {
-          width: 40px;
-          height: 40px;
-          font-size: 18px;
-          border-radius: 8px;
-        }
-        .notice {
-          font-size: 13px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="verify-card">
-      <p class="lead-text">
-        Masukkan 6 digit kode OTP<br />yang telah dikirim ke email Anda
-      </p>
+.resend.disabled {                     /* CSS: State saat tombol resend dinonaktifkan */
+  pointer-events: none;                /* CSS: Nonaktifkan klik pada link */
+  opacity: 0.5;                        /* CSS: Turunkan opacity agar terlihat non-aktif */
+}
 
-      <form
-        id="otpForm"
-        action="../backend/verify_otp.php"
-        method="post"
-        novalidate
+.notice-wrap {                         /* CSS: Wrapper untuk kumpulan pesan peringatan/info */
+  margin-top: 6px;                     /* CSS: Jarak atas 6px dari elemen sebelumnya */
+}
+
+.notice {                              /* CSS: Style umum untuk teks notice */
+  margin: 4px 0 0;                     /* CSS: Jarak atas 4px, kiri/kanan 0, bawah 0 */
+  font-size: 14px;                     /* CSS: Ukuran font notice 14px (lebih kecil) */
+  color: var(--brown);                 /* CSS: Warna teks notice coklat tua */
+}                                      /* CSS: Komentar asli: teks peringatan hitam/coklat tua */
+
+.notice.hide {                         /* CSS: Modifier untuk menyembunyikan notice */
+  display: none;                       /* CSS: Hilangkan elemen dari layout */
+}
+
+.notice.success {                      /* CSS: Modifier notice saat menampilkan pesan sukses */
+  font-weight: 700;                    /* CSS: Gunakan font weight bold untuk penekanan */
+}
+
+@media (max-width: 768px) {            /* CSS: Media query untuk layar <= 768px (tablet/HP) */
+  body {                               /* CSS: Override styling body di layar lebih kecil */
+    padding: 24px 16px;                /* CSS: Kurangi padding agar konten muat di layar kecil */
+  }
+
+  .verify-card {                       /* CSS: Kartu verifikasi pada layar <= 768px */
+    max-width: 360px;                  /* CSS: Perkecil lebar maksimal kartu */
+  }
+
+  .lead-text {                         /* CSS: Teks instruksi di layar <= 768px */
+    font-size: 0.95rem;                /* CSS: Sedikit mengecilkan ukuran font */
+    margin-bottom: 22px;               /* CSS: Kurangi jarak bawah menjadi 22px */
+  }
+
+  .otp-row {                           /* CSS: Baris OTP di layar <= 768px */
+    gap: 10px;                         /* CSS: Jarak antar kotak OTP diperkecil */
+    margin-bottom: 24px;               /* CSS: Jarak bawah sedikit diperkecil */
+  }
+
+  .otp-cell {                          /* CSS: Kotak OTP di layar <= 768px */
+    width: 46px;                       /* CSS: Lebar kotak sedikit lebih kecil */
+    height: 46px;                      /* CSS: Tinggi kotak disesuaikan dengan lebar */
+    font-size: 20px;                   /* CSS: Ukuran angka sedikit diperkecil */
+    border-radius: 10px;               /* CSS: Sudut kotak sedikit lebih kecil */
+  }
+
+  .resend {                            /* CSS: Link resend di layar <= 768px */
+    font-size: 0.9rem;                 /* CSS: Ukuran font link sedikit diperkecil */
+  }
+}
+
+@media (max-width: 480px) {            /* CSS: Media query untuk layar sangat kecil (HP) */
+  .verify-card {                       /* CSS: Kartu verifikasi di layar <= 480px */
+    max-width: 320px;                  /* CSS: Perkecil lagi lebar maksimal kartu */
+  }
+
+  .lead-text {                         /* CSS: Teks instruksi di layar <= 480px */
+    font-size: 0.88rem;                /* CSS: Ukuran font lebih kecil agar muat */
+    margin-bottom: 20px;               /* CSS: Margin bawah diperkecil lagi */
+  }
+
+  .otp-row {                           /* CSS: Baris OTP di layar <= 480px */
+    gap: 8px;                          /* CSS: Jarak antar kotak OTP diperkecil lagi */
+    margin-bottom: 20px;               /* CSS: Margin bawah 20px */
+  }
+
+  .otp-cell {                          /* CSS: Kotak OTP di layar <= 480px */
+    width: 40px;                       /* CSS: Lebar kotak paling kecil untuk HP */
+    height: 40px;                      /* CSS: Tinggi kotak disesuaikan */
+    font-size: 18px;                   /* CSS: Ukuran angka menyesuaikan kotak */
+    border-radius: 8px;                /* CSS: Sudut kotak sedikit lebih tajam */
+  }
+
+  .notice {                            /* CSS: Notice di layar <= 480px */
+    font-size: 13px;                   /* CSS: Ukuran font notice diperkecil */
+  }
+}
+</style> 
+</head> <!-- HTML: Penutup tag head -->
+
+<body> <!-- HTML: Awal area tampilan utama halaman -->
+
+  <!-- HTML: Kartu container utama untuk verifikasi OTP -->
+  <div class="verify-card">
+
+    <!-- HTML: Teks instruksi pengguna untuk memasukkan kode OTP -->
+    <p class="lead-text">
+      Masukkan 6 digit kode OTP<br>
+      yang telah dikirim ke email Anda
+    </p>
+
+    <!-- HTML: Form verifikasi OTP, POST ke backend verify_otp.php -->
+    <form
+      id="otpForm"
+      action="../backend/verify_otp.php"
+      method="post"
+      novalidate
+    >
+
+      <!-- HTML: Input hidden untuk membawa nilai email dari query string -->
+      <input
+        type="hidden"
+        id="email"
+        name="email"
+      />
+
+      <!-- HTML: Wrapper baris untuk enam kotak input OTP -->
+      <div
+        class="otp-row"
+        id="cells"
       >
-        <input type="hidden" id="email" name="email" />
 
-        <div class="otp-row" id="cells">
-          <input
-            type="text"
-            inputmode="numeric"
-            maxlength="1"
-            class="otp-cell"
-          />
-          <input
-            type="text"
-            inputmode="numeric"
-            maxlength="1"
-            class="otp-cell"
-          />
-          <input
-            type="text"
-            inputmode="numeric"
-            maxlength="1"
-            class="otp-cell"
-          />
-          <input
-            type="text"
-            inputmode="numeric"
-            maxlength="1"
-            class="otp-cell"
-          />
-          <input
-            type="text"
-            inputmode="numeric"
-            maxlength="1"
-            class="otp-cell"
-          />
-          <input
-            type="text"
-            inputmode="numeric"
-            maxlength="1"
-            class="otp-cell"
-          />
-        </div>
+        <!-- HTML: Input OTP digit ke-1 -->
+        <input
+          type="text"
+          inputmode="numeric"
+          maxlength="1"
+          class="otp-cell"
+        />
 
-        <button type="submit" class="btn-verify" id="btnVerify">
-          Verifikasi
-        </button>
+        <!-- HTML: Input OTP digit ke-2 -->
+        <input
+          type="text"
+          inputmode="numeric"
+          maxlength="1"
+          class="otp-cell"
+        />
 
-        <div class="text-center">
-          <a
-            href="#"
-            id="resendLink"
-            class="resend disabled"
-            aria-disabled="true"
-            >Kirim ulang OTP (05:00)</a
-          >
-        </div>
+        <!-- HTML: Input OTP digit ke-3 -->
+        <input
+          type="text"
+          inputmode="numeric"
+          maxlength="1"
+          class="otp-cell"
+        />
 
-        <div class="notice-wrap">
-          <p id="cooldownNote" class="notice hide">
-            Tunggu sebentar sebelum mengirim ulang.
-          </p>
-          <p id="alertBox" class="notice hide"></p>
-        </div>
-      </form>
-    </div>
-    <script>
-      // ====== Setup ======
-      const params = new URLSearchParams(location.search);
-      const emailInput = document.getElementById("email");
-      const form = document.getElementById("otpForm");
-      const cells = Array.prototype.slice.call(
-        document.querySelectorAll(".otp-cell")
+        <!-- HTML: Input OTP digit ke-4 -->
+        <input
+          type="text"
+          inputmode="numeric"
+          maxlength="1"
+          class="otp-cell"
+        />
+
+        <!-- HTML: Input OTP digit ke-5 -->
+        <input
+          type="text"
+          inputmode="numeric"
+          maxlength="1"
+          class="otp-cell"
+        />
+
+        <!-- HTML: Input OTP digit ke-6 -->
+        <input
+          type="text"
+          inputmode="numeric"
+          maxlength="1"
+          class="otp-cell"
+        />
+      </div> <!-- HTML: Penutup wrapper otp-row -->
+
+      <!-- HTML: Tombol submit verifikasi OTP -->
+      <button
+        type="submit"
+        class="btn-verify"
+        id="btnVerify"
+        onclick="return submitOtpManually()"
+      >
+        Verifikasi
+      </button>
+
+      <!-- HTML: Wrapper untuk link resend OTP -->
+      <div class="text-center">
+
+        <!-- HTML: Link kirim ulang OTP (awalnya disabled dan hitung mundur) -->
+        <a
+          href="#"
+          id="resendLink"
+          class="resend disabled"
+          aria-disabled="true"
+        >
+          Kirim ulang OTP (05:00)
+        </a>
+      </div>
+
+      <!-- HTML: Wrapper untuk pesan notifikasi -->
+      <div class="notice-wrap">
+
+        <!-- HTML: Pesan cooldown saat user harus menunggu -->
+        <p
+          id="cooldownNote"
+          class="notice hide"
+        >
+          Tunggu sebentar sebelum mengirim ulang.
+        </p>
+
+        <!-- HTML: Box pesan dinamis (error / success) -->
+        <p
+          id="alertBox"
+          class="notice hide"
+          role="status"
+          aria-live="polite"
+        ></p>
+      </div> <!-- HTML: Penutup notice-wrap -->
+    </form> <!-- HTML: Penutup form OTP -->
+
+  </div> <!-- HTML: Penutup kartu verify-card -->
+
+<script>
+  // JS: Normalisasi origin ke https (ganti http -> https jika perlu)
+  const ORIGIN = location.origin.replace(
+    /^http:\/\//i,
+    "https://"
+  );
+
+  // JS: URL endpoint verifikasi OTP di backend
+  const VERIFY_URL = ORIGIN + "/backend/verify_otp.php";
+
+  // JS: URL halaman login setelah verifikasi berhasil
+  const LOGIN_URL = ORIGIN + "/login";
+
+  // JS: Set action form OTP ke VERIFY_URL yang sudah diamankan
+  document
+    .getElementById("otpForm")
+    .setAttribute("action", VERIFY_URL);
+
+  // JS: Ambil objek URLSearchParams dari query string saat ini
+  const params = new URLSearchParams(location.search);
+
+  // JS: Referensi input hidden untuk email
+  const emailInput = document.getElementById("email");
+
+  // JS: Referensi elemen form OTP
+  const form = document.getElementById("otpForm");
+
+  // JS: Ambil semua elemen input OTP dan ubah NodeList menjadi array
+  const cells = Array.prototype.slice.call(
+    document.querySelectorAll(".otp-cell")
+  );
+
+  // JS: Referensi link untuk kirim ulang OTP
+  const resendLink = document.getElementById("resendLink");
+
+  // JS: Referensi elemen teks pemberitahuan cooldown
+  const note = document.getElementById("cooldownNote");
+
+  // JS: Referensi kotak alert untuk pesan error/sukses
+  const alertBox = document.getElementById("alertBox");
+
+  // JS: Referensi tombol verifikasi
+  const btnVerify = document.getElementById("btnVerify");
+
+  // JS: Flag global untuk menandai handler submit OTP via JS sudah aktif
+  window.__otpHandlerActive = false;
+
+  // JS: Ambil email dari query string (?email=...) atau kosong jika tidak ada
+  const emailQS = params.get("email") || "";
+
+  // JS: Jika ada email di query string, set ke input hidden email
+  if (emailQS) {
+    emailInput.value = emailQS;
+  }
+
+  // JS: Durasi cooldown untuk kirim ulang OTP (300 detik = 5 menit)
+  const COOLDOWN = 300; // 5 menit
+
+  // JS: Helper untuk membuat key localStorage berdasarkan email
+  function storageKey(email) {
+    return "otp_last_sent_" + (email || "anonymous");
+  }
+
+  // JS: Tampilkan pesan error di alertBox (tanpa style sukses)
+  function showAlert(msg) {
+    alertBox.textContent = msg;
+    alertBox.classList.remove("hide");
+    alertBox.classList.remove("success");
+  }
+
+  // JS: Tampilkan pesan sukses di alertBox (dengan style success)
+  function showSuccess(msg) {
+    alertBox.textContent = msg;
+    alertBox.classList.remove("hide");
+    alertBox.classList.add("success");
+  }
+
+  // JS: Sembunyikan alert dan reset state success
+  function hideAlert() {
+    alertBox.textContent = "";
+    alertBox.classList.add("hide");
+    alertBox.classList.remove("success");
+  }
+
+  // JS: Ambil hanya karakter digit dari string (buang non-angka)
+  function onlyDigit(v) {
+    return v.replace(/\D/g, "");
+  }
+
+  // JS: Pasang event listener pada setiap kotak OTP
+  cells.forEach(function (c, idx) {
+    // JS: Saat input, paksa hanya 1 digit dan loncat ke kotak berikutnya
+    c.addEventListener("input", function (e) {
+      e.target.value = onlyDigit(e.target.value).slice(0, 1);
+
+      if (e.target.value && idx < cells.length - 1) {
+        cells[idx + 1].focus();
+      }
+    });
+
+    // JS: Saat Backspace di kotak kosong, pindah fokus ke kotak sebelumnya
+    c.addEventListener("keydown", function (e) {
+      if (
+        e.key === "Backspace" &&
+        !e.target.value &&
+        idx > 0
+      ) {
+        cells[idx - 1].focus();
+      }
+    });
+
+    // JS: Handle paste – sebar digit ke semua kotak OTP
+    c.addEventListener("paste", function (e) {
+      const t =
+        (e.clipboardData || window.clipboardData)
+          .getData("text");
+
+      const d = onlyDigit(t).slice(0, 6);
+
+      if (!d) return;
+
+      e.preventDefault();
+
+      cells.forEach((cc, i) => {
+        cc.value = d[i] || "";
+      });
+
+      (
+        d.length < 6
+          ? cells[d.length]
+          : cells[cells.length - 1]
+      ).focus();
+    });
+  });
+
+  // JS: Variabel untuk menyimpan interval countdown
+  let tickInt = null;
+
+  // JS: Hitung sisa detik cooldown dari localStorage
+  function secondsLeftFromStorage() {
+    const ts = parseInt(
+      localStorage.getItem(
+        storageKey(emailInput.value)
+      ) || "0",
+      10
+    );
+
+    if (!ts) return 0;
+
+    const elapsed = Math.floor(
+      (Date.now() - ts) / 1000
+    );
+
+    return Math.max(0, COOLDOWN - elapsed);
+  }
+
+  // JS: Format detik menjadi string "mm:ss"
+  function fmt(s) {
+    const m = String(
+      Math.floor(s / 60)
+    ).padStart(2, "0");
+
+    const d = String(
+      s % 60
+    ).padStart(2, "0");
+
+    return m + ":" + d;
+  }
+
+  // JS: Render tampilan cooldown di tombol resend
+  function renderCooldown(sec) {
+    if (sec > 0) {
+      resendLink.textContent =
+        "Kirim ulang OTP (" + fmt(sec) + ")";
+      resendLink.classList.add("disabled");
+      resendLink.setAttribute(
+        "aria-disabled",
+        "true"
       );
-      const resendLink = document.getElementById("resendLink");
-      const note = document.getElementById("cooldownNote");
-      const alertBox = document.getElementById("alertBox");
+      note.classList.remove("hide");
+    } else {
+      resendLink.textContent = "Kirim ulang OTP";
+      resendLink.classList.remove("disabled");
+      resendLink.removeAttribute("aria-disabled");
+      note.classList.add("hide");
+    }
+  }
 
-      // ambil email dari query
-      const emailQS = params.get("email") || "";
-      if (emailQS) emailInput.value = emailQS;
+  // JS: Mulai countdown cooldown kirim ulang OTP
+  function startCountdown(startSeconds) {
+    let remaining = startSeconds;
 
-      // ====== CONFIG ======
-      const COOLDOWN = 300; // 5 menit
+    renderCooldown(remaining);
+    clearInterval(tickInt);
 
-      function storageKey(email) {
-        return "otp_last_sent_" + (email || "anonymous");
-      }
+    tickInt = setInterval(function () {
+      remaining -= 1;
+      renderCooldown(remaining);
 
-      function showAlert(msg) {
-        alertBox.textContent = msg;
-        alertBox.classList.remove("hide");
-      }
+      if (remaining > 0) {
+        const backTs =
+          Date.now() - (COOLDOWN - remaining) * 1000;
 
-      // ====== OTP typing ======
-      function onlyDigit(v) {
-        return v.replace(/\D/g, "");
-      }
-      cells.forEach(function (c, idx) {
-        c.addEventListener("input", function (e) {
-          e.target.value = onlyDigit(e.target.value).slice(0, 1);
-          if (e.target.value && idx < cells.length - 1) cells[idx + 1].focus();
-        });
-        c.addEventListener("keydown", function (e) {
-          if (e.key === "Backspace" && !e.target.value && idx > 0)
-            cells[idx - 1].focus();
-        });
-        c.addEventListener("paste", function (e) {
-          const t = (e.clipboardData || window.clipboardData).getData("text");
-          const digits = onlyDigit(t).slice(0, 6);
-          if (!digits) return;
-          e.preventDefault();
-          cells.forEach((cc, i) => (cc.value = digits[i] || ""));
-          (digits.length < 6
-            ? cells[digits.length]
-            : cells[cells.length - 1]
-          ).focus();
-        });
-      });
-
-      form.addEventListener("submit", function (e) {
-        const otp = cells.map((c) => c.value).join("");
-        if (otp.length !== 6) {
-          e.preventDefault();
-          showAlert("Masukkan 6 digit OTP.");
-          return;
-        }
-        const hid = document.createElement("input");
-        hid.type = "hidden";
-        hid.name = "otp";
-        hid.value = otp;
-        form.appendChild(hid);
-      });
-
-      // ====== COUNTDOWN ======
-      let tickInt = null;
-
-      function secondsLeftFromStorage() {
-        const key = storageKey(emailInput.value);
-        const ts = parseInt(localStorage.getItem(key) || "0", 10);
-        if (!ts) return 0;
-        const elapsed = Math.floor((Date.now() - ts) / 1000);
-        return Math.max(0, COOLDOWN - elapsed);
-      }
-
-      function fmt(s) {
-        const m = String(Math.floor(s / 60)).padStart(2, "0");
-        const d = String(s % 60).padStart(2, "0");
-        return m + ":" + d;
-      }
-
-      function startCountdown(startSeconds) {
-        let remaining = startSeconds;
-
-        function render(sec) {
-          if (sec > 0) {
-            resendLink.textContent = "Kirim ulang OTP (" + fmt(sec) + ")";
-            resendLink.classList.add("disabled");
-            resendLink.setAttribute("aria-disabled", "true");
-            note.classList.remove("hide");
-          } else {
-            resendLink.textContent = "Kirim ulang OTP";
-            resendLink.classList.remove("disabled");
-            resendLink.removeAttribute("aria-disabled");
-            note.classList.add("hide");
-          }
-        }
-
-        render(remaining);
-        clearInterval(tickInt);
-
-        tickInt = setInterval(function () {
-          remaining -= 1;
-          render(remaining);
-
-          // update lokal storage
-          if (remaining > 0) {
-            const backTs = Date.now() - (COOLDOWN - remaining) * 1000;
-            localStorage.setItem(
-              storageKey(emailInput.value),
-              backTs.toString()
-            );
-          }
-
-          if (remaining <= 0) {
-            clearInterval(tickInt);
-          }
-        }, 1000);
-      }
-
-      // ====== Kirim OTP pertama kali saat halaman dibuka ======
-      // (ini yang nyambungin ke backend/send_otp.php)
-      function sendInitialOtp() {
-        if (!emailInput.value) return;
-
-        fetch(
-          "../backend/send_otp.php?email=" +
-            encodeURIComponent(emailInput.value),
-          {
-            headers: {
-              "X-Requested-With": "XMLHttpRequest",
-              Accept: "application/json",
-            },
-          }
-        )
-          .then((r) => r.json())
-          .then((data) => {
-            if (!data.ok) {
-              // kalau gagal kirim yaudah, user masih bisa klik "kirim ulang"
-              showAlert("Tidak bisa mengirim OTP otomatis, coba kirim ulang.");
-              return;
-            }
-            // sukses → catat waktu kirim biar countdown langsung jalan
-            localStorage.setItem(
-              storageKey(emailInput.value),
-              Date.now().toString()
-            );
-            startCountdown(COOLDOWN);
-          })
-          .catch(() => {
-            // jaringan bermasalah → user bisa kirim ulang manual
-          });
-      }
-
-      // ====== INIT ======
-      const initLeft = secondsLeftFromStorage();
-      if (initLeft > 0) {
-        startCountdown(initLeft);
-      } else {
-        // belum ada countdown → langsung coba kirim OTP pertama
-        sendInitialOtp();
-        resendLink.textContent = "Kirim ulang OTP";
-        resendLink.classList.remove("disabled");
-        resendLink.removeAttribute("aria-disabled");
-        note.classList.add("hide");
-      }
-
-      // ====== RESEND CLICK (sekarang nembak ke send_otp.php) ======
-      resendLink.addEventListener("click", function (e) {
-        if (resendLink.classList.contains("disabled")) {
-          e.preventDefault();
-          return;
-        }
-        e.preventDefault();
-
-        if (!emailInput.value) {
-          showAlert("Email tidak valid.");
-          return;
-        }
-
-        // kasih feedback cepat
-        showAlert("Kode OTP baru sudah dikirim ke email.");
-
-        // langsung mulai countdown di front-end
         localStorage.setItem(
           storageKey(emailInput.value),
-          Date.now().toString()
+          String(backTs)
+        );
+      }
+
+      if (remaining <= 0) {
+        clearInterval(tickInt);
+      }
+    }, 1000);
+  }
+
+
+   // JS: Inisialisasi – gunakan cooldown dari storage, tanpa auto-resend
+  // ======= INIT TANPA AUTO-RESEND =======
+  const initLeft = secondsLeftFromStorage(); // JS: Sisa detik cooldown dari localStorage
+
+  // JS: Cek apakah URL punya parameter ?sent=1 (tanda OTP baru dikirim)
+  const paramSent = params.get("sent") === "1";
+
+  // JS: Jika masih ada sisa cooldown, lanjutkan countdown
+  if (initLeft > 0) {
+    startCountdown(initLeft);
+
+  // JS: Jika tidak ada cooldown tapi ada sent=1, anggap baru kirim OTP dan mulai cooldown baru
+  } else if (paramSent) {
+    localStorage.setItem(
+      storageKey(emailInput.value),
+      String(Date.now())
+    );
+    startCountdown(COOLDOWN);
+
+  // JS: Jika tidak ada cooldown dan tidak ada sent=1, tombol resend langsung aktif
+  } else {
+    renderCooldown(0); // tombol resend aktif, tidak auto kirim
+  }
+
+  // JS: Handler pengiriman ulang OTP saat user klik tombol
+  // ======= RESEND (hanya saat user klik) =======
+  async function requestResendOtp() {
+    // JS: Validasi – jika email kosong, tampilkan error dan batalkan
+    if (!emailInput.value) {
+      showAlert("Email tidak valid.");
+      return;
+    }
+
+    try {
+      // JS: Buat URL baru untuk endpoint VERIFY_URL
+      const url = new URL(VERIFY_URL);
+
+      // JS: Tambahkan query ?resend=1 untuk menandai request resend
+      url.searchParams.set("resend", "1");
+
+      // JS: Sertakan email sebagai parameter query
+      url.searchParams.set("email", emailInput.value);
+
+      // JS: Kirim request GET ke server dengan header AJAX & JSON
+      const res = await fetch(
+        url.toString(),
+        {
+          method: "GET",
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "Accept": "application/json"
+          },
+          cache: "no-store",
+          redirect: "follow",
+          referrerPolicy: "strict-origin-when-cross-origin"
+        }
+      );
+
+      // JS: Coba parse respon JSON, fallback ke objek kosong jika gagal
+      const data = await res.json().catch(() => ({}));
+
+      // JS: Jika respon OK dan data.ok true -> resend berhasil
+      if (res.ok && data.ok) {
+        localStorage.setItem(
+          storageKey(emailInput.value),
+          String(Date.now())
         );
         startCountdown(COOLDOWN);
+        hideAlert();
+        return;
+      }
 
-        // kirim ke backend benerannya
-        fetch(
-          "../backend/send_otp.php?email=" +
-            encodeURIComponent(emailInput.value),
-          {
-            headers: {
-              "X-Requested-With": "XMLHttpRequest",
-              Accept: "application/json",
-            },
-          }
-        )
-          .then((res) => res.json())
-          .then((data) => {
-            // kalau backend punya logika cooldown sendiri
-            if (!data.ok && data.error === "cooldown") {
-              const wait = parseInt(data.wait || "0", 10);
-              if (wait > 0) {
-                const backTs = Date.now() - (COOLDOWN - wait) * 1000;
-                localStorage.setItem(
-                  storageKey(emailInput.value),
-                  backTs.toString()
-                );
-                startCountdown(wait);
-              }
-              showAlert("Tunggu sebentar sebelum mengirim ulang.");
-            }
-          })
-          .catch(() => {
-            // kalau error jaringan → biarin, countdown tetap jalan
-          });
+      // JS: Jika status 429 (too many requests) dan error "cooldown"
+      if (res.status === 429 && data?.error === "cooldown") {
+        const wait = parseInt(data.wait || "0", 10);
+
+        // JS: Jika server kirim sisa waktu tunggu, sinkronkan dan mulai countdown
+        if (wait > 0) {
+          const backTs =
+            Date.now() - (COOLDOWN - wait) * 1000;
+
+          localStorage.setItem(
+            storageKey(emailInput.value),
+            String(backTs)
+          );
+
+          startCountdown(wait);
+        }
+
+        showAlert("Tunggu sebentar sebelum mengirim ulang.");
+        return;
+      }
+
+      // JS: Gagal kirim OTP dengan pesan error spesifik bila ada
+      showAlert(
+        data?.error
+          ? "Gagal mengirim OTP: " + data.error
+          : "Gagal mengirim OTP."
+      );
+
+    } catch {
+      // JS: Error jaringan atau exception lain saat fetch
+      showAlert("Jaringan bermasalah. Coba lagi.");
+    }
+  }
+
+  // JS: Listener klik tombol/link kirim ulang OTP
+  resendLink.addEventListener("click", function (e) {
+    // JS: Jika masih disabled, cegah klik dan hentikan
+    if (resendLink.classList.contains("disabled")) {
+      e.preventDefault();
+      return;
+    }
+
+    // JS: Cegah perilaku default link (#)
+    e.preventDefault();
+
+    // JS: Tampilkan pesan bahwa kode baru sedang dikirim
+    showAlert("Kode OTP baru dikirim ke email (jika tersedia).");
+
+    // JS: Simpan timestamp kirim OTP sekarang, mulai cooldown
+    localStorage.setItem(
+      storageKey(emailInput.value),
+      String(Date.now())
+    );
+
+    // JS: Mulai countdown cooldown
+    startCountdown(COOLDOWN);
+
+    // JS: Panggil fungsi async untuk benar-benar request resend ke backend
+    requestResendOtp();
+  });
+
+  // JS: Handler submit form untuk verifikasi OTP
+  // ======= VERIFY =======
+  form.addEventListener("submit", async function (e) {
+    // JS: Tandai bahwa handler submit JS sudah aktif (untuk fallback onclick)
+    window.__otpHandlerActive = true;
+
+    // JS: Cegah submit form standar (refresh halaman)
+    e.preventDefault();
+
+    // JS: Gabungkan nilai dari semua kotak OTP menjadi string
+    const otp = cells.map(c => c.value).join("");
+
+    // JS: Validasi – OTP harus tepat 6 digit
+    if (otp.length !== 6) {
+      showAlert("Masukkan 6 digit OTP.");
+      return;
+    }
+
+    // JS: Disable tombol verifikasi sementara & sembunyikan alert
+    btnVerify.disabled = true;
+    hideAlert();
+
+    try {
+      // JS: Siapkan FormData untuk dikirim ke backend
+      const fd = new FormData();
+      fd.append("email", emailInput.value);
+      fd.append("otp", otp);
+
+      // JS: Kirim request verifikasi OTP via POST (AJAX)
+      const res = await fetch(
+        VERIFY_URL,
+        {
+          method: "POST",
+          body: fd,
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+          cache: "no-store",
+          redirect: "follow",
+          referrerPolicy: "strict-origin-when-cross-origin"
+        }
+      );
+
+      // JS: Cek apakah responsenya bertipe JSON
+      if (
+        res.headers
+          .get("content-type")
+          ?.includes("application/json")
+      ) {
+        const data = await res.json().catch(() => ({}));
+
+        // JS: Jika verifikasi sukses (res.ok dan data.ok true)
+        if (res.ok && data.ok) {
+          showSuccess(
+            "Pendaftaran akun telah berhasil. Silakan login…"
+          );
+
+          // JS: Kunci tombol verifikasi & nonaktifkan resend
+          btnVerify.disabled = true;
+          resendLink.classList.add("disabled");
+          resendLink.setAttribute("aria-disabled", "true");
+
+          // JS: Redirect ke URL yang dikirim server atau ke halaman login
+          setTimeout(() => {
+            window.location.href =
+              data.redirect || LOGIN_URL;
+          }, 2000);
+
+          return;
+        }
+
+        // JS: Peta kode error ringkas -> pesan user-friendly
+        const map = {
+          invalid_input: "Input tidak valid.",
+          not_found: "Akun tidak ditemukan.",
+          already_active: "Akun sudah aktif, silakan login.",
+          wrong: "OTP salah.",
+          expired: "OTP kedaluwarsa. Silakan kirim ulang."
+        };
+
+        // JS: Tampilkan pesan sesuai mapping atau fallback message
+        showAlert(
+          map[data?.error] ||
+          data?.error ||
+          "Verifikasi gagal. Coba lagi."
+        );
+        return;
+      }
+
+      // JS: Jika bukan JSON tapi status OK, anggap berhasil dan redirect ke login
+      if (res.ok) {
+        showSuccess(
+          "Pendaftaran akun telah berhasil. Silakan login…"
+        );
+
+        setTimeout(() => {
+          window.location.href = LOGIN_URL;
+        }, 2000);
+
+        return;
+      }
+
+      // JS: Jika status tidak OK dan bukan JSON, tampilkan pesan gagal umum
+      showAlert("Verifikasi gagal. Coba lagi.");
+
+    } catch {
+      // JS: Error jaringan/exception saat verifikasi
+      showAlert("Jaringan bermasalah. Coba lagi.");
+
+    } finally {
+      // JS: Re-enable tombol verifikasi agar user bisa mencoba lagi
+      btnVerify.disabled = false;
+    }
+  });
+
+    // JS: Fallback bila event listener submit tidak terpasang dengan benar
+  function submitOtpManually() {
+
+    // JS: Jika handler submit JS sudah aktif, biarkan mekanisme normal berjalan
+    if (window.__otpHandlerActive) return true;
+
+    // JS: Gabungkan nilai dari semua kotak OTP menjadi satu string
+    let otp = "";
+    document
+      .querySelectorAll(".otp-cell")
+      .forEach((c) => {
+        otp += c.value || "";
       });
-    </script>
-  </body>
+
+    // JS: Validasi – pastikan OTP tepat 6 digit sebelum submit
+    if (otp.length !== 6) {
+      alert("Masukkan 6 digit OTP.");
+      return false;
+    }
+
+    // JS: Buat input hidden baru untuk mengirim OTP via form standar
+    const hid = document.createElement("input");
+    hid.type = "hidden";
+    hid.name = "otp";
+    hid.value = otp;
+
+    // JS: Tempelkan input hidden ke form dan pastikan action ke VERIFY_URL
+    form.appendChild(hid);
+    form.action = VERIFY_URL;
+
+    // JS: Kembalikan true agar submit form dilanjutkan (non-AJAX)
+    return true;
+  }
+
+  // JS: Ekspor fungsi fallback ke global window agar bisa dipanggil dari onclick HTML
+  window.submitOtpManually = submitOtpManually;
+</script>
+
+<!-- HTML: Penutup body halaman -->
+</body>
+
+<!-- HTML: Penutup dokumen HTML -->
 </html>

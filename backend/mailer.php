@@ -110,7 +110,7 @@ function makeMailer(): PHPMailer
         $m->DKIM_domain = DKIM_DOMAIN;
         $m->DKIM_private = DKIM_PRIVATE_KEY_PATH;
         $m->DKIM_selector = DKIM_SELECTOR;
-        $m->DKIM_identify = MAIL_ADDRESS;
+        $m->DKIM_identity = MAIL_ADDRESS;
         $m->DKIM_passphrase = '';
     }
 

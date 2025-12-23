@@ -1,249 +1,274 @@
 <!DOCTYPE html>
+<!-- Tagline: Halaman lupa password Caffora dengan request OTP via email dan alert inline tanpa reload. -->
 <html lang="id">
+  <!-- Atur bahasa dokumen HTML ke bahasa Indonesia -->
   <head>
+    <!-- Bagian head untuk meta, title, font, dan CSS inline -->
     <meta charset="utf-8" />
+    <!-- Set encoding karakter ke UTF-8 -->
     <title>Caffora — Lupa Password</title>
+    <!-- Judul halaman di tab browser -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Supaya tampilan responsif di mobile -->
 
-    <!-- Fonts & Bootstrap (samakan dengan login.html) -->
+    <!-- Fonts -->
+    <!-- Komentar: bagian untuk memuat font eksternal -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
+    <!-- Import font Poppins dari Google Fonts dengan beberapa ketebalan -->
 
     <style>
       :root {
-        --gold: #ffd54f;
-        --brown: #4b3f36;
-        --ink: #2e2823;
-        --muted: #8b8179;
-        --bg: #fff9f0;
+        /* Definisi variabel warna utama tema Caffora */
+        --gold: #ffd54f; /* Kuning emas lembut untuk aksen utama */
+        --gold-deep: #f9b923; /* Kuning lebih pekat untuk gradasi tombol */
+        --brown: #4b3f36; /* Coklat kopi sebagai warna teks utama */
+        --ink: #2e2823; /* Warna teks lebih gelap (tinta) */
+        --muted: #8b8179; /* Warna teks sekunder yang redup */
+        --line: #e5e7eb; /* Warna garis/border abu muda */
       }
 
       * {
-        box-sizing: border-box;
+        box-sizing: border-box; /* Hitung padding+border di dalam width/height elemen */
       }
 
       body {
-        margin: 0;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: "Poppins", sans-serif;
-        background: radial-gradient(
-            circle at 0 0,
-            #fff3d7 0,
-            rgba(255, 243, 215, 0) 55%
-          ),
-          radial-gradient(
-            circle at 100% 100%,
-            #ffe0c2 0,
-            rgba(255, 224, 194, 0) 55%
-          ),
-          var(--bg);
-        color: var(--brown);
+        margin: 0; /* Hilangkan margin default body */
+        min-height: 100vh; /* Tinggi minimal 1 layar penuh */
+        font-family: "Poppins", sans-serif; /* Gunakan font Poppins untuk keseluruhan halaman */
+        background: #ffffff; /* Latar belakang putih bersih */
+        color: var(--brown); /* Warna teks default coklat */
+        display: flex; /* Pakai flexbox untuk pusatkan konten */
+        align-items: center; /* Vertikal center */
+        justify-content: center; /* Horizontal center */
       }
 
-      .auth-card {
-        width: 100%;
-        max-width: 420px;
-        background: #ffffff;
-        border-radius: 24px;
-        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
-        padding: 28px 26px 24px;
+      .page-wrap {
+        width: 100%; /* Lebar penuh di mobile */
+        max-width: 420px; /* Batas lebar konten agar tampak rapi di desktop */
+        padding: 24px 20px 32px; /* Spasi di sekeliling konten */
       }
 
-      .brand {
-        text-align: center;
-        margin-bottom: 20px;
+      .field-label {
+        font-size: 0.9rem; /* Ukuran label sedikit kecil */
+        font-weight: 500; /* Semi-bold untuk label */
+        color: var(--ink); /* Warna label lebih pekat */
+        margin-bottom: 6px; /* Jarak bawah label ke input */
       }
 
-      .brand-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(145deg, #ffeb99, #ffc94f);
-        color: var(--brown);
-        font-size: 22px;
-        margin-bottom: 6px;
+      .input-email {
+        width: 100%; /* Input memenuhi lebar kontainer */
+        border-radius: 15px; /* Sudut input melengkung */
+        border: 1px solid var(--line); /* Garis border abu lembut */
+        padding: 11px 16px; /* Spasi dalam input */
+        font-size: 0.9rem; /* Ukuran teks input */
+        outline: none; /* Hilangkan outline default browser */
+        margin-top: 5px; /* Jarak atas terhadap label */
+        transition: border-color 0.15s ease; /* Animasi halus saat border berubah */
       }
 
-      .brand-title {
-        font-family: "Playfair Display", serif;
-        font-size: 22px;
-        letter-spacing: 0.5px;
+      .input-email:focus {
+        border-color: var(
+          --gold
+        ); /* Sorot border dengan warna emas saat fokus */
       }
 
-      .brand-subtitle {
-        font-size: 0.86rem;
-        color: var(--muted);
+      .btn-primary {
+        margin-top: 16px; /* Jarak tombol dari input di atasnya */
+        width: 100%; /* Tombol selebar kontainer */
+        border: none; /* Hilangkan border default */
+        border-radius: 12px; /* Sudut tombol melengkung */
+        padding: 11px 22px; /* Spasi dalam tombol */
+        font-size: 0.95rem; /* Ukuran teks tombol sedikit lebih besar */
+        font-weight: 600; /* Tebal untuk tekankan aksi utama */
+        cursor: pointer; /* Ubah kursor menjadi pointer saat hover */
+        background: linear-gradient(
+          135deg,
+          var(--gold),
+          var(--gold-deep)
+        ); /* Gradasi emas untuk tombol */
+        color: var(--brown); /* Teks tombol warna coklat */
       }
 
-      .form-label {
-        font-size: 0.86rem;
-        font-weight: 500;
-        margin-bottom: 4px;
-        color: var(--ink);
+      .btn-primary:disabled {
+        opacity: 0.8; /* Sedikit transparan saat disabled */
+        cursor: wait; /* Tanda proses berjalan */
+        box-shadow: none; /* Tanpa bayangan saat disabled */
       }
 
-      .form-control {
-        border-radius: 999px;
-        padding: 10px 14px;
-        border: 1px solid #e4e4e7;
-        font-size: 0.9rem;
+      .helper-row {
+        margin-top: 16px; /* Jarak dari elemen di atas */
+        font-size: 0.85rem; /* Ukuran teks bantuan lebih kecil */
+        text-align: center; /* Teks rata tengah */
+        color: var(--brown); /* Warna teks sama seperti utama */
       }
 
-      .form-control:focus {
-        border-color: var(--gold);
-        box-shadow: 0 0 0 0.1rem rgba(255, 213, 79, 0.4);
+      .helper-row a {
+        color: #0000ff; /* Link biru untuk aksen (login) */
+        font-weight: 500; /* Sedikit ditebalkan agar tampak jelas */
+        text-decoration: none; /* Hilangkan garis bawah default */
       }
 
-      .btn-gold {
-        border-radius: 999px;
-        width: 100%;
-        padding: 10px 16px;
-        border: none;
-        font-weight: 600;
-        font-size: 0.95rem;
-        background: linear-gradient(135deg, #ffd54f, #f9b923);
-        color: #3c2a17;
-        box-shadow: 0 10px 24px rgba(249, 185, 35, 0.35);
-        transition: transform 0.12s ease, box-shadow 0.12s ease;
+      .helper-row a:hover {
+        text-decoration: underline; /* Tambah underline saat hover untuk feedback */
       }
 
-      .btn-gold:disabled {
-        opacity: 0.8;
-        cursor: wait;
-        box-shadow: none;
+      /* ALERT SIMPEL BUAT DI BAWAH FORM */
+      .alert-box {
+        font-size: 0.82rem; /* Teks alert sedikit lebih kecil dari teks biasa */
+        color: var(--ink); /* Warna dasar teks alert */
+        padding: 6px 2px; /* Spasi atas-bawah kecil */
+        margin-top: 12px; /* Jarak dari form di atasnya */
+        display: none; /* Disembunyikan secara default */
+        opacity: 0; /* Opasitas 0 untuk transisi */
+        transition: opacity 0.25s ease; /* Animasi fade-in/out */
       }
 
-      .btn-gold:hover:not(:disabled) {
-        transform: translateY(-1px);
-        box-shadow: 0 16px 30px rgba(249, 185, 35, 0.45);
+      .alert-box.show {
+        display: block; /* Tampilkan alert saat punya class show */
+        opacity: 1; /* Set opasitas penuh */
       }
 
-      .alert-inline {
-        border-radius: 14px;
-        padding: 8px 10px;
-        font-size: 0.8rem;
-        margin-bottom: 10px;
+      .alert-error {
+        color: #a91919; /* Warna merah untuk pesan error */
       }
 
-      .back-link {
-        font-size: 0.85rem;
-        color: var(--muted);
-        text-align: center;
-        margin-top: 14px;
-      }
-
-      .back-link a {
-        color: var(--brown);
-        font-weight: 500;
-        text-decoration: none;
-      }
-
-      .back-link a:hover {
-        text-decoration: underline;
+      .alert-success {
+        color: #157f45; /* Warna hijau untuk pesan sukses */
       }
     </style>
   </head>
+
   <body>
-    <main class="auth-card">
-      <div class="brand">
-        <div class="brand-icon">☕</div>
-        <div class="brand-title">Caffora</div>
-        <div class="brand-subtitle">Setel ulang kata sandi akun Anda</div>
-      </div>
-
-      <div id="alertBox" class="alert alert-inline d-none" role="alert"></div>
-
+    <!-- Mulai body: tampilan utama halaman -->
+    <main class="page-wrap">
+      <!-- Container utama konten form lupa password -->
+      <!-- Form -->
       <form id="forgotForm" autocomplete="off" novalidate>
-        <div class="mb-3">
-          <label for="email" class="form-label">Email terdaftar</label>
-          <input
-            type="email"
-            class="form-control"
-            id="email"
-            name="email"
-            placeholder="nama@email.com"
-            required
-          />
-        </div>
+        <!-- Form kirim email untuk OTP, tanpa auto-complete & tanpa validasi HTML5 default -->
+        <label for="email" class="field-label">Email terdaftar</label>
+        <!-- Label untuk input email -->
+        <input
+          type="email"
+          id="email"
+          name="email"
+          class="input-email"
+          placeholder="nama@email.com"
+          required
+        />
+        <!-- Input email dengan placeholder dan wajib diisi -->
 
-        <button type="submit" id="btnSubmit" class="btn-gold">
-          Kirim link reset
+        <button type="submit" id="btnSubmit" class="btn-primary">
+          Kirim kode OTP
         </button>
+        <!-- Tombol submit untuk memicu pengiriman kode OTP -->
       </form>
 
-      <div class="back-link">
-        Ingat kata sandi? <a href="login.html">Kembali ke halaman login</a>
+      <!-- ALERT pindah ke bawah form -->
+      <div id="alertBox" class="alert-box"></div>
+      <!-- Kontainer pesan feedback (sukses/error) di bawah form -->
+
+      <div class="helper-row">
+        Ingat kata sandi?
+        <!-- Teks bantuan jika user ternyata ingat password -->
+        <a href="login.html">login</a>
+        <!-- Link menuju halaman login -->
       </div>
     </main>
 
     <script>
-      const form = document.getElementById("forgotForm");
-      const alertBox = document.getElementById("alertBox");
-      const btnSubmit = document.getElementById("btnSubmit");
+      <!-- Mulai script untuk logika lupa password -->
+      const form = document.getElementById("forgotForm"); // Ambil elemen form berdasarkan id
+      const alertBox = document.getElementById("alertBox"); // Ambil elemen box alert untuk pesan status
+      const btnSubmit = document.getElementById("btnSubmit"); // Ambil tombol submit untuk di-disable/enable
 
-      function showAlert(message, type = "info") {
-        alertBox.textContent = message;
-        alertBox.className =
-          "alert alert-inline alert-" + (type === "error" ? "danger" : type);
-        alertBox.classList.remove("d-none");
+      function showAlert(message, type = "") {
+        // Fungsi untuk menampilkan alert dengan pesan dan tipe (success/error)
+        alertBox.className = "alert-box show"; // Reset class ke alert-box + show (untuk tampil & efek fade)
+        if (type === "success") alertBox.classList.add("alert-success");
+        // Jika success, tambahkan warna hijau
+        else if (type === "error") alertBox.classList.add("alert-error"); // Jika error, tambahkan warna merah
+
+        alertBox.textContent = message; // Isi teks alert dengan pesan yang diberikan
+      }
+
+      function hideAlert() {
+        // Fungsi untuk menyembunyikan alert
+        alertBox.className = "alert-box"; // Kembalikan class ke default (tanpa show, tanpa warna)
+        alertBox.textContent = ""; // Bersihkan teks pesan
       }
 
       form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        alertBox.classList.add("d-none");
+        // Listener submit form untuk menangani pengiriman tanpa reload
+        e.preventDefault(); // Cegah submit bawaan browser (page reload)
+        hideAlert(); // Sembunyikan alert lama sebelum menampilkan yang baru
 
-        const email = document.getElementById("email").value.trim();
+        const email = document.getElementById("email").value.trim(); // Ambil dan trim value email dari input
         if (!email) {
-          showAlert("Email tidak boleh kosong.", "error");
-          return;
+          // Jika email kosong
+          showAlert("Email tidak boleh kosong.", "error"); // Tampilkan pesan error bahwa email wajib diisi
+          return; // Hentikan eksekusi fungsi
         }
 
-        btnSubmit.disabled = true;
-        btnSubmit.textContent = "Mengirim link reset...";
+        btnSubmit.disabled = true; // Disable tombol submit agar tidak diklik berulang
+        btnSubmit.textContent = "Mengirim kode OTP..."; // Ubah teks tombol jadi status proses
 
         try {
+          // Mulai blok try untuk request ke server
           const res = await fetch("backend/auth_forgot.php", {
-            method: "POST",
+            // Kirim request POST ke endpoint backend lupa password
+            method: "POST", // Metode HTTP POST
             headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
+              "Content-Type": "application/json", // Kirim data dengan format JSON
+              Accept: "application/json", // Minta respon dalam bentuk JSON
             },
-            body: JSON.stringify({ email }),
+            body: JSON.stringify({ email }), // Kirim payload { email: <alamat email> }
           });
 
-          const data = await res.json().catch(() => ({}));
+          const raw = await res.text(); // Baca respon sebagai teks mentah (antisipasi kalau bukan JSON bersih)
+          let data = {}; // Siapkan objek data default kosong
+          try {
+            data = JSON.parse(raw); // Coba parse teks ke JSON
+          } catch {
+            showAlert(
+              "Terjadi kesalahan pada server (response tidak valid).",
+              "error"
+            ); // Jika gagal parse, tampilkan pesan bahwa respon server tidak valid
+            return; // Hentikan eksekusi fungsi
+          }
 
           if (data.status === "success") {
+            // Jika backend mengembalikan status sukses
             showAlert(
-              "Jika email terdaftar, link reset password telah dikirim ke inbox Anda.",
+              "Kode OTP reset password sudah dikirim ke email Anda. Silakan cek inbox / spam.",
               "success"
-            );
-            form.reset();
+            ); // Tampilkan pesan hijau bahwa OTP sudah dikirim
+
+            setTimeout(() => {
+              // Setelah delay singkat, redirect ke halaman reset password
+              window.location.href =
+                "reset_password.html?email=" + encodeURIComponent(email); // Arahkan ke halaman reset dengan query email
+            }, 1200); // Delay 1,2 detik agar user sempat melihat pesan
           } else {
-            // Pesan tetap generik biar tidak bisa enumerate email
+            // Jika status bukan success
             showAlert(
-              "Jika email terdaftar, link reset password akan dikirim ke inbox Anda.",
-              "info"
-            );
+              data.message ||
+                "Terjadi kesalahan pada server saat mengirim OTP.",
+              "error"
+            ); // Tampilkan pesan error custom dari server atau fallback umum
           }
-        } catch (err) {
-          console.error(err);
-          showAlert("Terjadi kesalahan koneksi ke server.", "error");
+        } catch {
+          // Jika request fetch gagal (jaringan / server down)
+          showAlert(
+            "Terjadi kesalahan pada server (gagal terhubung).",
+            "error"
+          ); // Tampilkan pesan gagal koneksi
         } finally {
-          btnSubmit.disabled = false;
-          btnSubmit.textContent = "Kirim link reset";
+          // Blok yang selalu jalan di akhir (baik sukses maupun gagal)
+          btnSubmit.disabled = false; // Re-enable tombol submit agar bisa dipakai lagi
+          btnSubmit.textContent = "Kirim kode OTP"; // Kembalikan teks tombol ke semula
         }
       });
     </script>

@@ -2,9 +2,9 @@
 // public/admin/help.php
 declare(strict_types=1);
 
-require_once __DIR__.'/../../backend/auth_guard.php';
+require_once __DIR__ . '/../../backend/auth_guard.php';
 require_login(['admin']); // hanya admin
-require_once __DIR__.'/../../backend/config.php';
+require_once __DIR__ . '/../../backend/config.php';
 
 $userName = $_SESSION['user_name'] ?? 'Admin';
 ?>
@@ -21,124 +21,233 @@ $userName = $_SESSION['user_name'] ?? 'Admin';
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
 
   <style>
-    :root{
-      --gold:#ffd54f;
-      --ink:#222;
-      --brown:#4b3f36;
-      --bg:#fafbfc;
-      --line:#eceff3;
-      --faq-active:#fff7dd;
-    }
-    *{
-      font-family:"Poppins",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif !important;
-      box-sizing:border-box;
-    }
-    html,body{ background:var(--bg); color:var(--ink); margin:0; }
-
-   /* TOPBAR (samakan dengan settings) */
-.topbar{
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: #fff;
-  border-bottom: 1px solid rgba(0,0,0,.04);
-  padding-right: 40px;            /* ⬅️ ruang kanan untuk ikon */
+ :root{                                              /* Root variable */
+  --gold:#ffd54f;                                   /* Warna emas */
+  --ink:#222;                                       /* Warna teks utama */
+  --brown:#4b3f36;                                  /* Warna coklat */
+  --bg:#fafbfc;                                     /* Background halaman */
+  --line:#eceff3;                                   /* Warna garis */
+  --faq-active:#fff7dd;                             /* FAQ aktif */
 }
-.topbar .inner{
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 12px 24px;             /* ⬅️ padding seperti settings */
-  min-height: 52px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+
+*{                                                  /* Selector global */
+  font-family:                                      /* Font utama */
+    "Poppins",                                     /* Font Poppins */
+    system-ui,                                     /* System font */
+    -apple-system,                                 /* Apple system */
+    Segoe UI,                                      /* Windows UI */
+    Roboto,                                        /* Roboto */
+    Arial,                                         /* Arial */
+    sans-serif !important;                          /* Sans-serif */
+  box-sizing:border-box;                            /* Box sizing */
+}
+
+html,                                               /* HTML */
+body{                                               /* Body */
+  background:var(--bg);                             /* Background */
+  color:var(--ink);                                 /* Warna teks */
+  margin:0;                                         /* Hilangkan margin */
+}
+
+/* TOPBAR (samakan dengan settings) */
+.topbar{                                            /* Topbar */
+  position:sticky;                                  /* Sticky */
+  top:0;                                            /* Posisi atas */
+  z-index:20;                                       /* Layer */
+  background:#fff;                                  /* Background */
+  border-bottom:1px solid rgba(0,0,0,.04);          /* Border bawah */
+  padding-right:40px;                               /* Ruang kanan ikon */
+}
+
+.topbar .inner{                                     /* Inner topbar */
+  max-width:1200px;                                 /* Lebar maksimal */
+  margin:0 auto;                                    /* Tengah */
+  padding:12px 24px;                                /* Padding */
+  min-height:52px;                                  /* Tinggi minimum */
+  display:flex;                                     /* Flex */
+  align-items:center;                               /* Tengah vertikal */
+  gap:8px;                                          /* Jarak */
 }
 
 /* Back link — beri jarak ke input search/teks */
-.back-link{
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--brown);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 1.3;
-  padding-right: 50px;            /* ⬅️ sedikit geser ke kanan */
+.back-link{                                         /* Tombol kembali */
+  display:inline-flex;                              /* Inline flex */
+  align-items:center;                               /* Tengah vertikal */
+  gap:10px;                                         /* Jarak icon-teks */
+  color:var(--brown);                               /* Warna teks */
+  text-decoration:none;                             /* Tanpa underline */
+  font-weight:600;                                  /* Tebal */
+  font-size:16px;                                   /* Ukuran font */
+  line-height:1.3;                                  /* Tinggi baris */
+  padding-right:50px;                               /* Geser kanan */
 }
-.back-link i{
-  font-size: 18px !important;
-  width: 18px; height: 18px; line-height: 1;
-  display: inline-flex; align-items: center; justify-content: center;
+
+.back-link i{                                       /* Icon back */
+  font-size:18px !important;                        /* Ukuran icon */
+  width:18px;                                       /* Lebar */
+  height:18px;                                      /* Tinggi */
+  line-height:1;                                    /* Line height */
+  display:inline-flex;                              /* Inline flex */
+  align-items:center;                               /* Tengah vertikal */
+  justify-content:center;                           /* Tengah horizontal */
 }
 
 /* Responsif tetap seperti semula */
-@media (max-width:576px){
-  .topbar .inner{ max-width:100%; padding:30px 30px; }
-}
-
-    /* LAYOUT */
-    .wrap{ max-width:1200px; margin:10px auto 10px; padding:0 16px; }
-
-    /* FAQ LIST (sama seperti karyawan) */
-    .faq-list{ background:#fff; border-radius:0; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.02); }
-    .faq-item{ border-bottom:1px solid var(--line); background:#fff; transition:background .15s ease; }
-    .faq-item:last-child{ border-bottom:0; }
-    .faq-q{
-      width:100%; text-align:left; background:#fff; border:0; padding:12px 12px;
-      display:flex; align-items:center; justify-content:space-between; gap:16px;
-      font-weight:500; font-size:.95rem; color:var(--ink); cursor:pointer; transition:background .2s ease;
-    }
-    .faq-q:hover{ background:#fffbea; }
-    .faq-body{ display:none; background:#fff; padding:0 12px 12px; font-size:.9rem; line-height:1.6; color:#374151; transition:all .2s ease; }
-    .faq-item.open .faq-body{ display:block; background:#fff; }
-    .faq-item.open .chev{ transform:rotate(180deg); }
-    .chev{ transition:transform .15s ease; }
-
-    /* CONTACT LIST (disalin) */
-    .contact{ margin-top:14px; background:#fff; border-radius:14px; padding:4px 10px; box-shadow:0 1px 3px rgba(0,0,0,.02); }
-    .c-row{
-      display:grid; grid-template-columns:24px 1fr 16px; align-items:center; gap:10px;
-      padding:10px 2px; text-decoration:none; color:var(--ink); font-weight:500; font-size:.9rem;
-    }
-    .c-row .bi{ font-size:1.05rem; color:var(--brown); }
-    .c-row .chev{ color:#a3a3a3; }
-    .c-row.static{ grid-template-columns:24px 1fr; }
-
-    @media (max-width:576px){
-      .topbar .inner, .wrap{ max-width:100%; padding:10px 10px; }
-      .wrap{ margin:8px auto 28px; }
-      .faq-q{ font-size:.88rem; }
-      .faq-body{ font-size:.86rem; }
-      .c-row{ font-size:.88rem; padding:8px 0; }
-    }
-
-    /* ===== Samakan lebar isi dengan padding topbar seperti di settings ===== */
-@media (min-width: 992px){
-  .wrap {
-    max-width: 1400px;       /* dari 1200px jadi lebih lebar */
-    padding-left: 30px;      /* tambah ruang kiri */
-    padding-right: 30px;     /* tambah ruang kanan */
+@media (max-width:576px){                           /* Mobile kecil */
+  .topbar .inner{                                  /* Inner topbar */
+    max-width:100%;                                /* Lebar penuh */
+    padding:30px 30px;                             /* Padding */
   }
 }
 
+/* LAYOUT */
+.wrap{                                              /* Wrapper utama */
+  max-width:1200px;                                 /* Lebar maksimal */
+  margin:10px auto 10px;                            /* Margin */
+  padding:0 16px;                                   /* Padding */
+}
 
-   /* ====== kode responsif ipad rotasi ====== */
-    @media screen and (orientation:landscape) and (min-width:1024px) and (max-width:1366px){
-  .topbar .inner,
-  .page-inner, .settings-inner{
-    max-width: 100%;
-    padding-left: max(30px, env(safe-area-inset-left));
-    padding-right: 24px;
+/* FAQ LIST (sama seperti karyawan) */
+.faq-list{                                          /* List FAQ */
+  background:#fff;                                  /* Background */
+  border-radius:0;                                  /* Tanpa radius */
+  overflow:hidden;                                  /* Hidden overflow */
+  box-shadow:0 1px 3px rgba(0,0,0,.02);              /* Shadow */
+}
+
+.faq-item{                                          /* Item FAQ */
+  border-bottom:1px solid var(--line);               /* Border bawah */
+  background:#fff;                                  /* Background */
+  transition:background .15s ease;                  /* Transisi */
+}
+
+.faq-item:last-child{ border-bottom:0; }            /* Item terakhir */
+
+.faq-q{                                             /* Pertanyaan FAQ */
+  width:100%;                                       /* Lebar penuh */
+  text-align:left;                                  /* Rata kiri */
+  background:#fff;                                  /* Background */
+  border:0;                                         /* Tanpa border */
+  padding:12px 12px;                                /* Padding */
+  display:flex;                                     /* Flex */
+  align-items:center;                               /* Tengah vertikal */
+  justify-content:space-between;                    /* Spasi */
+  gap:16px;                                         /* Jarak */
+  font-weight:500;                                  /* Tebal */
+  font-size:.95rem;                                 /* Ukuran font */
+  color:var(--ink);                                 /* Warna teks */
+  cursor:pointer;                                   /* Pointer */
+  transition:background .2s ease;                   /* Transisi */
+}
+
+.faq-q:hover{ background:#fffbea; }                 /* Hover FAQ */
+
+.faq-body{                                          /* Isi FAQ */
+  display:none;                                     /* Sembunyi */
+  background:#fff;                                  /* Background */
+  padding:0 12px 12px;                              /* Padding */
+  font-size:.9rem;                                  /* Ukuran font */
+  line-height:1.6;                                  /* Tinggi baris */
+  color:#374151;                                    /* Warna teks */
+  transition:all .2s ease;                          /* Transisi */
+}
+
+.faq-item.open .faq-body{                           /* FAQ terbuka */
+  display:block;                                    /* Tampil */
+  background:#fff;                                  /* Background */
+}
+
+.faq-item.open .chev{                               /* Chevron aktif */
+  transform:rotate(180deg);                         /* Rotasi */
+}
+
+.chev{                                              /* Chevron */
+  transition:transform .15s ease;                   /* Transisi */
+}
+
+/* CONTACT LIST (disalin) */
+.contact{                                           /* Kontak */
+  margin-top:14px;                                  /* Margin atas */
+  background:#fff;                                  /* Background */
+  border-radius:14px;                               /* Radius */
+  padding:4px 10px;                                 /* Padding */
+  box-shadow:0 1px 3px rgba(0,0,0,.02);              /* Shadow */
+}
+
+.c-row{                                             /* Baris kontak */
+  display:grid;                                     /* Grid */
+  grid-template-columns:24px 1fr 16px;              /* Kolom */
+  align-items:center;                               /* Tengah vertikal */
+  gap:10px;                                         /* Jarak */
+  padding:10px 2px;                                 /* Padding */
+  text-decoration:none;                             /* Tanpa underline */
+  color:var(--ink);                                 /* Warna teks */
+  font-weight:500;                                  /* Tebal */
+  font-size:.9rem;                                  /* Ukuran font */
+}
+
+.c-row .bi{                                         /* Icon kontak */
+  font-size:1.05rem;                                /* Ukuran */
+  color:var(--brown);                               /* Warna */
+}
+
+.c-row .chev{                                       /* Chevron kontak */
+  color:#a3a3a3;                                    /* Warna */
+}
+
+.c-row.static{                                      /* Kontak statis */
+  grid-template-columns:24px 1fr;                   /* Dua kolom */
+}
+
+@media (max-width:576px){                           /* Mobile */
+  .topbar .inner,                                  /* Inner topbar */
+  .wrap{                                           /* Wrapper */
+    max-width:100%;                                /* Lebar penuh */
+    padding:10px 10px;                             /* Padding */
+  }
+
+  .wrap{ margin:8px auto 28px; }                   /* Margin wrapper */
+
+  .faq-q{ font-size:.88rem; }                      /* Font FAQ */
+
+  .faq-body{ font-size:.86rem; }                   /* Font isi FAQ */
+
+  .c-row{                                          /* Baris kontak */
+    font-size:.88rem;                              /* Ukuran font */
+    padding:8px 0;                                 /* Padding */
   }
 }
-    
-@media screen and (max-width: 768px) {
-  /* atur jarak kiri kanan topbar ini di hp ngga rotasi y gaes */
-  .topbar {
-    padding-left: 12px;
-    padding-right: 12px;
+
+/* ===== Samakan lebar isi dengan padding topbar seperti di settings ===== */
+@media (min-width:992px){                          /* Desktop besar */
+  .wrap{                                           /* Wrapper */
+    max-width:1400px;                              /* Lebar besar */
+    padding-left:30px;                             /* Padding kiri */
+    padding-right:30px;                            /* Padding kanan */
   }
+}
+
+/* ====== kode responsif ipad rotasi ====== */
+@media screen                                     /* Media screen */
+  and (orientation:landscape)                     /* Landscape */
+  and (min-width:1024px)                          /* Min width */
+  and (max-width:1366px){                         /* Max width */
+
+  .topbar .inner,                                 /* Inner topbar */
+  .page-inner,                                    /* Page inner */
+  .settings-inner{                                /* Settings inner */
+    max-width:100%;                               /* Lebar penuh */
+    padding-left:max(30px, env(safe-area-inset-left)); /* Safe area */
+    padding-right:24px;                           /* Padding kanan */
+  }
+}
+
+@media screen and (max-width:768px){              /* Mobile besar */
+  .topbar{                                        /* Topbar */
+    padding-left:12px;                            /* Padding kiri */
+    padding-right:12px;                           /* Padding kanan */
+  }
+}
   </style>
 </head>
 <body>
@@ -326,20 +435,36 @@ $userName = $_SESSION['user_name'] ?? 'Admin';
       </div>
     </div>
   </main>
+<!-- Load Bootstrap JS bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  
+<script>
+  // Mengambil semua elemen FAQ item
+  const items = document.querySelectorAll('.faq-item');
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    // accordion manual (sama seperti karyawan)
-    const items = document.querySelectorAll('.faq-item');
-    items.forEach(item => {
-      const btn = item.querySelector('.faq-q');
-      btn.addEventListener('click', () => {
-        items.forEach(i => { if (i !== item) i.classList.remove('open'); });
-        item.classList.toggle('open');
+  // Loop setiap item FAQ
+  items.forEach(item => {
+
+    // Ambil tombol pertanyaan FAQ
+    const btn = item.querySelector('.faq-q');
+
+    // Tambahkan event klik pada tombol
+    btn.addEventListener('click', () => {
+
+      // Tutup semua FAQ lain selain yang diklik
+      items.forEach(i => {
+        // Jika bukan item yang aktif, hapus class open
+        if (i !== item) i.classList.remove('open');
       });
+
+      // Toggle buka/tutup FAQ yang diklik
+      item.classList.toggle('open');
     });
-  </script>
+  });
+</script>
+
+<!-- Akhir body -->
 </body>
+
+<!-- Akhir dokumen HTML -->
 </html>

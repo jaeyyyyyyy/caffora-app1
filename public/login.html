@@ -1,62 +1,85 @@
+<!-- Tagline: Halaman login Caffora dengan kartu glassmorphism, animasi halus, dan proses login AJAX aman. -->
+
 <!DOCTYPE html>
+<!-- Deklarasi tipe dokumen HTML5 -->
 <html lang="id">
+  <!-- Dokumen berbahasa Indonesia -->
   <head>
+    <!-- Bagian head berisi meta, judul, dan resource -->
     <meta charset="utf-8" />
+    <!-- Set karakter encoding ke UTF-8 -->
     <title>Caffora — Login</title>
+    <!-- Judul tab browser -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Supaya layout responsive di mobile -->
 
     <!-- Fallback security metas (utama tetap dari .htaccess) -->
+    <!-- Komentar: meta security tambahan jika server belum atur -->
     <meta
       http-equiv="Content-Security-Policy"
       content="upgrade-insecure-requests; default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'"
     />
+    <!-- CSP dasar: paksa https dan batasi sumber konten -->
     <meta
       http-equiv="Strict-Transport-Security"
       content="max-age=31536000; includeSubDomains"
     />
+    <!-- HSTS: paksa akses via HTTPS selama 1 tahun -->
     <meta
       http-equiv="Referrer-Policy"
       content="strict-origin-when-cross-origin"
     />
+    <!-- Atur kebijakan referrer agar lebih privat -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <!-- Cegah MIME sniffing oleh browser -->
     <meta http-equiv="X-Frame-Options" content="SAMEORIGIN" />
+    <!-- Cegah di-embed di iframe domain lain -->
     <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    <!-- Aktifkan proteksi XSS lawas di beberapa browser -->
     <meta
       http-equiv="Permissions-Policy"
       content="geolocation=(), microphone=(), camera=()"
     />
+    <!-- Nonaktifkan akses geo, mic, kamera dari halaman ini -->
 
     <!-- Fonts & Bootstrap -->
+    <!-- Memuat font dan library UI -->
     <link
       href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
+    <!-- Import font Playfair Display & Poppins dari Google Fonts -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <!-- CSS Bootstrap 5.3.3 dari CDN -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
       rel="stylesheet"
     />
+    <!-- Bootstrap Icons dari CDN -->
 
     <style>
+      /* Mulai blok CSS inline */
       :root {
-        --gold: #ffd54f;
-        --brown: #4b3f36;
-        --ink: #2e2823;
-        --muted: #8b8179;
-        --surface-rgb: 255, 255, 255;
+        /* Variabel global untuk tema warna dan surface */
+        --gold: #ffd54f; /* Warna emas utama */
+        --brown: #4b3f36; /* Warna coklat brand */
+        --ink: #2e2823; /* Warna teks gelap */
+        --muted: #8b8179; /* Warna teks sekunder */
+        --surface-rgb: 255, 255, 255; /* untuk rgba() glass */ /* Dipakai untuk background kaca semi transparan */
       }
 
+      /* ===== Base ===== */ /* Styling dasar halaman */
       html,
       body {
-        height: 100%;
+        height: 100%; /* Pastikan tinggi full viewport */
       }
       body {
-        font-family: "Poppins", sans-serif;
-        margin: 0;
-        color: var(--ink);
+        font-family: "Poppins", sans-serif; /* Font utama halaman */
+        margin: 0; /* Hilangkan margin default body */
+        color: var(--ink); /* Warna teks default */
         background: radial-gradient(
             circle at 20% 15%,
             rgba(255, 248, 219, 0.9) 0,
@@ -67,20 +90,21 @@
             rgba(255, 236, 185, 0.9) 0,
             rgba(255, 236, 185, 0) 38%
           ),
-          linear-gradient(160deg, #fff7d5 0%, #fffef8 42%, #ffffff 100%);
-        position: relative;
-        overflow-x: hidden;
+          linear-gradient(160deg, #fff7d5 0%, #fffef8 42%, #ffffff 100%); /* Background lembut gradasi kuning-cream */
+        position: relative; /* Untuk pseudo-element overlay */
+        overflow-x: hidden; /* Cegah scroll horizontal */
       }
       @media (min-width: 769px) {
+        /* Styling khusus layar besar (desktop/tablet) */
         body {
-          background: url("assets/img/bg.jpg") center/cover no-repeat fixed;
+          background: url("assets/img/bg.jpg") center/cover no-repeat fixed; /* Ganti background dengan gambar full-screen */
         }
         body::before {
-          content: "";
-          position: fixed;
-          inset: 0;
-          z-index: 0;
-          pointer-events: none;
+          content: ""; /* Tambah layer overlay di atas background gambar */
+          position: fixed; /* Tetap saat scroll */
+          inset: 0; /* Penuhi seluruh viewport */
+          z-index: 0; /* Di paling belakang konten */
+          pointer-events: none; /* Tidak ganggu interaksi */
           background: radial-gradient(
               80% 80% at 50% 30%,
               rgba(255, 239, 196, 0.18) 0%,
@@ -90,371 +114,410 @@
               120% 90% at 50% 120%,
               rgba(0, 0, 0, 0.18) 0%,
               rgba(0, 0, 0, 0) 70%
-            );
+            ); /* Overlay cahaya dan bayangan untuk depth */
         }
       }
 
       .login-wrap {
-        min-height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 20px;
-        position: relative;
-        z-index: 1;
+        min-height: 100vh; /* Tinggi minimal se-layar */
+        display: flex; /* Flex container untuk center */
+        justify-content: center; /* Center horizontal */
+        align-items: center; /* Center vertical */
+        padding: 20px; /* Padding global */
+        position: relative; /* Di atas background */
+        z-index: 1; /* Pastikan di atas overlay body::before */
       }
 
-      /* ===== Glass Card ===== */
+      /* ===== Glass Card ===== */ /* Kartu login gaya glassmorphism */
       .login-card {
-        width: 100%;
-        max-width: 360px;
-        background: rgba(var(--surface-rgb), 0.76);
-        -webkit-backdrop-filter: blur(14px) saturate(125%);
-        backdrop-filter: blur(14px) saturate(125%);
-        border-radius: 18px;
-        border: 1px solid rgba(255, 214, 114, 0.35);
+        width: 100%; /* Lebar penuh hingga max-width */
+        max-width: 360px; /* Lebar maksimal kartu login */
+        background: rgba(
+          var(--surface-rgb),
+          0.76
+        ); /* Background putih semi-transparan */
+        -webkit-backdrop-filter: blur(14px) saturate(125%); /* Efek blur kaca (Safari) */
+        backdrop-filter: blur(14px) saturate(125%); /* Efek blur kaca (browser modern) */
+        border-radius: 18px; /* Sudut kartu membulat */
+        border: 1px solid rgba(255, 214, 114, 0.35); /* Garis border emas lembut */
         box-shadow: 0 22px 48px rgba(0, 0, 0, 0.08),
           0 5px 14px rgba(0, 0, 0, 0.04),
-          inset 0 1px 0 rgba(255, 255, 255, 0.35);
-        padding: 18px 20px 18px;
+          inset 0 1px 0 rgba(255, 255, 255, 0.35); /* Kombinasi shadow luar dan highlight dalam */
+        padding: 18px 20px 18px; /* Padding isi kartu */
 
-        opacity: 0;
-        transform: translateY(18px) scale(0.985);
-        filter: blur(8px);
+        opacity: 0; /* Awal animasi transparan */
+        transform: translateY(18px) scale(0.985); /* Awal pos sedikit turun dan kecil */
+        filter: blur(8px); /* Awal agak blur */
         animation: glassIn 0.8s cubic-bezier(0.22, 0.75, 0.12, 1) forwards,
-          ambientGlow 6s ease-in-out 1.2s infinite;
+          ambientGlow 6s ease-in-out 1.2s infinite; /* Animasi masuk + glow berulang */
       }
       @keyframes glassIn {
+        /* Animasi masuk kartu login */
         0% {
-          opacity: 0;
-          transform: translateY(18px) scale(0.985);
-          filter: blur(8px);
+          opacity: 0; /* Mulai tak terlihat */
+          transform: translateY(18px) scale(0.985); /* Sedikit turun dan kecil */
+          filter: blur(8px); /* Blur cukup tinggi */
         }
         60% {
-          opacity: 1;
-          transform: translateY(-2px) scale(1);
-          filter: blur(0);
+          opacity: 1; /* Sudah terlihat penuh */
+          transform: translateY(-2px) scale(1); /* Sedikit naik ke atas */
+          filter: blur(0); /* Blur hilang */
         }
         100% {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-          filter: blur(0);
+          opacity: 1; /* Tetap terlihat */
+          transform: translateY(0) scale(1); /* Posisi akhir normal */
+          filter: blur(0); /* Tidak blur */
         }
       }
       @keyframes ambientGlow {
+        /* Animasi glow halus pada shadow */
         0%,
         100% {
           box-shadow: 0 22px 48px rgba(0, 0, 0, 0.08),
             0 5px 14px rgba(0, 0, 0, 0.04),
-            inset 0 1px 0 rgba(255, 255, 255, 0.35);
+            inset 0 1px 0 rgba(255, 255, 255, 0.35); /* Shadow base */
         }
         50% {
           box-shadow: 0 26px 54px rgba(0, 0, 0, 0.1),
             0 6px 16px rgba(0, 0, 0, 0.05),
-            inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            inset 0 1px 0 rgba(255, 255, 255, 0.4); /* Shadow sedikit lebih kuat di tengah */
         }
       }
       @media (prefers-reduced-motion: reduce) {
+        /* Hormati preferensi user yang mengurangi animasi */
         .login-card {
-          animation: none;
-          opacity: 1;
-          transform: none;
-          filter: none;
+          animation: none; /* Matikan animasi jika reduce-motion */
+          opacity: 1; /* Pastikan tetap terlihat */
+          transform: none; /* Posisi normal */
+          filter: none; /* Tanpa blur */
         }
       }
 
-      /* ===== Header ===== */
+      /* ===== Header ===== */ /* Bagian header brand di dalam kartu login */
       .header-brand {
-        text-align: center;
-        margin-bottom: 10px;
-        opacity: 0;
-        transform: translateY(6px);
-        animation: fadeUp 0.48s ease-out 0.16s forwards;
+        text-align: center; /* Tengah secara horizontal */
+        margin-bottom: 10px; /* Spasi bawah header */
+        opacity: 0; /* Untuk efek animasi masuk */
+        transform: translateY(6px); /* Posisi awal sedikit turun */
+        animation: fadeUp 0.48s ease-out 0.16s forwards; /* Animasi naik pelan */
       }
       .header-brand i {
-        font-size: 1.7rem !important;
+        font-size: 1.7rem !important; /* Besarkan ikon cup */
       }
       .header-brand .brand {
-        font-family: "Playfair Display", serif;
-        font-weight: 700;
-        font-size: 1.45rem;
-        color: var(--brown);
-        margin-top: 4px;
+        font-family: "Playfair Display", serif; /* Font branding elegan */
+        font-weight: 700; /* Tebal */
+        font-size: 1.45rem; /* Ukuran judul brand */
+        color: var(--brown); /* Warna teks brand coklat */
+        margin-top: 4px; /* Jarak kecil atas brand */
       }
       .muted {
-        color: var(--muted);
-        font-size: 0.78rem;
-        margin-top: -4px;
+        color: var(--muted); /* Warna teks sekunder lembut */
+        font-size: 0.78rem; /* Ukuran font kecil */
+        margin-top: -4px; /* Tarik sedikit naik mendekati brand */
       }
 
-      /* ===== Form ===== */
+      /* ===== Form ===== */ /* Styling bagian form login */
       .form-label {
-        font-size: 13px;
-        font-weight: 600;
-        margin-bottom: 4px;
+        font-size: 13px; /* Ukuran label kecil */
+        font-weight: 600; /* Label semi-bold */
+        margin-bottom: 4px; /* Spasi label dengan input */
       }
       .form-control {
-        height: 36px;
-        border-radius: 8px;
-        background: #fff;
-        border: 1px solid rgba(46, 40, 35, 0.15);
-        font-size: 12.5px;
-        padding: 0 12px;
-        box-sizing: border-box;
-        transition: border-color 0.18s ease, background-color 0.2s ease;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+        height: 36px; /* Tinggi input relatif ramping */
+        border-radius: 8px; /* Sudut input membulat */
+        background: #fff; /* Background input putih */
+        border: 1px solid rgba(46, 40, 35, 0.15); /* Border abu kecoklatan tipis */
+        font-size: 12.5px; /* Ukuran teks input kecil */
+        padding: 0 12px; /* Padding horizontal */
+        box-sizing: border-box; /* Padding masuk perhitungan width */
+        transition: border-color 0.18s ease, background-color 0.2s ease; /* Transisi smooth saat focus/hover */
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55); /* Highlight tipis di atas input */
       }
       .form-control:hover {
-        border-color: rgba(246, 198, 58, 0.45);
+        border-color: rgba(
+          246,
+          198,
+          58,
+          0.45
+        ); /* Border sedikit kuning saat di-hover */
       }
       .form-control:focus {
-        outline: none !important;
-        box-shadow: none !important;
-        border-color: rgba(246, 198, 58, 0.8);
-        border-width: 1px;
-        background-color: rgba(255, 255, 255, 0.98);
+        outline: none !important; /* Hilangkan outline biru default */
+        box-shadow: none !important; /* Hilangkan shadow default bootstrap */
+        border-color: rgba(
+          246,
+          198,
+          58,
+          0.8
+        ); /* Border kuning lebih kuat saat fokus */
+        border-width: 1px; /* Pastikan border tetap 1px */
+        background-color: rgba(
+          255,
+          255,
+          255,
+          0.98
+        ); /* Sedikit lebih terang saat fokus */
       }
 
       .pw-wrap {
-        position: relative;
+        position: relative; /* Untuk posisikan tombol eye di dalam input */
       }
       .pw-toggle {
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: transparent;
-        border: none;
-        width: 24px;
+        position: absolute; /* Eye icon di dalam input password */
+        right: 8px; /* Menempel di kanan */
+        top: 50%; /* Tengah vertikal */
+        transform: translateY(-50%); /* Koreksi ke tengah benar */
+        background: transparent; /* Tanpa background */
+        border: none; /* Tanpa border */
+        width: 24px; /* Tombol kecil */
         height: 24px;
-        display: flex;
+        display: flex; /* Flex untuk center ikon */
         align-items: center;
         justify-content: center;
-        color: var(--brown);
-        cursor: pointer;
-        transition: none;
-        outline: none;
+        color: var(--brown); /* Warna ikon eye */
+        cursor: pointer; /* Tunjukan bisa di-klik */
+        transition: none; /* Tanpa animasi tambahan */
+        outline: none; /* Hilangkan outline fokus */
       }
 
       .pw-toggle:hover,
       .pw-toggle:active,
       .pw-toggle:focus {
-        transform: translateY(-50%);
-        opacity: 1;
+        transform: translateY(-50%); /* Tetap di posisi vertikal yang sama */
+        opacity: 1; /* Opacity penuh (jaga konsisten) */
       }
 
       .pw-toggle i {
-        font-size: 16px;
-        width: 14px;
-        height: 14px;
-        line-height: 1;
-        transition: none;
+        font-size: 16px; /* Ukuran ikon mata */
+        width: 14px; /* Lebar ikon */
+        height: 14px; /* Tinggi ikon */
+        line-height: 1; /* Line-height rapat */
+        transition: none; /* Tanpa animasi tambahan */
       }
 
       .mb-field {
-        margin-bottom: 12px;
-        opacity: 0;
-        transform: translateY(6px);
+        margin-bottom: 12px; /* Spasi antar field */
+        opacity: 0; /* Awal: tersembunyi untuk animasi */
+        transform: translateY(6px); /* Awal: sedikit turun */
       }
       .mb-field:nth-of-type(1) {
-        animation: fadeUp 0.4s ease-out 0.22s forwards;
+        animation: fadeUp 0.4s ease-out 0.22s forwards; /* Field pertama naik duluan */
       }
       .mb-field:nth-of-type(2) {
-        animation: fadeUp 0.4s ease-out 0.28s forwards;
+        animation: fadeUp 0.4s ease-out 0.28s forwards; /* Field kedua menyusul */
       }
 
       .form-inline-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin: 6px 0 12px;
-        font-size: 11px;
-        opacity: 0;
-        transform: translateY(6px);
-        animation: fadeUp 0.4s ease-out 0.34s forwards;
+        display: flex; /* Layout horizontal remember + forgot */
+        justify-content: space-between; /* Kedua sisi berjauhan */
+        align-items: center; /* Vertikal center */
+        margin: 6px 0 12px; /* Margin atas dan bawah */
+        font-size: 11px; /* Font kecil */
+        opacity: 0; /* Untuk animasi */
+        transform: translateY(6px); /* Awal turun */
+        animation: fadeUp 0.4s ease-out 0.34s forwards; /* Animasi muncul terakhir dari field */
       }
       .form-check-input {
-        width: 14px;
+        width: 14px; /* Ukuran checkbox kecil */
         height: 14px;
-        accent-color: var(--gold);
+        accent-color: var(--gold); /* Warna aksen checkbox kuning */
       }
 
-      /* Link: default biru, hover gold */
+      /* Link: default biru, hover gold */ /* Styling link inline dan link teks bawah */
       .link-inline,
       .text-center a {
-        color: #1a73e8;
-        font-weight: 500;
-        text-decoration: none;
-        transition: color 0.2s ease, transform 0.15s ease;
+        color: #1a73e8; /* Warna biru default (mirip Google) */
+        font-weight: 500; /* Semi-bold link */
+        text-decoration: none; /* Hilangkan underline default */
+        transition: color 0.2s ease, transform 0.15s ease; /* Animasi warna dan sedikit gerak */
       }
       .link-inline:hover,
       .text-center a:hover {
-        color: var(--gold) !important;
-        transform: translateY(-1px);
+        color: var(--gold) !important; /* Hover: ganti ke warna gold */
+        transform: translateY(-1px); /* Sedikit naik untuk feedback */
       }
 
-      /* Tombol */
+      /* Tombol */ /* Styling tombol utama Login */
       .btn-brand {
-        width: 100%;
-        height: 38px;
-        border-radius: 9px;
-        border: none;
-        background: linear-gradient(180deg, var(--gold) 0%, #ffc92b 100%);
-        color: var(--brown);
-        font-weight: 700;
-        font-size: 0.83rem;
+        width: 100%; /* Tombol full lebar form */
+        height: 38px; /* Tinggi tombol */
+        border-radius: 9px; /* Sudut tombol */
+        border: none; /* Tanpa border */
+        background: linear-gradient(
+          180deg,
+          var(--gold) 0%,
+          #ffc92b 100%
+        ); /* Gradasi vertikal kuning */
+        color: var(--brown); /* Warna teks tombol coklat */
+        font-weight: 700; /* Tebal */
+        font-size: 0.83rem; /* Ukuran font tombol */
         transition: transform 0.08s ease, filter 0.15s ease,
-          box-shadow 0.15s ease;
-        opacity: 0;
-        transform: translateY(6px);
-        animation: fadeUp 0.42s ease-out 0.42s forwards;
+          box-shadow 0.15s ease; /* Transisi halus pada interaksi */
+        opacity: 0; /* Untuk animasi masuk */
+        transform: translateY(6px); /* Awal turun sedikit */
+        animation: fadeUp 0.42s ease-out 0.42s forwards; /* Tombol muncul setelah field */
       }
       .btn-brand:active {
-        transform: translateY(1px);
+        transform: translateY(
+          1px
+        ); /* Saat ditekan, turun 1px untuk efek klik */
       }
 
       .social-row {
-        display: flex;
-        justify-content: center;
-        gap: 12px;
-        margin-top: 6px;
-        opacity: 0;
-        transform: translateY(6px);
-        animation: fadeUp 0.5s ease-out 0.52s forwards;
+        display: flex; /* Layout horizontal ikon sosial */
+        justify-content: center; /* Center ikon sosial */
+        gap: 12px; /* Jarak antar ikon */
+        margin-top: 6px; /* Spasi atas dari tombol */
+        opacity: 0; /* Untuk animasi (meskipun di markup tidak ada isi) */
+        transform: translateY(6px); /* Awal turun */
+        animation: fadeUp 0.5s ease-out 0.52s forwards; /* Potensial animasi jika diisi */
       }
       .social-row svg {
-        width: 20px;
+        width: 20px; /* Ukuran ikon sosial */
         height: 20px;
-        transition: transform 0.2s ease, opacity 0.2s ease;
+        transition: transform 0.2s ease, opacity 0.2s ease; /* Animasi hover */
       }
       .social-row a:hover svg {
-        transform: translateY(-3px) scale(1.05);
-        opacity: 0.9;
+        transform: translateY(-3px) scale(1.05); /* Sedikit naik dan membesar saat hover */
+        opacity: 0.9; /* Sedikit lebih terang */
       }
-      /* "atau masuk dengan" */
+      /* "atau masuk dengan" → MUTED */ /* Styling teks kecil muter "atau masuk dengan" jika dipakai */
       .login-card .text-center.text-muted.mt-2.mb-2,
       .login-card .text-center.text-muted.mt-2.mb-2 small {
-        font-size: 12px !important;
-        color: var(--muted) !important;
-        opacity: 0;
-        transform: translateY(6px);
-        animation: fadeUp 0.5s ease-out 0.52s forwards;
+        font-size: 12px !important; /* Ukuran font kecil */
+        color: var(--muted) !important; /* Warna abu lembut */
+        opacity: 0; /* Untuk animasi */
+        transform: translateY(6px); /* Awal turun */
+        animation: fadeUp 0.5s ease-out 0.52s forwards; /* Animasi muncul */
       }
-      /* "Belum punya akun? Register"*/
+      /* "Belum punya akun? Register" → HITAM */ /* Styling baris register di bawah form */
       .login-card .text-center.mt-1.mb-1 small {
-        font-size: 12px !important;
-        color: var(--ink) !important;
-        font-weight: 400;
-        opacity: 0;
-        transform: translateY(6px);
-        animation: fadeUp 0.5s ease-out 0.62s forwards;
+        font-size: 12px !important; /* Ukuran teks kecil */
+        color: var(--ink) !important; /* Warna teks utama (hitam-ish) */
+        font-weight: 400; /* Normal weight */
+        opacity: 0; /* Dipakai animasi */
+        transform: translateY(6px); /* Awal turun sedikit */
+        animation: fadeUp 0.5s ease-out 0.62s forwards; /* Muncul paling terakhir */
       }
 
       @keyframes fadeUp {
+        /* Animasi sederhana dari bawah ke atas */
         to {
-          opacity: 1;
-          transform: translateY(0);
+          opacity: 1; /* Akhir: terlihat penuh */
+          transform: translateY(0); /* Akhir: posisi normal */
         }
       }
 
-      /* ====== Caffora Alert (Inline) ====== */
+      /* ====== Caffora Alert (Inline) ====== */ /* Box alert custom untuk error login */
       .cf-alert {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: #ffff;
-        color: #050505;
-        border: 1px solid #ffff;
-        border-radius: 10px;
-        padding: 10px 12px;
-        font-size: 13.5px;
-        margin-bottom: 12px;
-        box-shadow: 0 8px 18px rgba(255, 179, 179, 0.12);
-        animation: cf-fade-in 0.18s ease-out;
+        display: flex; /* Layout horizontal ikon + pesan + tombol close */
+        align-items: center; /* Vertikal center konten */
+        gap: 10px; /* Jarak antar elemen di dalam alert */
+        background: #fff2f2; /* Background merah muda lembut */
+        color: #9b2c2c; /* Warna teks merah gelap */
+        border: 1px solid #ffb3b3; /* Border merah lembut */
+        border-radius: 10px; /* Sudut alert membulat */
+        padding: 10px 12px; /* Padding isi alert */
+        font-size: 13.5px; /* Ukuran teks alert */
+        margin-bottom: 12px; /* Spasi bawah alert dari form */
+        box-shadow: 0 8px 18px rgba(255, 179, 179, 0.12); /* Shadow lembut merah */
+        animation: cf-fade-in 0.18s ease-out; /* Animasi muncul halus */
       }
       .cf-alert .bi {
-        font-size: 16px;
-        flex: 0 0 auto;
+        font-size: 16px; /* Ukuran ikon di alert */
+        flex: 0 0 auto; /* Ikon punya lebar tetap */
       }
       .cf-alert .cf-close {
-        margin-left: auto;
-        border: none;
-        background: transparent;
-        color: #9b2c2c;
-        font-size: 18px;
-        line-height: 1;
-        cursor: pointer;
-        padding: 0 4px;
+        margin-left: auto; /* Dorong tombol close ke paling kanan */
+        border: none; /* Tanpa border */
+        background: transparent; /* Tanpa background */
+        color: #9b2c2c; /* Warna tombol close sama seperti teks */
+        font-size: 18px; /* Ukuran simbol 'x' */
+        line-height: 1; /* Line-height rapat */
+        cursor: pointer; /* Tunjukkan interaktif */
+        padding: 0 4px; /* Padding horizontal kecil */
       }
       @keyframes cf-fade-in {
+        /* Animasi fade-in alert */
         from {
-          opacity: 0.4;
-          transform: translateY(-2px);
+          opacity: 0.4; /* Mulai agak transparan */
+          transform: translateY(-2px); /* Sedikit di atas */
         }
         to {
-          opacity: 1;
-          transform: translateY(0);
+          opacity: 1; /* Akhir: full */
+          transform: translateY(0); /* Posisi normal */
         }
       }
       @keyframes cf-shake {
+        /* Animasi goyangan untuk highlight error */
         10%,
         90% {
-          transform: translateX(-1px);
+          transform: translateX(-1px); /* Gerakan kecil ke kiri */
         }
         20%,
         80% {
-          transform: translateX(2px);
+          transform: translateX(2px); /* Gerakan kecil ke kanan */
         }
         30%,
         50%,
         70% {
-          transform: translateX(-3px);
+          transform: translateX(-3px); /* Gerakan lebih besar ke kiri */
         }
         40%,
         60% {
-          transform: translateX(3px);
+          transform: translateX(3px); /* Gerakan lebih besar ke kanan */
         }
       }
       .cf-shake {
-        animation: cf-shake 0.4s;
+        animation: cf-shake 0.4s; /* Tambah kelas ini untuk trigger animasi goyang */
       }
 
-      /* Mobile clean */
+      /* Mobile clean */ /* Penyesuaian tampilan untuk mobile */
       @media (max-width: 768px) {
         body {
-          background: #fff;
+          background: #fff; /* Di mobile pakai background putih polos */
         }
         .login-card {
-          max-width: 340px;
-          background: #fff;
-          border: none;
-          box-shadow: none;
-          border-radius: 0;
-          animation: none;
-          opacity: 1;
-          transform: none;
-          filter: none;
-          padding: 0 16px 16px;
+          max-width: 340px; /* Sedikit lebih kecil di mobile */
+          background: #fff; /* Background solid, tanpa glass */
+          border: none; /* Hilangkan border kaca */
+          box-shadow: none; /* Hilangkan shadow di mobile */
+          border-radius: 0; /* Kartu tanpa radius (flat) */
+          animation: none; /* Hilangkan animasi di mobile */
+          opacity: 1; /* Langsung terlihat */
+          transform: none; /* Tidak geser */
+          filter: none; /* Tanpa blur */
+          padding: 0 16px 16px; /* Padding sederhana di mobile */
         }
         .form-control {
-          height: 38px;
+          height: 38px; /* Tinggi input sedikit lebih gede untuk tap */
         }
         .btn-brand {
-          height: 40px;
+          height: 40px; /* Tinggi tombol sedikit lebih tinggi di mobile */
         }
       }
     </style>
+    <!-- Akhir style inline -->
   </head>
   <body>
+    <!-- Awal body (konten yang terlihat user) -->
     <div class="login-wrap">
+      <!-- Wrapper untuk center kartu login -->
       <div class="login-card">
+        <!-- Kartu login utama dengan efek glass -->
         <div class="header-brand">
+          <!-- Bagian header brand di dalam kartu -->
           <i class="bi bi-cup-hot-fill text-warning"></i>
+          <!-- Ikon cangkir kopi warna kuning -->
           <h2 class="brand mb-1">Caffora</h2>
+          <!-- Nama brand Caffora -->
           <p class="muted mb-0">Masuk ke akun Anda</p>
+          <!-- Subjudul ajakan login -->
         </div>
 
         <!-- Alert error inline -->
+        <!-- Blok alert untuk tampilkan pesan error login -->
         <div
           id="errBox"
           class="cf-alert"
@@ -462,14 +525,19 @@
           role="alert"
           aria-live="polite"
         >
+          <!-- Alert awalnya disembunyikan, accessible (role & aria-live) -->
           <i class="bi bi-exclamation-triangle-fill"></i>
+          <!-- Ikon peringatan -->
           <span id="errMsg">Terjadi kesalahan.</span>
+          <!-- Placeholder pesan error yang akan diganti JS -->
           <button type="button" class="cf-close" aria-label="Tutup">
             &times;
+            <!-- Tombol X untuk menutup alert -->
           </button>
         </div>
 
         <!-- Form -->
+        <!-- Form login utama -->
         <form
           id="loginForm"
           action="/auth/login"
@@ -477,8 +545,11 @@
           autocomplete="off"
           novalidate
         >
+          <!-- Form post ke /auth/login, divalidasi manual dengan JS -->
           <div class="mb-field">
+            <!-- Field pertama: identity (email/username) -->
             <label for="identity" class="form-label">Email / Username</label>
+            <!-- Label input identity -->
             <input
               type="text"
               id="identity"
@@ -486,11 +557,15 @@
               class="form-control"
               required
             />
+            <!-- Input teks untuk email atau username, wajib diisi -->
           </div>
 
           <div class="mb-field">
+            <!-- Field kedua: password -->
             <label for="password" class="form-label">Password</label>
+            <!-- Label input password -->
             <div class="pw-wrap">
+              <!-- Wrapper untuk password + toggle eye -->
               <input
                 type="password"
                 id="password"
@@ -498,19 +573,24 @@
                 class="form-control"
                 required
               />
+              <!-- Input password, default tipe 'password' -->
               <button
                 type="button"
                 class="pw-toggle"
                 id="togglePwBtn"
                 aria-label="Tampilkan password"
               >
+                <!-- Tombol untuk toggle show/hide password -->
                 <i id="eyeIcon" class="bi bi-eye"></i>
+                <!-- Ikon mata default (lihat) -->
               </button>
             </div>
           </div>
 
           <div class="form-inline-row">
+            <!-- Baris remember me + link lupa password -->
             <label class="d-flex align-items-center gap-1 mb-0">
+              <!-- Label wrapper untuk checkbox + teks -->
               <input
                 type="checkbox"
                 id="remember"
@@ -518,194 +598,154 @@
                 class="form-check-input m-0"
                 style="width: 14px; height: 14px"
               />
+              <!-- Checkbox remember me -->
               <span>Remember me</span>
+              <!-- Teks remember me -->
             </label>
-            <a href="#" class="link-inline">Forgot password?</a>
+            <a href="forgot.html" class="link-inline">Forgot password?</a>
+            <!-- Link ke halaman lupa password -->
           </div>
 
           <button type="submit" id="loginBtn" class="btn-brand mb-2">
             Login
+            <!-- Tombol submit untuk login -->
           </button>
         </form>
-
-        <!-- Baris atas: harus MUTED -->
-        <div class="text-center text-muted mt-2 mb-2">
-          <small>atau masuk dengan</small>
-        </div>
-
-        <div class="social-row mb-2">
-          <a href="#" aria-label="Login dengan Google" title="Google">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="25"
-              height="25"
-              viewBox="0 0 533.5 544.3"
-              role="img"
-            >
-              <path
-                fill="#4285F4"
-                d="M533.5 278.4c0-17.4-1.6-34.1-4.6-50.4H272.1v95.3h146.9c-6.3 33.7-25.2 62.3-53.6 81.5l86.6 67.3c50.5-46.6 81.5-115.2 81.5-193.7z"
-              />
-              <path
-                fill="#34A853"
-                d="M272.1 544.3c72.9 0 134.1-24.1 178.8-65.5l-86.6-67.3c-24 16.1-54.8 25.6-92.2 25.6-70.9 0-131-47.9-152.6-112.1l-89.7 69.3c44.5 88.1 135.6 150 242.3 150z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M119.5 324.9c-5.6-16.8-8.8-34.7-8.8-53s3.2-36.2 8.8-53l-89.7-69.3C10.6 181.1 0 226.8 0 271.9s10.6 90.8 29.8 122.3l89.7-69.3z"
-              />
-              <path
-                fill="#EA4335"
-                d="M272.1 107.3c39.7 0 75.3 13.7 103.3 40.6l77.5-77.5C406.1 24.8 345 0 272.1 0 165.4 0 74.3 61.9 29.8 149.6l89.7 69.3c21.6-64.2 81.7-111.6 152.6-111.6z"
-              />
-            </svg>
-          </a>
-          <a href="#" aria-label="Login dengan Apple" title="Apple">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="25"
-              height="25"
-              viewBox="0 0 24 24"
-              role="img"
-              fill="#000"
-            >
-              <path
-                d="M16.365 1.43c0 1-.41 1.98-1.07 2.7-.69.76-1.84 1.34-2.85 1.24-.13-1.06.46-2.1 1.11-2.77.73-.75 1.99-1.3 2.81-1.17zM20.53 17.08c-.46 1.07-1.01 2.12-1.8 3.16-.96 1.25-2.16 2.8-3.74 2.83-1.4.03-1.85-.82-3.43-.82-1.58 0-2.07.8-3.46.85-1.59.06-2.8-1.35-3.77-2.59-2.06-2.62-3.65-7.41-1.52-10.64 1.08-1.66 2.9-2.71 4.92-2.74 1.53-.03 2.97 1.02 3.43 1.02.46 0 2.38-1.26 4.01-1.07.68.03 2.59.28 3.82 2.16-3.36 1.78-2.83 6.41.54 7.83z"
-              />
-            </svg>
-          </a>
-          <a href="#" aria-label="Login dengan Facebook" title="Facebook">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="25"
-              height="25"
-              viewBox="0 0 24 24"
-              role="img"
-            >
-              <path
-                fill="#1877F2"
-                d="M24 12a12 12 0 1 0-13.875 11.85v-8.385H7.077V12h3.048V9.356c0-3.012 1.793-4.687 4.533-4.687 1.312 0 2.686.235 2.686.235v2.953h-1.514c-1.494 0-1.96.929-1.96 1.883V12h3.328l-.532 3.465h-2.796v8.385A12.002 12.002 0 0 0 24 12"
-              />
-            </svg>
-          </a>
-        </div>
-
         <!-- Baris bawah: harus HITAM -->
+        <!-- Bagian teks untuk ajakan register -->
         <div class="text-center mt-1 mb-1">
+          <!-- Wrapper teks register di bawah -->
           <small
             >Belum punya akun?
             <a href="/register" class="link-inline">Register</a></small
           >
+          <!-- Ajakan register dengan link ke /register -->
         </div>
       </div>
     </div>
 
     <script>
+      <!-- Script client-side untuk toggle password dan AJAX login -->
       // Toggle password
       (function () {
-        const pw = document.getElementById("password");
-        const btn = document.getElementById("togglePwBtn");
-        const ic = document.getElementById("eyeIcon");
+        // IIFE untuk mengisolasi logika toggle password
+        const pw = document.getElementById("password"); // Ambil elemen input password
+        const btn = document.getElementById("togglePwBtn"); // Ambil tombol toggle mata
+        const ic = document.getElementById("eyeIcon"); // Ambil ikon eye di dalam tombol
         btn.addEventListener("click", () => {
-          const show = pw.type === "password";
-          pw.type = show ? "text" : "password";
-          ic.classList.toggle("bi-eye", !show);
-          ic.classList.toggle("bi-eye-slash", show);
+          // Saat tombol mata diklik
+          const show = pw.type === "password"; // Cek apakah saat ini sedang mode hidden
+          pw.type = show ? "text" : "password"; // Ganti tipe input sesuai state (show/hide)
+          ic.classList.toggle("bi-eye", !show); // Jika hide, tampilkan ikon eye
+          ic.classList.toggle("bi-eye-slash", show); // Jika show, tampilkan ikon eye-slash
         });
       })();
 
       // AJAX login + error inline
       (function () {
-        const form = document.getElementById("loginForm");
-        const btn = document.getElementById("loginBtn");
-        const box = document.getElementById("errBox");
-        const msg = document.getElementById("errMsg");
-        const closeBtn = box.querySelector(".cf-close");
-        let autoHideId = null;
+        // IIFE untuk handle submit login AJAX dan error alert
+        const form = document.getElementById("loginForm"); // Ambil form login
+        const btn = document.getElementById("loginBtn"); // Ambil tombol login
+        const box = document.getElementById("errBox"); // Ambil container alert error
+        const msg = document.getElementById("errMsg"); // Elemen teks pesan dalam alert
+        const closeBtn = box.querySelector(".cf-close"); // Tombol X untuk menutup alert
+        let autoHideId = null; // ID timeout untuk auto-hide alert
 
         function showErr(text) {
-          msg.textContent = text || "Login gagal. Coba lagi.";
-          box.style.display = "flex";
-          box.classList.remove("cf-shake");
-          void box.offsetWidth;
-          box.classList.add("cf-shake");
-          clearTimeout(autoHideId);
-          autoHideId = setTimeout(hideErr, 6000);
+          // Fungsi menampilkan error di alert
+          msg.textContent = text || "Login gagal. Coba lagi."; // Set pesan error, dengan default fallback
+          box.style.display = "flex"; // Tampilkan alert (flex layout)
+          box.classList.remove("cf-shake"); // Reset animasi goyang jika sebelumnya sudah pernah
+          void box.offsetWidth; // Force reflow supaya animasi bisa re-trigger
+          box.classList.add("cf-shake"); // Tambahkan animasi shake untuk highlight error
+          clearTimeout(autoHideId); // Bersihkan timeout sebelumnya
+          autoHideId = setTimeout(hideErr, 6000); // Auto hide alert setelah 6 detik
         }
         function hideErr() {
-          clearTimeout(autoHideId);
-          box.style.display = "none";
-          msg.textContent = "";
+          // Fungsi menyembunyikan alert error
+          clearTimeout(autoHideId); // Bersihkan timeout hide
+          box.style.display = "none"; // Sembunyikan alert
+          msg.textContent = ""; // Kosongkan teks error
         }
-        closeBtn.addEventListener("click", hideErr);
+        closeBtn.addEventListener("click", hideErr); // Klik tombol X menutup alert manual
         ["identity", "password"].forEach((id) => {
-          document.getElementById(id).addEventListener("input", hideErr);
+          // Untuk field identity dan password
+          document.getElementById(id).addEventListener("input", hideErr); // Saat user mengetik, sembunyikan alert error
         });
 
         form.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          hideErr();
+          // Handler submit form login
+          e.preventDefault(); // Cegah submit default (full page reload)
+          hideErr(); // Sembunyikan alert error sebelum validasi baru
 
           const identity = (
             document.getElementById("identity").value || ""
-          ).trim();
+          ).trim(); // Ambil dan trim nilai identity
           const password = (
             document.getElementById("password").value || ""
-          ).trim();
+          ).trim(); // Ambil dan trim nilai password
           const remember =
-            document.getElementById("remember")?.checked ?? false;
+            document.getElementById("remember")?.checked ?? false; // Ambil status checkbox remember (default false)
 
           if (!identity || !password) {
-            showErr("Email/Username dan password wajib diisi.");
-            return;
+            // Validasi jika ada field kosong
+            showErr("Email/Username dan password wajib diisi."); // Tampilkan error wajib diisi
+            return; // Stop eksekusi submit
           }
 
-          btn.disabled = true;
-          const oldLabel = btn.textContent;
-          btn.textContent = "Memproses...";
+          btn.disabled = true; // Disable tombol sementara request berjalan
+          const oldLabel = btn.textContent; // Simpan teks lama tombol
+          btn.textContent = "Memproses..."; // Ganti label tombol untuk indikasi loading
 
           try {
             const res = await fetch("/auth/login", {
-              method: "POST",
+              // Kirim request login ke endpoint API
+              method: "POST", // Metode POST
               headers: {
-                "Content-Type": "application/json",
-                "X-Requested-With": "XMLHttpRequest",
+                "Content-Type": "application/json", // Kirim data sebagai JSON
+                "X-Requested-With": "XMLHttpRequest", // Tandai sebagai AJAX request
               },
-              body: JSON.stringify({ identity, password, remember }),
+              body: JSON.stringify({ identity, password, remember }), // Body JSON dengan kredensial dan flag remember
             });
 
-            let data = null;
+            let data = null; // Variabel untuk respon JSON
             try {
-              data = await res.json();
-            } catch (_) {}
+              data = await res.json(); // Coba parse respons sebagai JSON
+            } catch (_) {} // Abaikan error parse jika bukan JSON valid
 
             if (!res.ok) {
-              showErr((data && data.message) || "Login gagal. Coba lagi.");
-              return;
+              // Jika HTTP status bukan 2xx
+              showErr((data && data.message) || "Login gagal. Coba lagi."); // Tampilkan pesan error dari server atau default
+              return; // Stop proses lebih lanjut
             }
 
             if (data.status === "success" && data.redirect) {
-              window.location.href = data.redirect;
-              return;
+              // Jika login sukses dan ada URL redirect
+              window.location.href = data.redirect; // Redirect user ke URL yang diberikan
+              return; // Stop eksekusi
             }
             if (data.status === "need_verification" && data.email) {
+              // Jika perlu verifikasi OTP dulu
               window.location.href =
-                "/verify_otp?email=" + encodeURIComponent(data.email);
-              return;
+                "/verify_otp?email=" + encodeURIComponent(data.email); // Redirect ke halaman verifikasi OTP dengan email sebagai query
+              return; // Stop eksekusi
             }
             if (data.status === "error" && data.message) {
-              showErr(data.message);
-              return;
+              // Jika respon error terstruktur dari server
+              showErr(data.message); // Tampilkan pesan error khusus
+              return; // Stop eksekusi
             }
-            showErr("Login gagal. Coba lagi.");
+            showErr("Login gagal. Coba lagi."); // Fallback error jika status tidak dikenali
           } catch {
-            showErr("Jaringan bermasalah. Periksa koneksi Anda.");
+            showErr("Jaringan bermasalah. Periksa koneksi Anda."); // Error jika network/connection bermasalah
           } finally {
-            btn.disabled = false;
-            btn.textContent = oldLabel;
+            btn.disabled = false; // Re-enable tombol login
+            btn.textContent = oldLabel; // Kembalikan label tombol seperti semula
           }
         });
       })();
     </script>
+    <!-- Akhir script -->
   </body>
 </html>
+<!-- Akhir dokumen HTML -->

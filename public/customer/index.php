@@ -2172,7 +2172,7 @@ $role = $_SESSION['user_role'] ?? 'customer';
             toggleBtnInside.addEventListener(
               "click",
               () => {
-                // Menutup panel offcanvas
+        
                 bsOffcanvas.hide();
               }
             );

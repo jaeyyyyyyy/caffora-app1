@@ -1,134 +1,448 @@
 <?php
-// public/karyawan/orders.php
-declare(strict_types=1);
-session_start();
+// Tagline: Halaman "Daftar Pesanan" untuk karyawan — tampilkan list order, update status/pembayaran, batalkan pesanan, plus badge notifikasi real-time.
 
-require_once __DIR__.'/../../backend/auth_guard.php';
-require_login(['karyawan', 'admin']);
-require_once __DIR__.'/../../backend/config.php';
+// public/karyawan/orders.php                                // Lokasi file untuk halaman orders karyawan
+declare(strict_types=1);                                     // Aktifkan strict types di PHP
+session_start();                                             // Mulai/melanjutkan sesi PHP
 
-$userName = $_SESSION['user_name'] ?? 'Staff';
-$userRole = $_SESSION['user_role'] ?? 'karyawan'; // kirim ke JS
+require_once __DIR__ . '/../../backend/auth_guard.php';      // Include helper proteksi autentikasi
+require_login(['karyawan','admin']);                         // Wajib login sebagai karyawan atau admin
+require_once __DIR__ . '/../../backend/config.php';          // Load konfigurasi global (BASE_URL, DB, dll)
+
+$userName = $_SESSION['user_name'] ?? 'Staff';               // Ambil nama user dari session atau fallback "Staff"
+$userRole = $_SESSION['user_role'] ?? 'karyawan'; // kirim ke JS  // Ambil role user dari session atau default "karyawan"
 ?>
-<!doctype html>
-<html lang="id">
+<!doctype html>                                              
+<html lang="id">                                             
 <head>
-  <meta charset="utf-8">
-  <title>Orders — Karyawan Desk</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">                                     
+  <title>Orders — Karyawan Desk</title>                      
+  <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- Responsif di mobile -->
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-  <script src="https://code.iconify.design/2/2.2.1/iconify.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"> <!-- CSS Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"> <!-- Bootstrap Icons -->
+  <script src="https://code.iconify.design/2/2.2.1/iconify.min.js"></script> <!-- Iconify untuk ikon tambahan -->
 
   <style>
     :root{
-      --gold:#ffd54f; --gold-soft:#f4d67a; --brown:#4B3F36; --ink:#111827;
-      --radius:18px; --sidebar-w:320px;
+      --gold:#ffd54f;                                        /* Warna emas utama */
+      --gold-soft:#f4d67a;                                   /* Warna emas lembut (hover/border) */
+      --brown:#4B3F36;                                       /* Warna coklat brand */
+      --ink:#111827;                                         /* Warna teks utama gelap */
+      --radius:18px;                                         /* Default border radius kartu */
+      --sidebar-w:320px;                                     /* Lebar sidebar */
     }
-    body{ background:#FAFAFA; color:var(--ink); font-family:Inter,system-ui,Segoe UI,Roboto,Arial; }
+
+    body{
+      background:#FAFAFA;                                    /* Latar belakang abu terang */
+      color:var(--ink);                                      /* Warna teks */
+      font-family:Inter,system-ui,Segoe UI,Roboto,Arial;     /* Font stack utama */
+    }
 
     /* Sidebar */
-    .sidebar{ position:fixed; left:-320px; top:0; bottom:0; width:var(--sidebar-w);
-      background:#fff; border-right:1px solid rgba(0,0,0,.04); transition:left .25s ease;
-      z-index:1050; padding:14px 18px 18px; overflow-y:auto; }
-    .sidebar.show{ left:0; }
-    .sidebar-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
-    .sidebar-inner-toggle,.sidebar-close-btn{ background:transparent;border:0; width:40px;height:36px; display:grid;place-items:center; }
-    .hamb-icon{ width:24px; height:20px; display:flex; flex-direction:column; justify-content:space-between; gap:4px; }
-    .hamb-icon span{ height:2px; background:var(--brown); border-radius:99px; }
-    .sidebar .nav-link{ display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:16px; color:#111; font-weight:600; text-decoration:none; background:transparent; user-select:none; }
-    .sidebar .nav-link:hover,.sidebar .nav-link:focus,.sidebar .nav-link:active{ background:rgba(255,213,79,0.25); color:#111; outline:none; box-shadow:none; }
-    .sidebar hr{ border-color:rgba(0,0,0,.05); opacity:1; }
-    .backdrop-mobile{ display:none; }
-    .backdrop-mobile.active{ display:block; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:1040; }
+    .sidebar{
+      position:fixed;                                        /* Sidebar menempel di viewport */
+      left:-320px;                                           /* Awal tersembunyi di kiri */
+      top:0;
+      bottom:0;
+      width:var(--sidebar-w);                                /* Lebar sidebar sesuai variabel */
+      background:#fff;                                       /* Background putih */
+      border-right:1px solid rgba(0,0,0,.04);                /* Garis batas kanan tipis */
+      transition:left .25s ease;                             /* Animasi slide kiri-kanan */
+      z-index:1050;                                          /* Di atas konten utama */
+      padding:14px 18px 18px;                                /* Padding dalam sidebar */
+      overflow-y:auto;                                       /* Scroll jika kontennya panjang */
+    }
+    .sidebar.show{ left:0; }                                 /* Saat class show, sidebar muncul dari kiri */
 
-    .content{ margin-left:0; padding:16px 14px 40px; }
-    .topbar{ display:flex; align-items:center; gap:12px; margin-bottom:16px; }
-    .btn-menu{ background:transparent; border:0; width:40px; height:38px; display:grid; place-items:center; }
-    .search-box{ position:relative; flex:1 1 auto; min-width:0; }
-    .search-input{ height:46px; width:100%; border-radius:9999px; padding-left:16px; padding-right:44px; border:1px solid #e5e7eb; background:#fff; outline:none !important; transition:border-color .12s ease; box-shadow:none !important; }
-    .search-input:focus{ border-color:var(--gold-soft) !important; background:#fff; }
-    .search-icon{ position:absolute; right:16px; top:50%; transform:translateY(-50%); font-size:1.1rem; color:var(--brown); cursor:pointer; }
-
-    .top-actions{ display:flex; align-items:center; gap:14px; flex:0 0 auto; }
-    .icon-btn{ width:38px; height:38px; border-radius:999px; display:flex; align-items:center; justify-content:center; color:var(--brown); text-decoration:none; }
-    #badgeNotif.notif-dot{ position:absolute; top:3px; right:4px; width:8px; height:8px; background:#4b3f36; border-radius:50%; box-shadow:0 0 0 1.5px #fff; }
-    #badgeNotif.d-none{ display:none !important; }
-
-    .cardx{ background:#fff; border:1px solid #f7d78d; border-radius:var(--radius); padding:18px; }
-    .table thead th{ background:#fffbe6; font-weight:600; }
-    .table td, .table th{ vertical-align:middle; white-space:nowrap; }
-
-    @media (min-width:992px){
-      .content{ padding:20px 26px 50px; }
-      .search-box{ max-width:1100px; }
+    .sidebar-head{
+      display:flex;                                          /* Atur head sidebar dengan flex */
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .sidebar-inner-toggle,
+    .sidebar-close-btn{
+      background:transparent;                                /* Tombol tanpa background */
+      border:0;                                              /* Tanpa border */
+      width:40px;
+      height:36px;
+      display:grid;                                          /* Grid untuk center ikon */
+      place-items:center;
+    }
+    .hamb-icon{
+      width:24px;
+      height:20px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:4px;
+    }
+    .hamb-icon span{
+      height:2px;
+      background:var(--brown);                               /* Warna garis hamburger */
+      border-radius:99px;
     }
 
-    /* Modal */
-    #modalCancel .modal-content{ border-radius:18px; }
+    .sidebar .nav-link{
+      display:flex;                                          /* Item menu sidebar horizontal */
+      align-items:center;
+      gap:12px;
+      padding:12px 14px;                                     /* Padding link */
+      border-radius:16px;                                    /* Sudut membulat */
+      color:#111;
+      font-weight:600;                                       /* Teks lebih tebal */
+      text-decoration:none;                                  /* Hilangkan underline */
+      background:transparent;
+      user-select:none;                                      /* Tidak bisa diseleksi */
+    }
+    .sidebar .nav-link:hover,
+    .sidebar .nav-link:focus,
+    .sidebar .nav-link:active{
+      background:rgba(255,213,79,0.25);                      /* Highlight kuning lembut saat hover/fokus */
+      color:#111;
+      outline:none;
+      box-shadow:none;
+    }
+
+    .sidebar hr{
+      border-color:rgba(0,0,0,.05);                          /* Garis pemisah menu */
+      opacity:1;
+    }
+
+    .backdrop-mobile{ display:none; }                        /* Overlay untuk mobile dalam keadaan default */
+    .backdrop-mobile.active{
+      display:block;
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.35);                            /* Overlay hitam transparan */
+      z-index:1040;
+    }
+
+    .content{
+      margin-left:0;                                         /* Konten tanpa offset sidebar (mobile) */
+      padding:16px 14px 40px;                                /* Padding area konten */
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:16px;                                    /* Jarak bawah topbar */
+    }
+
+    .btn-menu{
+      background:transparent;                                /* Tombol hamburger transparan */
+      border:0;
+      width:40px;
+      height:38px;
+      display:grid;
+      place-items:center;
+    }
+
+    .search-box{
+      position:relative;
+      flex:1 1 auto;
+      min-width:0;
+    }
+    .search-input{
+      height:46px;
+      width:100%;
+      border-radius:9999px;                                  /* Input berbentuk pill */
+      padding-left:16px;
+      padding-right:44px;                                    /* Ruang untuk ikon search */
+      border:1px solid #e5e7eb;
+      background:#fff;
+      outline:none !important;
+      transition:border-color .12s ease;                     /* Transisi border saat fokus */
+      box-shadow:none !important;
+    }
+    .search-input:focus{
+      border-color:var(--gold-soft) !important;              /* Border kuning lembut saat fokus */
+      background:#fff;
+    }
+    .search-icon{
+      position:absolute;
+      right:16px;
+      top:50%;
+      transform:translateY(-50%);                            /* Pusatkan ikon di input */
+      font-size:1.1rem;
+      color:var(--brown);
+      cursor:pointer;
+    }
+
+    .top-actions{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      flex:0 0 auto;
+    }
+    .icon-btn{
+      width:38px;
+      height:38px;
+      border-radius:999px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--brown);
+      text-decoration:none;
+    }
+
+    #badgeNotif.notif-dot{
+      position:absolute;
+      top:3px;
+      right:4px;
+      width:8px;
+      height:8px;
+      background:#4b3f36;                                    /* Titik notif warna coklat gelap */
+      border-radius:50%;
+      box-shadow:0 0 0 1.5px #fff;                           /* Outline putih tipis */
+    }
+    #badgeNotif.d-none{ display:none !important; }           /* Sembunyikan notif-dot jika tidak ada notif */
+
+    .cardx{
+      background:#fff;
+      border:1px solid #f7d78d;                              /* Border kuning muda */
+      border-radius:var(--radius);
+      padding:18px 22px;
+    }
+
+    /* ===== Tabel ===== */
+    .table{
+      margin-bottom:0;                                       /* Hilangkan margin bawah tabel */
+    }
+    .table thead th,
+    .table td{
+      vertical-align:middle;
+      white-space:nowrap;                                    /* Jangan wrap teks di cell */
+      text-align:center;
+      padding:0.8rem 1.1rem;
+    }
+    .table thead th{
+      background:#fffbe6;                                    /* Header tabel latar kuning lembut */
+      font-weight:600;
+    }
+
+    .col-invoice{ min-width:170px; text-align:left; }        /* Kolom invoice lebih lebar, rata kiri */
+    .col-name   { min-width:120px; text-align:left; }        /* Kolom nama */
+    .col-total  { min-width:130px; }                         /* Kolom total */
+    .col-status { min-width:130px; }                         /* Kolom status */
+    .col-method { min-width:125px; }                         /* Kolom metode */
+    .col-actions{ min-width:260px; }                         /* Kolom aksi agar tombol muat */
+
+    .col-total{
+      font-variant-numeric:tabular-nums;                     /* Angka rata (tabular) agar sejajar */
+    }
+
+    /* Layout aksi: 2 baris (atas: Mulai+Lunas, bawah: Batal+Struk) */
+    .actions-cell{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:4px;
+    }
+    .actions-row{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      gap:6px;
+    }
+    .actions-row .btn{
+      border-radius:12px;
+      padding:.28rem .9rem;
+      font-size:.8rem;
+    }
+    .actions-row a.btn{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+    }
+
+    @media (min-width:992px){
+      .content{
+        padding:20px 26px 50px;                              /* Lebih lega di layar besar */
+      }
+      .search-box{ max-width:1100px; }                       /* Batasi lebar search di desktop */
+    }
+
+    /* Modal Batalkan (tema Caffora) */
+    #modalCancel .modal-dialog{
+      max-width:480px;                                       /* Lebar maksimum modal batal */
+    }
+    #modalCancel .modal-content{
+      border-radius:24px;
+      border:none;
+      box-shadow:0 20px 60px rgba(15,23,42,.35);             /* Bayangan pekat untuk modal */
+      padding:4px 2px 6px;
+    }
+    #modalCancel .modal-header{
+      border-bottom:0;
+      padding:18px 22px 6px;
+    }
+    #modalCancel .modal-title{
+      font-weight:700;
+      color:var(--brown);
+    }
+    #modalCancel .btn-close{
+      box-shadow:none !important;
+    }
+    #modalCancel .modal-body{
+      padding:6px 22px 18px;
+    }
+    #modalCancel .modal-footer{
+      border-top:0;
+      padding:4px 22px 18px;
+      gap:10px;
+    }
+    #modalCancel .alert{
+      border-radius:16px;
+      background:#fff9e6;
+      border-color:#ffe7aa;
+      color:var(--brown);
+      font-size:.9rem;
+    }
+    #modalCancel .form-select,
+    #modalCancel textarea{
+      border-radius:14px;
+      border-color:#e5e7eb;
+      box-shadow:none !important;
+    }
+    #modalCancel .form-select:focus,
+    #modalCancel textarea:focus{
+      border-color:var(--gold-soft);
+    }
+    #modalCancel .small{
+      font-size:.78rem;
+    }
+    #modalCancel .btn{
+      border-radius:999px;
+      font-weight:600;
+      padding:.48rem 1.3rem;
+    }
+    #modalCancel .btn-light{
+      background:#fff7e0;
+      border-color:#fff7e0;
+      color:var(--brown);
+    }
+    #modalCancel .btn-light:hover{
+      background:#ffefc2;
+      border-color:#ffefc2;
+    }
+    #modalCancel .btn-danger{
+      background:#ef4444;
+      border-color:#ef4444;
+    }
+    #modalCancel .btn-danger:hover{
+      background:#dc2626;
+      border-color:#dc2626;
+    }
+
+    .modal-backdrop.show{
+      background:rgba(15,23,42,.55);                         /* Overlay belakang modal lebih gelap */
+    }
   </style>
 </head>
 <body>
 
-<div id="backdrop" class="backdrop-mobile"></div>
+<div id="backdrop" class="backdrop-mobile"></div>            <!-- Overlay hitam untuk menutup sidebar di mobile -->
 
-<aside class="sidebar" id="sideNav">
+<aside class="sidebar" id="sideNav">                          <!-- Sidebar navigasi karyawan -->
   <div class="sidebar-head">
-    <button class="sidebar-inner-toggle" id="toggleSidebarInside" aria-label="Tutup menu"></button>
-    <button class="sidebar-close-btn" id="closeSidebar" aria-label="Tutup menu"><i class="bi bi-x-lg"></i></button>
+    <button class="sidebar-inner-toggle" id="toggleSidebarInside" aria-label="Tutup menu"></button> <!-- Tombol tutup di dalam sidebar -->
+    <button class="sidebar-close-btn" id="closeSidebar" aria-label="Tutup menu">                     <!-- Tombol X untuk menutup sidebar -->
+      <i class="bi bi-x-lg"></i>
+    </button>
   </div>
-  <nav class="nav flex-column gap-2" id="sidebar-nav">
-    <a class="nav-link" href="<?= BASE_URL ?>/public/karyawan/index.php"><i class="bi bi-house-door"></i> Dashboard</a>
-    <a class="nav-link active" href="<?= BASE_URL ?>/public/karyawan/orders.php"><i class="bi bi-receipt"></i> Orders</a>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/karyawan/stock.php"><i class="bi bi-box-seam"></i> Menu Stock</a>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/karyawan/settings.php"><i class="bi bi-gear"></i> Settings</a>
+  <nav class="nav flex-column gap-2" id="sidebar-nav">        <!-- Daftar link navigasi vertikal -->
+    <a class="nav-link" href="<?= BASE_URL ?>/public/karyawan/index.php">
+      <i class="bi bi-house-door"></i> Dashboard              <!-- Menu ke dashboard karyawan -->
+    </a>
+    <a class="nav-link active" href="<?= BASE_URL ?>/public/karyawan/orders.php">
+      <i class="bi bi-receipt"></i> Orders                    <!-- Menu aktif: Orders -->
+    </a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/karyawan/stock.php">
+      <i class="bi bi-box-seam"></i> Menu Stock               <!-- Menu stok / inventory -->
+    </a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/karyawan/settings.php">
+      <i class="bi bi-gear"></i> Settings                     <!-- Menu pengaturan akun -->
+    </a>
     <hr>
-    <a class="nav-link" href="<?= BASE_URL ?>/public/karyawan/help.php"><i class="bi bi-question-circle"></i> Help Center</a>
-    <a class="nav-link" href="<?= BASE_URL ?>/backend/logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
+    <a class="nav-link" href="<?= BASE_URL ?>/public/karyawan/help.php">
+      <i class="bi bi-question-circle"></i> Help Center       <!-- Menu bantuan -->
+    </a>
+    <a class="nav-link" href="<?= BASE_URL ?>/backend/logout.php">
+      <i class="bi bi-box-arrow-right"></i> Logout            <!-- Logout karyawan -->
+    </a>
   </nav>
 </aside>
 
-<main class="content">
+<main class="content">                                       <!-- Kontainer utama isi halaman -->
   <div class="topbar">
-    <button class="btn-menu" id="openSidebar" aria-label="Buka menu">
+    <button class="btn-menu" id="openSidebar" aria-label="Buka menu"> <!-- Tombol hamburger buka sidebar -->
       <div class="hamb-icon"><span></span><span></span><span></span></div>
     </button>
 
-    <div class="search-box">
-      <input class="search-input" id="searchInput" placeholder="Search..." autocomplete="off" />
-      <i class="bi bi-search search-icon" id="searchIcon"></i>
+    <div class="search-box">                                  <!-- Box pencarian pesanan -->
+      <input
+        class="search-input"
+        id="searchInput"
+        placeholder="Search..."
+        autocomplete="off"
+      />
+      <i class="bi bi-search search-icon" id="searchIcon"></i> <!-- Ikon search clickable -->
     </div>
 
-    <div class="top-actions">
-      <a id="btnBell" class="icon-btn position-relative text-decoration-none" href="<?= BASE_URL ?>/public/karyawan/notifications.php" aria-label="Notifikasi">
-        <span class="iconify" data-icon="mdi:bell-outline" data-width="24" data-height="24"></span>
-        <span id="badgeNotif" class="notif-dot d-none"></span>
+    <div class="top-actions">                                 <!-- Aksi kanan atas (notifikasi & akun) -->
+      <a
+        id="btnBell"
+        class="icon-btn position-relative text-decoration-none"
+        href="<?= BASE_URL ?>/public/karyawan/notifications.php"
+        aria-label="Notifikasi"
+      >
+        <span
+          class="iconify"
+          data-icon="mdi:bell-outline"
+          data-width="24"
+          data-height="24"
+        ></span>
+        <span id="badgeNotif" class="notif-dot d-none"></span> <!-- Titik kecil indikator notif belum dibaca -->
       </a>
-      <a class="icon-btn text-decoration-none" href="<?= BASE_URL ?>/public/karyawan/settings.php" aria-label="Akun">
-        <span class="iconify" data-icon="mdi:account-circle-outline" data-width="28" data-height="28"></span>
+      <a
+        class="icon-btn text-decoration-none"
+        href="<?= BASE_URL ?>/public/karyawan/settings.php"
+        aria-label="Akun"
+      >
+        <span
+          class="iconify"
+          data-icon="mdi:account-circle-outline"
+          data-width="28"
+          data-height="28"
+        ></span>
       </a>
     </div>
   </div>
 
-  <h2 class="fw-bold mb-3">Daftar Pesanan</h2>
+  <h2 class="fw-bold mb-3">Daftar Pesanan</h2>                <!-- Judul halaman list pesanan -->
 
-  <div class="cardx">
-    <div class="table-responsive">
-      <table class="table align-middle mb-0">
+  <div class="cardx">                                         <!-- Card pembungkus tabel pesanan -->
+    <div class="table-responsive">                            <!-- Tabel bisa discroll horizontal di mobile -->
+      <table class="table align-middle">
         <thead>
           <tr>
-            <th>Invoice</th>
-            <th>Nama</th>
-            <th>Total</th>
-            <th>Pesanan</th>
-            <th>Pembayaran</th>
-            <th>Metode</th>
-            <th>Aksi</th>
+            <th class="col-invoice">Invoice</th>              <!-- Kolom nomor invoice -->
+            <th class="col-name">Nama</th>                    <!-- Nama pelanggan -->
+            <th class="col-total">Total</th>                  <!-- Total tagihan -->
+            <th class="col-status">Pesanan</th>               <!-- Status pesanan -->
+            <th class="col-status">Pembayaran</th>            <!-- Status pembayaran -->
+            <th class="col-method">Metode</th>                <!-- Metode pembayaran -->
+            <th class="col-actions">Aksi</th>                 <!-- Tombol aksi -->
           </tr>
         </thead>
-        <tbody id="rows">
-          <tr><td colspan="7" class="text-center text-muted py-4">Memuat...</td></tr>
+        <tbody id="rows">                                     <!-- Body tabel akan diisi via JS -->
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">Memuat...</td> <!-- Placeholder saat loading -->
+          </tr>
         </tbody>
       </table>
     </div>
@@ -136,238 +450,106 @@ $userRole = $_SESSION['user_role'] ?? 'karyawan'; // kirim ke JS
 </main>
 
 <!-- Modal Batalkan Pesanan -->
-<div class="modal fade" id="modalCancel" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="modalCancel" tabindex="-1" aria-hidden="true"> <!-- Modal konfirmasi pembatalan -->
   <div class="modal-dialog modal-dialog-centered modal-md">
-    <form class="modal-content" id="formCancel">
-      <div class="modal-header border-0 pb-0">
-        <h5 class="modal-title fw-bold">Batalkan Pesanan</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+    <form class="modal-content" id="formCancel">             <!-- Form pembatalan pesanan -->
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Batalkan Pesanan</h5> <!-- Judul modal -->
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Tutup"
+        ></button>
       </div>
-      <div class="modal-body pt-2">
-        <input type="hidden" name="order_id" id="cancel_order_id">
+
+      <div class="modal-body">
+        <input type="hidden" name="order_id" id="cancel_order_id"> <!-- Hidden ID pesanan yang dibatalkan -->
+
         <div class="alert alert-warning py-2 mb-3">
-          Anda yakin ingin membatalkan pesanan <span id="cancel_invoice" class="fw-semibold"></span>?
+          Anda yakin ingin membatalkan pesanan
+          <span id="cancel_invoice" class="fw-semibold"></span>? <!-- Tampilkan nomor invoice dinamis -->
         </div>
 
-        <label class="form-label">Alasan pembatalan <span class="text-danger">*</span></label>
-        <select class="form-select" name="reason_sel" id="cancel_reason_sel" required>
-          <option value="">Pilih alasan…</option>
+        <label class="form-label">
+          Alasan pembatalan <span class="text-danger">*</span>    <!-- Label alasan wajib -->
+        </label>
+        <select
+          class="form-select"
+          name="reason_sel"
+          id="cancel_reason_sel"
+          required
+        >
+          <option value="">Pilih alasan…</option>                 <!-- Placeholder pilihan -->
           <option>Stok habis / tidak mencukupi</option>
           <option>Pelanggan tidak melanjutkan (belum bayar)</option>
           <option>Salah input pesanan</option>
           <option>Menu tidak tersedia hari ini</option>
-          <option value="__custom__">Lainnya (tulis manual)</option>
+          <option value="__custom__">Lainnya (tulis manual)</option> <!-- Pilihan untuk alasan custom -->
         </select>
 
-        <div class="mt-2 d-none" id="cancel_reason_custom_wrap">
-          <textarea class="form-control" id="cancel_reason_custom" rows="2" placeholder="Tulis alasan singkat"></textarea>
+        <div class="mt-2 d-none" id="cancel_reason_custom_wrap">  <!-- Textarea alasan custom, hidden by default -->
+          <textarea
+            class="form-control"
+            id="cancel_reason_custom"
+            rows="2"
+            placeholder="Tulis alasan singkat"
+          ></textarea>
         </div>
 
         <div class="small text-muted mt-2">
-          Pembatalan hanya untuk pesanan <strong>belum dibayar</strong>. Setelah batal, pembayaran ditandai <em>failed</em>.
+          Pembatalan hanya untuk pesanan
+          <strong>belum dibayar</strong>. Setelah batal, pembayaran
+          ditandai <em>failed</em>.                             <!-- Info aturan pembatalan -->
         </div>
       </div>
-      <div class="modal-footer border-0 pt-0">
-        <button class="btn btn-light" type="button" data-bs-dismiss="modal">Tidak</button>
-        <button class="btn btn-danger" type="submit">Ya, Batalkan</button>
+
+      <div class="modal-footer">
+        <button
+          class="btn btn-light"
+          type="button"
+          data-bs-dismiss="modal"
+        >
+          Tidak                                                   <!-- Tombol batal (tidak jadi membatalkan) -->
+        </button>
+        <button class="btn btn-danger" type="submit">
+          Ya, Batalkan                                            <!-- Tombol submit pembatalan -->
+        </button>
       </div>
     </form>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script> <!-- JS Bootstrap bundle -->
 <script>
-const USER_ROLE = <?= json_encode($userRole, JSON_UNESCAPED_SLASHES) ?>;
-const BASE      = "<?= rtrim(BASE_URL, '/') ?>";
-const API       = BASE + "/backend/api/orders.php";
-const $rows     = document.getElementById('rows');
-const $search   = document.getElementById('searchInput');
+/* =============================
+   ANTI-XSS ESCAPE HELPER
+   ============================= */
+function escHtml(value){                                      // Helper untuk escape teks agar aman dari XSS
+  const str = String(value ?? '');                            // Pastikan nilai jadi string (fallback kosong)
+  return str
+    .replace(/&/g, '&amp;')                                   // Ganti & dengan &amp;
+    .replace(/</g, '&lt;')                                    // Ganti < dengan &lt;
+    .replace(/>/g, '&gt;')                                    // Ganti > dengan &gt;
+    .replace(/"/g, '&quot;')                                  // Ganti " dengan &quot;
+    .replace(/'/g, '&#39;');                                  // Ganti ' dengan &#39;
+}
+
+const USER_ROLE = <?= json_encode($userRole, JSON_UNESCAPED_SLASHES) ?>; // Role user dari PHP dikirim ke JS
+const BASE      = "<?= rtrim(BASE_URL, '/') ?>";             // BASE_URL tanpa slash di akhir
+const ORIGIN    = location.origin.replace(/^http:\/\//i, "https://"); // Normalisasi origin ke https (kalau http)
+
+/* Endpoint clean + fallback legacy */
+const API_ORDERS_CLEAN  = ORIGIN + "/api/orders";            // Endpoint clean untuk list/update orders
+const API_ORDERS_LEGACY = ORIGIN + "/backend/api/orders.php"; // Endpoint legacy untuk orders
+const API_NOTIF_CLEAN   = ORIGIN + "/api/notifications?action=unread_count"; // Endpoint clean jumlah notif belum dibaca
+const API_NOTIF_LEGACY  = ORIGIN + "/backend/api/notifications.php?action=unread_count"; // Endpoint legacy notif
+
+const $rows   = document.getElementById('rows');              // Element tbody tempat render baris pesanan
+const $search = document.getElementById('searchInput');       // Input pencarian orders
+
+let cancelModal, cancelOrderInput, cancelInvoiceSpan;         // Variabel untuk komponen modal batal
+let selCancel, wrapCustom, cancelReasonCustom;                // Elemen select + wrapper alasan custom + textarea custom
 
 /* Sidebar */
-const sideNav = document.getElementById('sideNav');
-const backdrop = document.getElementById('backdrop');
-document.getElementById('openSidebar')?.addEventListener('click', () => { sideNav.classList.add('show'); backdrop.classList.add('active'); });
-document.getElementById('closeSidebar')?.addEventListener('click', () => { sideNav.classList.remove('show'); backdrop.classList.remove('active'); });
-document.getElementById('toggleSidebarInside')?.addEventListener('click', () => { sideNav.classList.remove('show'); backdrop.classList.remove('active'); });
-backdrop?.addEventListener('click', () => { sideNav.classList.remove('show'); backdrop.classList.remove('active'); });
-
-/* Notif badge */
-async function refreshNotif(){
-  const badge = document.getElementById('badgeNotif'); if(!badge) return;
-  try{
-    const r = await fetch(BASE + "/backend/api/notifications.php?action=unread_count", {credentials:"same-origin"});
-    if(!r.ok) return; const d = await r.json(); const c = d.count ?? 0;
-    if(c>0) badge.classList.remove('d-none'); else badge.classList.add('d-none');
-  }catch(e){}
-}
-refreshNotif(); setInterval(refreshNotif, 30000);
-
-/* Helpers */
-const rp = (n) => 'Rp ' + Number(n||0).toLocaleString('id-ID');
-function badgeOrder(os){ const map={new:'secondary',processing:'primary',ready:'warning',completed:'success',cancelled:'dark'}; return `<span class="badge text-bg-${map[os]||'secondary'} fw-semibold text-capitalize">${os||'-'}</span>`; }
-function badgePay(ps){ const map={pending:'warning',paid:'success',failed:'danger',refunded:'info',overdue:'secondary'}; return `<span class="badge text-bg-${map[ps]||'secondary'} fw-semibold text-capitalize">${ps||'-'}</span>`; }
-function nextButtons(os){
-  const order=['new','processing','ready','completed']; const idx=order.indexOf(os);
-  if(idx===-1 || os==='completed' || os==='cancelled') return '<button class="btn btn-sm btn-outline-secondary" disabled>Selesai</button>';
-  const next=order[idx+1]; const labelMap={processing:'Mulai', ready:'Siap', completed:'Selesai'};
-  return `<button class="btn btn-sm btn-outline-primary" data-act="next" data-val="${next}">${labelMap[next]||'→'}</button>`;
-}
-
-/* Load table */
-async function loadOrders(q=''){
-  try{
-    const url=new URL(API, location.origin); 
-    url.searchParams.set('action','list'); 
-    if(q.trim()) url.searchParams.set('q', q.trim());
-
-    const res=await fetch(url.toString(), {credentials:'same-origin', cache:'no-store'});
-    const js=await res.json();
-
-    if(!res.ok || !js.ok){
-      $rows.innerHTML='<tr><td colspan="7" class="text-danger text-center py-4">'+(js?.error||'Gagal memuat')+'</td></tr>'; 
-      return;
-    }
-    const items=js.items||[];
-    if(!items.length){ 
-      $rows.innerHTML='<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data.</td></tr>'; 
-      return; 
-    }
-
-    $rows.innerHTML = items.map(it=>{
-      const receiptPath = (USER_ROLE==='admin') ? '/public/admin/receipt.php?order='+it.id : '/public/karyawan/receipt.php?order='+it.id;
-      const strukHref   = BASE + receiptPath;
-      const strukDisabled = it.payment_status!=='paid';
-      return `
-      <tr data-id="${it.id}" data-invoice="${it.invoice_no||''}" data-pay="${it.payment_status||''}" data-ost="${it.order_status||''}">
-        <td class="fw-semibold">${it.invoice_no||'-'}</td>
-        <td>${it.customer_name||'-'}</td>
-        <td>${rp(it.total)}</td>
-        <td>${badgeOrder(it.order_status)}</td>
-        <td>${badgePay(it.payment_status)}</td>
-        <td>${it.payment_method||'-'}</td>
-        <td class="d-flex flex-wrap gap-1">
-          ${nextButtons(it.order_status)}
-          <div class="btn-group">
-            <button class="btn btn-sm btn-outline-success" data-act="pay" data-val="paid">Lunas</button>
-            <button class="btn btn-sm btn-outline-warning" data-act="pay" data-val="pending">Pending</button>
-          </div>
-          <div class="btn-group">
-            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Metode</button>
-            <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="#" data-act="method" data-val="cash">Cash</a></li>
-              <li><a class="dropdown-item" href="#" data-act="method" data-val="qris">QRIS</a></li>
-              <li><a class="dropdown-item" href="#" data-act="method" data-val="bank_transfer">Transfer</a></li>
-              <li><a class="dropdown-item" href="#" data-act="method" data-val="ewallet">e-Wallet</a></li>
-            </ul>
-          </div>
-          <button class="btn btn-sm btn-outline-danger" data-act="cancel">Batal</button>
-          <a class="btn btn-sm btn-outline-dark ${strukDisabled?'disabled':''} ms-1" ${strukDisabled?'aria-disabled="true"':''} href="${strukDisabled?'#':strukHref}">
-            <i class="bi bi-printer me-1"></i> Struk
-          </a>
-        </td>
-      </tr>`;
-    }).join('');
-
-    bindRowActions();
-  }catch(e){
-    console.error(e);
-    $rows.innerHTML = '<tr><td colspan="7" class="text-danger text-center py-4">Gagal memuat.</td></tr>';
-  }
-}
-
-/* Bind actions (include modal cancel) */
-function bindRowActions(){
-  const cancelModal = new bootstrap.Modal(document.getElementById('modalCancel'));
-  const selCancel   = document.getElementById('cancel_reason_sel');
-  const wrapCustom  = document.getElementById('cancel_reason_custom_wrap');
-
-  selCancel.onchange = ()=> wrapCustom.classList.toggle('d-none', selCancel.value!=='__custom__');
-
-  $rows.querySelectorAll('[data-act]').forEach(btn=>{
-    btn.addEventListener('click', async (ev)=>{
-      ev.preventDefault();
-      const tr=btn.closest('tr'); if(!tr) return;
-      const id=tr.dataset.id; const act=btn.dataset.act;
-      let payload={ id:Number(id) };
-
-      if(act==='cancel'){
-        // hanya boleh batal bila pembayaran masih pending
-        if(tr.dataset.pay !== 'pending'){
-          alert('Pesanan sudah dibayar atau sudah diproses refund. Pembatalan hanya untuk yang belum dibayar.');
-          return;
-        }
-        document.getElementById('cancel_order_id').value = tr.dataset.id;
-        document.getElementById('cancel_invoice').textContent = '#'+(tr.dataset.invoice||'');
-        selCancel.value=''; 
-        wrapCustom.classList.add('d-none'); 
-        document.getElementById('cancel_reason_custom').value='';
-        cancelModal.show();
-        return;
-      }
-
-      if(act==='next'){ payload.order_status=btn.dataset.val; }
-      else if(act==='pay'){ payload.payment_status=btn.dataset.val; }
-      else if(act==='method'){ payload.payment_method=btn.dataset.val; }
-      else { return; }
-
-      const r = await fetch(API+'?action=update',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        credentials:'same-origin',
-        body:JSON.stringify(payload)
-      });
-      await loadOrders($search.value);
-    });
-  });
-
-  // submit cancel -> orders_cancel.php (set order_status=cancelled, payment_status=failed)
-  document.getElementById('formCancel').addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const btn = e.submitter || document.querySelector('#formCancel button[type="submit"]');
-    const id  = document.getElementById('cancel_order_id').value;
-    const opt = document.getElementById('cancel_reason_sel').value;
-    const cus = document.getElementById('cancel_reason_custom').value.trim();
-    const reason = (opt==='__custom__') ? (cus || 'Alasan lain') : opt;
-
-    if(!id || !reason){ alert('Lengkapi alasan.'); return; }
-
-    btn.disabled = true; btn.textContent = 'Memproses...';
-
-    try{
-      const res = await fetch(BASE + '/backend/api/orders_cancel.php', {
-        method:'POST',
-        credentials:'same-origin',
-        headers:{
-          'Accept':'application/json',
-          'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8'
-        },
-        body: new URLSearchParams({ order_id:id, reason })
-      });
-
-      const raw = await res.text();
-      let js; try{ js = JSON.parse(raw); }catch{ js = null; }
-
-      if(!res.ok || !js || js.ok!==true){
-        console.error('orders_cancel.php response:', res.status, raw);
-        alert((js && js.error) ? js.error : 'Gagal membatalkan pesanan.');
-        return;
-      }
-
-      bootstrap.Modal.getInstance(document.getElementById('modalCancel')).hide();
-      await loadOrders($search.value);
-    }catch(err){
-      console.error(err);
-      alert('Terjadi masalah jaringan.');
-    }finally{
-      btn.disabled = false; btn.textContent = 'Ya, Batalkan';
-    }
-  });
-}
-
-/* Search + init */
-$search.addEventListener('input', ()=> loadOrders($search.value));
-document.getElementById('searchIcon').addEventListener('click', ()=> loadOrders($search.value));
-document.addEventListener('DOMContentLoaded', ()=> loadOrders());
-</script>
-</body>
-</html>
+const sideNav  = document.getElementById('sideNav');          // Element sideba
